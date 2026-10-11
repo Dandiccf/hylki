@@ -2,6 +2,32 @@
 
 Hylki (formerly Vireo) is a clean, fast, GNOME-native email client built with Rust and libadwaita for Wayland desktops. Privacy-first: no telemetry, remote content blocked by default, and credentials kept in the system keyring.
 
+## What's new in 1.44.0-beta.3
+
+New features:
+
+- Gmail keyboard shortcuts, switched on in Settings → System - (#392)
+- A command palette on Ctrl+K - (#399)
+- Unsubscribe can delete what the list sent - (#407)
+- Old list mail moved to the Trash on a schedule - (#407)
+- .eml and Outlook .msg files open in Hylki - (#398)
+- Settings → System → Storage shows and limits downloaded mail - (#394)
+- Settings → System → Renderer chooses how GTK draws - (#403)
+- Insert Signature in the composer, at the cursor or before or after the text - (#385)
+- A refresh button for GNOME Online Accounts in Settings → Accounts
+
+Fixes:
+
+- an MP3 new-mail sound crashing Hylki - (#397)
+- docks on X11 showing Hylki twice - (#402)
+- new mail landing just above the top of the list - (#400)
+- Edit as New adding a second signature - (#385)
+- your own replies showing in an opened conversation - (#388)
+- saving a signature emptying the list and the reader - (#382)
+- l, w and b doing nothing useful - (#392)
+- a removed account's mail showing under the next account
+- an account added to GNOME Online Accounts being slow to appear
+
 ## What's new in 1.44.0-beta.2
 
 New features:

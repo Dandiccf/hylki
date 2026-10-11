@@ -63,6 +63,11 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="1.44.0-beta.3" date="2026-10-10" type="development">
+      <description>
+        <p>Third preview of 1.44.0: Gmail keyboard shortcuts, a command palette, .eml and Outlook .msg files, list mail clean-up, storage and renderer settings, and Insert Signature in the composer.</p>
+      </description>
+    </release>
     <release version="1.44.0-beta.2" date="2026-10-10" type="development">
       <description>
         <p>Second preview of 1.44.0: a Hylki address book, contact filters, row tints for tagged mail, a light or dark switch per message, and faster folder switching.</p>

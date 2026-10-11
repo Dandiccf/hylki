@@ -1,5 +1,79 @@
 # Changelog
 
+## 1.44.0-beta.3 — 2026-10-10
+
+The third beta previewing 1.44.0.
+
+- **Added: a refresh button for GNOME Online Accounts.** In **Settings →
+  Accounts**, beside **Add Account…**, it looks for accounts added in GNOME
+  Settings since the list was made.
+- **Fixed: an account added to GNOME Online Accounts was slow to appear** in
+  Hylki's import list. Hylki watched only for accounts removed or changed
+  there; it now notices one added as soon as GNOME announces it.
+- **Added: Gmail keys** (#392, requested by 3v1n0). **Settings → System →
+  Gmail keys** swaps in Gmail's single-key shortcuts: j/k move a cursor down
+  the list without opening, o or Enter opens, e archives, # deletes, Shift+U
+  and Shift+I mark unread and read, x selects, z undoes, and g then i, s, t,
+  d, a or c goes to Inbox, Starred, Sent, Drafts, Archive or Contacts.
+- **Fixed: l, w and b did nothing useful** (#392). l now puts the keyboard in
+  the open message, w and b step through the conversation's cards, opening a
+  folded one, and the single-key shortcuts keep working after a click in the
+  message. x selected no row from the keyboard.
+- **Added: a command palette** (#399, requested by 3v1n0). **Ctrl+K** opens a
+  search over the actions that apply to the open mail, the views, every
+  account's folders and the tags; Enter runs the one picked.
+- **Added: Unsubscribe can delete what the list sent** (#407, requested by
+  zachrdavis). The unsubscribe dialog offers to move the mail already
+  received from the same address to Trash; off unless ticked, and undoable.
+- **Added: .eml files open in Hylki** (#398, requested by 3v1n0). A message
+  file opened from GNOME Files or the command line, or with **Open Message
+  File…** in the command palette, shows in a window of its own instead of
+  being attached to a new message. **Save as File…** on a message's
+  right-click menu and its card saves it whole as a `.eml`.
+- **Added: Outlook .msg files open in Hylki** (#398). They show like a
+  `.eml`: the server's headers when Outlook kept them, else the sender,
+  recipients, subject and date from the file, with the text, attachments and
+  inline pictures. A body kept only as RTF is not read.
+- **Added: old list mail can leave the Inbox on its own** (#407). Each IMAP
+  or JMAP account's **Move list mail to Trash**, under Syncing, moves Inbox
+  mail with an unsubscribe link older than 30, 60, 90 or 180 days to the
+  Trash at each sync, starred mail excepted. Off unless chosen.
+- **Added: Settings → System → Storage** (#394, requested by somepaulo). It
+  shows what downloaded messages and attachments take up, removes them on
+  request, and **Keep downloaded mail** removes those older than a year, 90
+  days or 30 days. The message list and search are unaffected.
+- **Added: Settings → System → Renderer** (#403, requested by narcarsiss).
+  Automatic, Vulkan, OpenGL or Software, for older graphics hardware where
+  Vulkan is incomplete; applies at the next start.
+- **Fixed: choosing an MP3 as the new-mail sound crashed Hylki** (#397,
+  reported by JavierLopezBravo). An MP3 that starts with an ID3v2 tag made
+  GStreamer abort the app when the sound was chosen, previewed or played for
+  new mail. The tag is taken off when the file is copied in, and off a sound
+  chosen with an earlier version before it next plays.
+- **Fixed: docs on X11 showed Hylki twice** (#402, reported by narcarsiss).
+  The window's class was `hylki` while the launcher names the app ID, so a
+  pinned launcher and the open window did not group. Wayland was not affected.
+- **Fixed: new mail landed just above the top of the list** (#400, reported
+  by yioannides). A list read from the very top now stays at the top when a
+  message arrives; scrolled down, it keeps its place.
+- **Fixed: Edit as New added a second signature** (#385, reported by
+  urkos101). The copy keeps the signature it already has. **Insert
+  Signature**, a button beside Translate at the end of the formatting row,
+  puts the account's signature at the cursor; right-click it to put the
+  signature before or after the text.
+- **Fixed: an opened conversation showed your own replies with "Show your own
+  replies in the message list" off** (#388, reported by amadeusp). Mail sent
+  from your addresses now nests under a conversation only when the setting is
+  on; received mail filed in other folders still does.
+- **Fixed: saving a signature emptied the list and the reader** (#382,
+  reported by urkos101). Changing an account's signature, color, emoji,
+  picture, Gravatar switch, label or place in the unified section no longer
+  reconnects every account.
+- **Fixed: removing an account showed its mail under the next one.** The
+  accounts after a removed one keep their own folders and mail.
+- **Changed: the documentation gives the mail cache's real location**,
+  `~/.local/share/hylki/cache.db`.
+
 ## 1.44.0-beta.2 — 2026-10-10
 
 The second beta previewing 1.44.0.
