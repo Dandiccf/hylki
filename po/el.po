@@ -204,6 +204,10 @@ msgstr "Ακύρωση"
 msgid "Delete All"
 msgstr "Διαγραφή"
 
+#, fuzzy
+msgid "The renderer applies the next time Hylki starts."
+msgstr "Η γλώσσα θα εφαρμοστεί την επόμενη φορά που θα εκκινηθεί το Hylki."
+
 msgid "The language applies the next time Hylki starts."
 msgstr "Η γλώσσα θα εφαρμοστεί την επόμενη φορά που θα εκκινηθεί το Hylki."
 
@@ -280,6 +284,10 @@ msgstr "Η εισαγωγή απέτυχε: {e}"
 msgid "Could not import account: {e}"
 msgstr "Αδυναμία εισαγωγής λογαριασμού: {e}"
 
+#, fuzzy
+msgid "Could not save the message: {e}"
+msgstr "Δεν ήταν δυνατή η ενημέρωση του μηνύματος: {e}"
+
 msgid "No address book available"
 msgstr "Δεν υπάρχει διαθέσιμο βιβλίο διευθύνσεων"
 
@@ -321,6 +329,103 @@ msgstr "Σχετικά"
 msgid "Remove Tags"
 msgstr "Αφαίρεση ετικετών"
 
+#, fuzzy
+msgid "Action"
+msgstr "Ενέργειες"
+
+msgid "New Message"
+msgstr "Νέο μήνυμα"
+
+msgid "New Message from Template"
+msgstr "Νέο μήνυμα από πρότυπο"
+
+#, fuzzy
+msgid "Reply to All"
+msgstr "Απάντηση σε όλους"
+
+msgid "Edit as New Message"
+msgstr "Επεξεργασία ως νέο μήνυμα"
+
+msgid "View Source"
+msgstr "Προβολή πηγαίου κώδικα"
+
+msgid "Print"
+msgstr "Εκτύπωση"
+
+msgid "Print Preview"
+msgstr "Προεπισκόπηση εκτύπωσης"
+
+msgid "Find in Message"
+msgstr "Εύρεση στο μήνυμα"
+
+msgid "Delete"
+msgstr "Διαγραφή"
+
+#, fuzzy
+msgid "Star or Remove Star"
+msgstr "Αφαίρεση αστεριού"
+
+#, fuzzy
+msgid "Mark as Read or Unread"
+msgstr "Σήμανση ως αναγνωσμένο ή μη αναγνωσμένο"
+
+#, fuzzy
+msgid "Move to Folder"
+msgstr "Μετακίνηση φακέλου"
+
+#, fuzzy
+msgid "Open Message File…"
+msgstr "Εκτύπωση μηνύματος…"
+
+msgid "Undo"
+msgstr "Αναίρεση"
+
+msgid "Redo"
+msgstr "Επανάληψη"
+
+#, fuzzy
+msgid "Check for New Mail"
+msgstr "Έλεγχος για νέα μηνύματα"
+
+#, fuzzy
+msgid "Search Messages"
+msgstr "Αναζήτηση μηνυμάτων…"
+
+#, fuzzy
+msgid "Show or Hide the Sidebar"
+msgstr "Εμφάνιση ή απόκρυψη λογαριασμών στην πλευρική στήλη"
+
+msgid "Mail Accounts"
+msgstr "Λογαριασμοί αλληλογραφίας"
+
+#, fuzzy
+msgid "About Hylki"
+msgstr "Σχετικά"
+
+#, fuzzy
+msgid "Turn Focus Mode On"
+msgstr "Λειτουργία συγκέντρωσης"
+
+#, fuzzy
+msgid "Turn Focus Mode Off"
+msgstr "Λειτουργία συγκέντρωσης"
+
+msgid "View"
+msgstr ""
+
+msgid "All accounts"
+msgstr "Όλοι οι λογαριασμοί"
+
+msgid "Contacts"
+msgstr "Επαφές"
+
+msgid "Outbox"
+msgstr "Εξερχόμενα"
+
+#, fuzzy
+msgid "Tag"
+msgstr "Ετικέτες"
+
 msgid ""
 "Single-key shortcuts are switched off. Turn them on in Settings → System."
 msgstr ""
@@ -330,9 +435,6 @@ msgstr ""
 msgid "Your tags"
 msgstr "Οι ετικέτες σας"
 
-msgid "Delete"
-msgstr "Διαγραφή"
-
 msgid "Move to {name}"
 msgstr "Μετακίνηση στο {name}"
 
@@ -341,12 +443,6 @@ msgstr "Προσθήκη ετικέτας {name}"
 
 msgid "Remove Tag {name}"
 msgstr "Αφαίρεση ετικέτας {name}"
-
-msgid "Undo"
-msgstr "Αναίρεση"
-
-msgid "Redo"
-msgstr "Επανάληψη"
 
 msgid "Restarting Hylki"
 msgstr "Επανεκκίνηση Hylki"
@@ -368,17 +464,8 @@ msgstr ""
 msgid "Restart Now"
 msgstr "Επανεκκίνηση τώρα"
 
-msgid "View Source"
-msgstr "Προβολή πηγαίου κώδικα"
-
 msgid "Move to Inbox"
 msgstr "Μετακίνηση στα Εισερχόμενα"
-
-msgid "Find in Message"
-msgstr "Εύρεση στο μήνυμα"
-
-msgid "Print Preview"
-msgstr "Προεπισκόπηση εκτύπωσης"
 
 msgid "Search Messages…"
 msgstr "Αναζήτηση μηνυμάτων…"
@@ -395,9 +482,6 @@ msgstr "Χρήση προτύπου"
 msgid "Edit Template"
 msgstr "Επεξεργασία προτύπου"
 
-msgid "Edit as New Message"
-msgstr "Επεξεργασία ως νέο μήνυμα"
-
 msgid "Add Sender to Contacts"
 msgstr "Προσθήκη αποστολέα στις επαφές"
 
@@ -413,14 +497,36 @@ msgstr "Ανάπτυξη όλων των μηνυμάτων"
 msgid "Collapse All Messages"
 msgstr "Σύμπτυξη όλων των μηνυμάτων"
 
+#, fuzzy
+msgid "Save as File…"
+msgstr "Αποθήκευση ως PDF…"
+
 msgid "Print…"
 msgstr "Εκτύπωση…"
 
+#, fuzzy
+msgid "Save Message"
+msgstr "Νέο μήνυμα"
+
+#, fuzzy
+msgid "Open Message File"
+msgstr "Νέο μήνυμα"
+
+#, fuzzy
+msgid "Email messages"
+msgstr "{n} μηνύματα"
+
+#. Other programs name files .msg too (Tcl's catalogues).
+#, fuzzy
+msgid "it is not an Outlook message"
+msgstr "Το gpg δεν υπέγραψε το μήνυμα."
+
+#, fuzzy
+msgid "Could not open {file}: {e}"
+msgstr "Δεν ήταν δυνατή η μετακίνηση φακέλου: {e}"
+
 msgid "Delete {n} messages"
 msgstr "Διαγραφή {n} μηνυμάτων"
-
-msgid "New Message"
-msgstr "Νέο μήνυμα"
 
 msgid "Could not attach {names}: Hylki cannot read the file."
 msgid_plural "Could not attach {n} files (Hylki cannot read them): {names}"
@@ -479,9 +585,6 @@ msgstr "Επισύναψη ούτως ή άλλως"
 
 msgid "Upload to Cloud Storage"
 msgstr "Μεταφόρτωση σε αποθήκευση cloud"
-
-msgid "New Message from Template"
-msgstr "Νέο μήνυμα από πρότυπο"
 
 msgid "The new message starts as a copy of the template you pick."
 msgstr "Το νέο μήνυμα ξεκινά ως αντίγραφο του προτύπου που επιλέγετε."
@@ -847,6 +950,12 @@ msgstr ""
 msgid "Unsubscribe"
 msgstr "Κατάργηση εγγραφής"
 
+#, fuzzy
+msgid "Also delete the message from {addr}"
+msgid_plural "Also delete the {n} messages from {addr}"
+msgstr[0] "Δεν ήταν δυνατή η διαγραφή του μηνύματος: {e}"
+msgstr[1] "Δεν ήταν δυνατή η διαγραφή του μηνύματος: {e}"
+
 msgid "the message offers no way to unsubscribe"
 msgstr "το μήνυμα δεν προσφέρει τρόπο κατάργησης εγγραφής"
 
@@ -859,23 +968,26 @@ msgstr "Όλες οι σημειώσεις έκδοσης στο GitHub"
 msgid "Move around"
 msgstr "Μετακίνηση"
 
-msgid "Next message"
-msgstr "Επόμενο μήνυμα"
+msgid "Move down or up the list without opening"
+msgstr ""
 
-msgid "Previous message"
-msgstr "Προηγούμενο μήνυμα"
-
-msgid "Open the selected message"
-msgstr "Άνοιγμα επιλεγμένου μηνύματος"
+#, fuzzy
+msgid "Open the message the cursor is on"
+msgstr "Ανοίγει το μήνυμα με έτοιμη προώθηση."
 
 msgid "Back to the message list"
 msgstr "Επιστροφή στη λίστα μηνυμάτων"
 
-msgid "Next message in the conversation"
-msgstr "Επόμενο μήνυμα στη συνομιλία"
-
-msgid "Previous message in the conversation"
+#, fuzzy
+msgid "Next or previous message in the conversation"
 msgstr "Προηγούμενο μήνυμα στη συνομιλία"
+
+msgid "Go to Inbox, Starred, Sent, Drafts or Archive"
+msgstr ""
+
+#, fuzzy
+msgid "Go to Contacts"
+msgstr "Προσθήκη στις επαφές"
 
 msgid "Search"
 msgstr "Αναζήτηση"
@@ -892,15 +1004,49 @@ msgstr "Σήμανση ως ανεπιθύμητο"
 msgid "Star or unstar"
 msgstr "Προσθήκη ή αφαίρεση αστεριού"
 
-msgid "Mark read or unread"
-msgstr "Σήμανση ως αναγνωσμένο ή μη αναγνωσμένο"
+msgid "Mark as read"
+msgstr "Σήμανση ως αναγνωσμένο"
+
+msgid "Mark as unread"
+msgstr "Σήμανση ως μη αναγνωσμένο"
 
 msgid "Select this row (for a bulk action)"
 msgstr "Επιλογή αυτής της σειράς (για μαζική ενέργεια)"
 
+msgid "Select every row, or none"
+msgstr ""
+
+#, fuzzy
+msgid "Move to a folder"
+msgstr "Μετακίνηση φακέλου"
+
+msgid "Undo the last action"
+msgstr ""
+
 msgid "Add or remove a tag (the first nine, in Settings order)"
 msgstr ""
 "Προσθήκη ή αφαίρεση ετικέτας (οι πρώτες εννέα, με τη σειρά των Ρυθμίσεων)"
+
+msgid "Compose"
+msgstr "Σύνταξη"
+
+msgid "Next message"
+msgstr "Επόμενο μήνυμα"
+
+msgid "Previous message"
+msgstr "Προηγούμενο μήνυμα"
+
+msgid "Open the selected message"
+msgstr "Άνοιγμα επιλεγμένου μηνύματος"
+
+msgid "Next message in the conversation"
+msgstr "Επόμενο μήνυμα στη συνομιλία"
+
+msgid "Previous message in the conversation"
+msgstr "Προηγούμενο μήνυμα στη συνομιλία"
+
+msgid "Mark read or unread"
+msgstr "Σήμανση ως αναγνωσμένο ή μη αναγνωσμένο"
 
 msgid "Remove every tag"
 msgstr "Αφαίρεση όλων των ετικετών"
@@ -912,9 +1058,6 @@ msgid "Preview it as a PDF first"
 msgstr "Προεπισκόπηση πρώτα ως PDF"
 
 msgid "Writing"
-msgstr "Σύνταξη"
-
-msgid "Compose"
 msgstr "Σύνταξη"
 
 msgid "New message from a template"
@@ -984,6 +1127,9 @@ msgstr "Κλείσιμο παραθύρου (ο συγχρονισμός συν�
 
 msgid "Quit Hylki entirely"
 msgstr "Πλήρης έξοδος από το Hylki"
+
+msgid "Command palette: search actions, folders and tags"
+msgstr ""
 
 msgid "This list"
 msgstr "Αυτή η λίστα"
@@ -1088,9 +1234,6 @@ msgstr "Μετακίνηση σε"
 
 msgid "Find"
 msgstr "Εύρεση"
-
-msgid "Print"
-msgstr "Εκτύπωση"
 
 #, fuzzy
 msgid "Hylki Address Book"
@@ -1436,11 +1579,12 @@ msgstr ""
 msgid "Enable POP/IMAP access in GMX settings first."
 msgstr "Ενεργοποιήστε πρώτα την πρόσβαση POP/IMAP στις ρυθμίσεις GMX."
 
-msgid "Mail Accounts"
-msgstr "Λογαριασμοί αλληλογραφίας"
-
 msgid "Drag to set the order they appear in the sidebar."
 msgstr "Σύρετε για να ορίσετε τη σειρά εμφάνισής τους στην πλευρική στήλη."
+
+#, fuzzy
+msgid "Check GNOME Online Accounts for new accounts"
+msgstr "Διαδικτυακοί λογαριασμοί GNOME"
 
 msgid "Add Account…"
 msgstr "Προσθήκη λογαριασμού…"
@@ -1824,6 +1968,15 @@ msgid ""
 msgstr ""
 "Οριστική διαγραφή μηνυμάτων στον Κάδο παλαιότερων από αυτό το διάστημα, με "
 "έλεγχο σε κάθε συγχρονισμό."
+
+#, fuzzy
+msgid "Move list mail to Trash"
+msgstr "Μετακίνηση αυτού του προχείρου στον Κάδο"
+
+msgid ""
+"Inbox mail from mailing lists and newsletters (anything with an unsubscribe "
+"link) older than this, unless starred. Checked at each sync."
+msgstr ""
 
 msgid "Folder Order"
 msgstr "Σειρά φακέλων"
@@ -2509,9 +2662,6 @@ msgstr "Άνοιγμα στην προεπιλεγμένη εφαρμογή"
 msgid "Go to Message"
 msgstr "Μετάβαση στο μήνυμα"
 
-msgid "All accounts"
-msgstr "Όλοι οι λογαριασμοί"
-
 msgid "Deleting…"
 msgstr "Διαγραφή…"
 
@@ -2555,6 +2705,12 @@ msgstr "Για να αφαιρέσετε το {old}, εκτελέστε:"
 
 msgid "Copy"
 msgstr "Αντιγραφή"
+
+msgid "Command Palette"
+msgstr ""
+
+msgid "Type an action, a folder or a tag"
+msgstr ""
 
 msgid "Cloud Storage"
 msgstr "Αποθήκευση στο cloud"
@@ -3061,6 +3217,10 @@ msgstr "Εμφάνιση του μηνύματος όπως θα σταλεί"
 msgid "Translate what you wrote"
 msgstr "Μετάφραση όσων γράψατε"
 
+#, fuzzy
+msgid "Insert Signature"
+msgstr "Εισαγωγή υπογραφής"
+
 msgid "More"
 msgstr "Περισσότερα"
 
@@ -3100,6 +3260,14 @@ msgstr "Αφαίρεση του {name}"
 
 msgid "Typing"
 msgstr "Πληκτρολόγηση"
+
+#, fuzzy
+msgid "Insert Before the Text"
+msgstr "Εισαγωγή στο κείμενο"
+
+#, fuzzy
+msgid "Insert After the Text"
+msgstr "Εισαγωγή στο κείμενο"
 
 msgid "Show Original"
 msgstr "Εμφάνιση πρωτοτύπου"
@@ -3234,9 +3402,6 @@ msgstr ""
 
 msgid "Not found"
 msgstr "Δεν βρέθηκε"
-
-msgid "Contacts"
-msgstr "Επαφές"
 
 msgid "Open in GNOME Contacts"
 msgstr "Άνοιγμα στις Επαφές GNOME"
@@ -3575,9 +3740,6 @@ msgstr "Υψηλή σημασία"
 msgid "Low importance"
 msgstr "Χαμηλή σπουδαιότητα"
 
-msgid "Mark as read"
-msgstr "Σήμανση ως αναγνωσμένο"
-
 msgid "Move to…"
 msgstr "Μετακίνηση σε…"
 
@@ -3586,9 +3748,6 @@ msgstr "Μη ανεπιθύμητο"
 
 msgid "Add sender to Contacts"
 msgstr "Προσθήκη αποστολέα στις Επαφές"
-
-msgid "Mark as unread"
-msgstr "Σήμανση ως μη αναγνωσμένο"
 
 msgid "Remove star"
 msgstr "Αφαίρεση αστεριού"
@@ -4390,6 +4549,15 @@ msgstr ""
 
 msgid "Installed, but not this version's copy"
 msgstr "Εγκατεστημένο, αλλά όχι το αντίγραφο αυτής της έκδοσης"
+
+#, fuzzy
+msgid "Measuring…"
+msgstr "Αναζήτηση…"
+
+msgid ""
+"Messages {bodies}, attachments {files}. The cache, message list included, is "
+"{total}."
+msgstr ""
 
 msgid "Search Settings"
 msgstr "Αναζήτηση στις Ρυθμίσεις"
@@ -5627,6 +5795,16 @@ msgstr ""
 "επιφάνεια εργασίας, με αγγλικά όπου δεν υπάρχει μετάφραση. Η αλλαγή "
 "εφαρμόζεται την επόμενη φορά που θα ξεκινήσει το Hylki."
 
+#, fuzzy
+msgid "Renderer"
+msgstr "Αποστολέας"
+
+msgid ""
+"How the windows are drawn. OpenGL or Software can help on older graphics "
+"hardware where Vulkan is incomplete. A change applies the next time Hylki "
+"starts."
+msgstr ""
+
 msgid "Keep running in the background"
 msgstr "Διατήρηση εκτέλεσης στο παρασκήνιο"
 
@@ -5705,6 +5883,15 @@ msgstr ""
 "για μετακίνηση, r για απάντηση, a για αρχειοθέτηση. Πατήστε Ctrl+? για την "
 "πλήρη λίστα."
 
+#, fuzzy
+msgid "Gmail keys"
+msgstr "Διεύθυνση email"
+
+msgid ""
+"Single-key shortcuts as Gmail has them: j/k move without opening, o opens, e "
+"archives, # deletes, g then a letter goes to a folder."
+msgstr ""
+
 msgid "Console mode"
 msgstr "Λειτουργία κονσόλας"
 
@@ -5722,6 +5909,22 @@ msgstr ""
 "Αποθήκευση όλων όσων έχει καταγράψει η κονσόλα από την εκκίνηση του Hylki, "
 "για επισύναψη σε αναφορά σφάλματος. Οι διευθύνσεις email συντομεύονται στον "
 "τομέα τους."
+
+#, fuzzy
+msgid "Downloaded mail"
+msgstr "Λήψη…"
+
+#, fuzzy
+msgid "Remove…"
+msgstr "Αφαίρεση"
+
+msgid "Keep downloaded mail"
+msgstr ""
+
+msgid ""
+"Older messages and their attachments are removed from this computer and "
+"fetched again when opened."
+msgstr ""
 
 msgid "GNOME Files Integration"
 msgstr "Ενσωμάτωση με τα Αρχεία GNOME"
@@ -5822,6 +6025,9 @@ msgstr ""
 "τους από την κλειδοθήκη, τους οποίους δεν περιέχει κανένα αντίγραφο "
 "ασφαλείας."
 
+msgid "Software"
+msgstr ""
+
 msgid "In the unified section"
 msgstr "Στην ενοποιημένη ενότητα"
 
@@ -5866,6 +6072,20 @@ msgid ""
 msgstr ""
 "Η εκκίνηση εμφανίζει ένα σύνολο εικονιδίων εκτός του Hylki. Η επιλογή ενός "
 "εδώ το αντικαθιστά."
+
+#, fuzzy
+msgid "Always"
+msgstr "Πάντα ορατή"
+
+#, fuzzy
+msgid "A year"
+msgstr "1 έτος"
+
+msgid "90 days"
+msgstr ""
+
+msgid "30 days"
+msgstr ""
 
 msgid "When displayed"
 msgstr "Κατά την εμφάνιση"
@@ -5947,6 +6167,14 @@ msgstr "{percent}%"
 
 msgid "Could not install the extension"
 msgstr "Δεν ήταν δυνατή η εγκατάσταση της επέκτασης"
+
+msgid "Remove downloaded mail?"
+msgstr ""
+
+msgid ""
+"Every message and attachment kept on this computer is removed, and fetched "
+"again from the server when it is opened. Nothing on the server changes."
+msgstr ""
 
 msgid "Could not remove the extension"
 msgstr "Δεν ήταν δυνατή η αφαίρεση της επέκτασης"
@@ -6151,9 +6379,6 @@ msgstr "Δεν υπάρχουν ακόμη λογαριασμοί"
 
 msgid "New Message from Template…"
 msgstr "Νέο μήνυμα από πρότυπο…"
-
-msgid "Outbox"
-msgstr "Εξερχόμενα"
 
 msgid "Mark Inbox as Read"
 msgstr "Σήμανση Εισερχομένων ως αναγνωσμένων"

@@ -204,6 +204,10 @@ msgstr "Mégse"
 msgid "Delete All"
 msgstr "Törlés"
 
+#, fuzzy
+msgid "The renderer applies the next time Hylki starts."
+msgstr "A nyelvi módosítások a Hylki következő indításakor lépnek életbe."
+
 msgid "The language applies the next time Hylki starts."
 msgstr "A nyelvi módosítások a Hylki következő indításakor lépnek életbe."
 
@@ -279,6 +283,10 @@ msgstr "Az importálás sikertelen: {e}"
 msgid "Could not import account: {e}"
 msgstr "A fiók nem importálható: {e}"
 
+#, fuzzy
+msgid "Could not save the message: {e}"
+msgstr "Az üzenet nem frissíthető: {e}"
+
 msgid "No address book available"
 msgstr "Nem érhető el címjegyzék"
 
@@ -321,6 +329,104 @@ msgid "Remove Tags"
 msgstr "Címkék eltávolítása"
 
 #, fuzzy
+msgid "Action"
+msgstr "Műveletek"
+
+msgid "New Message"
+msgstr "Új üzenet"
+
+#, fuzzy
+msgid "New Message from Template"
+msgstr "Inkább új üzenet"
+
+#, fuzzy
+msgid "Reply to All"
+msgstr "Válasz mindenkinek"
+
+msgid "Edit as New Message"
+msgstr "Szerkesztés új üzenetként"
+
+msgid "View Source"
+msgstr "Forrás megtekintése"
+
+msgid "Print"
+msgstr "Nyomtatás"
+
+msgid "Print Preview"
+msgstr "Nyomtatási előnézet"
+
+msgid "Find in Message"
+msgstr "Keresés az üzenetben"
+
+msgid "Delete"
+msgstr "Törlés"
+
+#, fuzzy
+msgid "Star or Remove Star"
+msgstr "Csillag eltávolítása"
+
+#, fuzzy
+msgid "Mark as Read or Unread"
+msgstr "Megjelölés olvasottként vagy olvasatlanként"
+
+#, fuzzy
+msgid "Move to Folder"
+msgstr "Mappa áthelyezése"
+
+#, fuzzy
+msgid "Open Message File…"
+msgstr "Nyomtatás…"
+
+msgid "Undo"
+msgstr "Visszavonás"
+
+msgid "Redo"
+msgstr "Újra"
+
+#, fuzzy
+msgid "Check for New Mail"
+msgstr "Új levelek keresése"
+
+#, fuzzy
+msgid "Search Messages"
+msgstr "Üzenetek keresése..."
+
+#, fuzzy
+msgid "Show or Hide the Sidebar"
+msgstr "Fiókok megjelenítése vagy elrejtése az oldalsávban"
+
+msgid "Mail Accounts"
+msgstr "Levelezési fiókok"
+
+#, fuzzy
+msgid "About Hylki"
+msgstr "Névjegy"
+
+#, fuzzy
+msgid "Turn Focus Mode On"
+msgstr "Fókusz mód"
+
+#, fuzzy
+msgid "Turn Focus Mode Off"
+msgstr "Fókusz mód"
+
+msgid "View"
+msgstr ""
+
+msgid "All accounts"
+msgstr "Összes fiók"
+
+msgid "Contacts"
+msgstr "Névjegyek"
+
+msgid "Outbox"
+msgstr "Kimenő"
+
+#, fuzzy
+msgid "Tag"
+msgstr "Címkék"
+
+#, fuzzy
 msgid ""
 "Single-key shortcuts are switched off. Turn them on in Settings → System."
 msgstr ""
@@ -330,9 +436,6 @@ msgstr ""
 msgid "Your tags"
 msgstr "Saját címkék"
 
-msgid "Delete"
-msgstr "Törlés"
-
 msgid "Move to {name}"
 msgstr "Áthelyzés ide: {name}"
 
@@ -341,12 +444,6 @@ msgstr "Címke hozzáadása: {name}"
 
 msgid "Remove Tag {name}"
 msgstr "Címke eltávolítása: {name}"
-
-msgid "Undo"
-msgstr "Visszavonás"
-
-msgid "Redo"
-msgstr "Újra"
 
 msgid "Restarting Hylki"
 msgstr "A Hylki újraindítása"
@@ -366,17 +463,8 @@ msgstr ""
 msgid "Restart Now"
 msgstr "Újraindítás most"
 
-msgid "View Source"
-msgstr "Forrás megtekintése"
-
 msgid "Move to Inbox"
 msgstr "Áthelyezés a Beérkezett üzenetek közé"
-
-msgid "Find in Message"
-msgstr "Keresés az üzenetben"
-
-msgid "Print Preview"
-msgstr "Nyomtatási előnézet"
 
 msgid "Search Messages…"
 msgstr "Üzenetek keresése..."
@@ -393,9 +481,6 @@ msgstr ""
 #, fuzzy
 msgid "Edit Template"
 msgstr "Címke szerkesztése"
-
-msgid "Edit as New Message"
-msgstr "Szerkesztés új üzenetként"
 
 msgid "Add Sender to Contacts"
 msgstr "Feladó hozzáadása a névjegyekhez"
@@ -414,14 +499,36 @@ msgstr "Keresés az üzenetben"
 msgid "Collapse All Messages"
 msgstr "Olvasói nézetre váltás"
 
+#, fuzzy
+msgid "Save as File…"
+msgstr "Mentés PDF-ként…"
+
 msgid "Print…"
 msgstr "Nyomtatás…"
 
+#, fuzzy
+msgid "Save Message"
+msgstr "Új üzenet"
+
+#, fuzzy
+msgid "Open Message File"
+msgstr "Új üzenet"
+
+#, fuzzy
+msgid "Email messages"
+msgstr "{n} db üzenet"
+
+#. Other programs name files .msg too (Tcl's catalogues).
+#, fuzzy
+msgid "it is not an Outlook message"
+msgstr "A gpg nem írta alá az üzenetet."
+
+#, fuzzy
+msgid "Could not open {file}: {e}"
+msgstr "A mappa nem helyezhető át: {e}"
+
 msgid "Delete {n} messages"
 msgstr "{n} üzenet törlése"
-
-msgid "New Message"
-msgstr "Új üzenet"
 
 msgid "Could not attach {names}: Hylki cannot read the file."
 msgid_plural "Could not attach {n} files (Hylki cannot read them): {names}"
@@ -476,10 +583,6 @@ msgstr "Csatolás mindenképpen"
 
 msgid "Upload to Cloud Storage"
 msgstr "Feltöltés a felhőbe"
-
-#, fuzzy
-msgid "New Message from Template"
-msgstr "Inkább új üzenet"
 
 #, fuzzy
 msgid "The new message starts as a copy of the template you pick."
@@ -839,6 +942,12 @@ msgstr ""
 msgid "Unsubscribe"
 msgstr "Leiratkozás"
 
+#, fuzzy
+msgid "Also delete the message from {addr}"
+msgid_plural "Also delete the {n} messages from {addr}"
+msgstr[0] "Az üzenet nem törölhető: {e}"
+msgstr[1] "Az üzenet nem törölhető: {e}"
+
 msgid "the message offers no way to unsubscribe"
 msgstr "az üzenet nem kínál leiratkozási lehetőséget"
 
@@ -851,23 +960,26 @@ msgstr "A teljes verzióinformáció a GitHub-on"
 msgid "Move around"
 msgstr "Navigáció"
 
-msgid "Next message"
-msgstr "Következő üzenet"
+msgid "Move down or up the list without opening"
+msgstr ""
 
-msgid "Previous message"
-msgstr "Előző üzenet"
-
-msgid "Open the selected message"
-msgstr "Kijelölt üzenet megnyitása"
+#, fuzzy
+msgid "Open the message the cursor is on"
+msgstr "Megnyitja az üzenetet, amelyben már megkezdődött az átirányítás."
 
 msgid "Back to the message list"
 msgstr "Vissza az üzenetlistához"
 
-msgid "Next message in the conversation"
-msgstr "A beszélgetés következő üzenete"
-
-msgid "Previous message in the conversation"
+#, fuzzy
+msgid "Next or previous message in the conversation"
 msgstr "A beszélgetés előző üzenete"
+
+msgid "Go to Inbox, Starred, Sent, Drafts or Archive"
+msgstr ""
+
+#, fuzzy
+msgid "Go to Contacts"
+msgstr "Hozzáadás a névjegyekhez"
 
 msgid "Search"
 msgstr "Keresés"
@@ -884,16 +996,51 @@ msgstr "Megjelölés levélszemétként"
 msgid "Star or unstar"
 msgstr "Csillagozás vagy csillag eltávolítása"
 
-msgid "Mark read or unread"
-msgstr "Megjelölés olvasottként vagy olvasatlanként"
+msgid "Mark as read"
+msgstr "Megjelölés olvasottként"
+
+msgid "Mark as unread"
+msgstr "Megjelölés olvasatlanként"
 
 msgid "Select this row (for a bulk action)"
 msgstr "Sor kijelölése (csoportos művelethez)"
+
+msgid "Select every row, or none"
+msgstr ""
+
+#, fuzzy
+msgid "Move to a folder"
+msgstr "Mappa áthelyezése"
+
+#, fuzzy
+msgid "Undo the last action"
+msgstr "Legutóbbi áthelyezés vagy törlés visszavonása"
 
 msgid "Add or remove a tag (the first nine, in Settings order)"
 msgstr ""
 "Címke hozzáadása vagy eltávolítása (az első kilenc, a Beállítások "
 "sorrendjében)"
+
+msgid "Compose"
+msgstr "Levélírás"
+
+msgid "Next message"
+msgstr "Következő üzenet"
+
+msgid "Previous message"
+msgstr "Előző üzenet"
+
+msgid "Open the selected message"
+msgstr "Kijelölt üzenet megnyitása"
+
+msgid "Next message in the conversation"
+msgstr "A beszélgetés következő üzenete"
+
+msgid "Previous message in the conversation"
+msgstr "A beszélgetés előző üzenete"
+
+msgid "Mark read or unread"
+msgstr "Megjelölés olvasottként vagy olvasatlanként"
 
 msgid "Remove every tag"
 msgstr "Minden címke eltávolítása"
@@ -907,9 +1054,6 @@ msgstr "Először PDF-ként való megtekintés"
 #, fuzzy
 msgid "Writing"
 msgstr "Írás:"
-
-msgid "Compose"
-msgstr "Levélírás"
 
 #, fuzzy
 msgid "New message from a template"
@@ -977,6 +1121,9 @@ msgstr "Ablak bezárása (a háttérben futó szinkronizálás folytatódik)"
 
 msgid "Quit Hylki entirely"
 msgstr "Kilépés teljesen a Hylkiből"
+
+msgid "Command palette: search actions, folders and tags"
+msgstr ""
 
 msgid "This list"
 msgstr "Ez a lista"
@@ -1087,9 +1234,6 @@ msgstr "Áthelyezés ide"
 
 msgid "Find"
 msgstr "Keresés"
-
-msgid "Print"
-msgstr "Nyomtatás"
 
 #, fuzzy
 msgid "Hylki Address Book"
@@ -1421,11 +1565,12 @@ msgstr ""
 msgid "Enable POP/IMAP access in GMX settings first."
 msgstr "Először engedélyezze a POP/IMAP hozzáférést a GMX beállításaiban."
 
-msgid "Mail Accounts"
-msgstr "Levelezési fiókok"
-
 msgid "Drag to set the order they appear in the sidebar."
 msgstr "Húzással állítsa be az oldalsávban való megjelenési sorrendet."
+
+#, fuzzy
+msgid "Check GNOME Online Accounts for new accounts"
+msgstr "GNOME Internetes Fiókok"
 
 msgid "Add Account…"
 msgstr "Fiók hozzáadása…"
@@ -1804,6 +1949,15 @@ msgid ""
 msgstr ""
 "A kukában található, ennél régebbi e-maileket véglegesen törölje; ezt minden "
 "szinkronizáláskor ellenőrizzük."
+
+#, fuzzy
+msgid "Move list mail to Trash"
+msgstr "Piszkozat áthelyezése a Kukába"
+
+msgid ""
+"Inbox mail from mailing lists and newsletters (anything with an unsubscribe "
+"link) older than this, unless starred. Checked at each sync."
+msgstr ""
 
 msgid "Folder Order"
 msgstr "Mappák sorrendje"
@@ -2483,9 +2637,6 @@ msgstr "Megnyitás az alapértelmezett alkalmazásban"
 msgid "Go to Message"
 msgstr "Ugrás az üzenethez"
 
-msgid "All accounts"
-msgstr "Összes fiók"
-
 msgid "Deleting…"
 msgstr "Törlés…"
 
@@ -2530,6 +2681,12 @@ msgstr "{old} törléséhez, futtasd:"
 
 msgid "Copy"
 msgstr "Másolás"
+
+msgid "Command Palette"
+msgstr ""
+
+msgid "Type an action, a folder or a tag"
+msgstr ""
 
 msgid "Cloud Storage"
 msgstr "Felhőtárhely"
@@ -3035,6 +3192,10 @@ msgstr "Az üzenet megjelenítése úgy, ahogyan elküldésre kerül"
 msgid "Translate what you wrote"
 msgstr "Fordította"
 
+#, fuzzy
+msgid "Insert Signature"
+msgstr "Aláírás importálása"
+
 msgid "More"
 msgstr "Továbbiak"
 
@@ -3075,6 +3236,14 @@ msgstr "{name} eltávolítása"
 
 msgid "Typing"
 msgstr "Gépelés"
+
+#, fuzzy
+msgid "Insert Before the Text"
+msgstr "Beillesztés a szövegbe"
+
+#, fuzzy
+msgid "Insert After the Text"
+msgstr "Beillesztés a szövegbe"
 
 #, fuzzy
 msgid "Show Original"
@@ -3214,9 +3383,6 @@ msgstr ""
 #, fuzzy
 msgid "Not found"
 msgstr "Nem jelenik meg"
-
-msgid "Contacts"
-msgstr "Névjegyek"
 
 msgid "Open in GNOME Contacts"
 msgstr "Megnyitás a GNOME Névjegyekben"
@@ -3560,9 +3726,6 @@ msgstr ""
 msgid "Low importance"
 msgstr "Kulcs importálva"
 
-msgid "Mark as read"
-msgstr "Megjelölés olvasottként"
-
 msgid "Move to…"
 msgstr "Áthelyezés…"
 
@@ -3571,9 +3734,6 @@ msgstr "Nem levélszemét"
 
 msgid "Add sender to Contacts"
 msgstr "Feladó hozzáadása a névjegyekhez"
-
-msgid "Mark as unread"
-msgstr "Megjelölés olvasatlanként"
 
 msgid "Remove star"
 msgstr "Csillag eltávolítása"
@@ -4387,6 +4547,15 @@ msgstr ""
 
 msgid "Installed, but not this version's copy"
 msgstr "Telepítve van, de nem ennek a verziónak a példánya"
+
+#, fuzzy
+msgid "Measuring…"
+msgstr "Keresés…"
+
+msgid ""
+"Messages {bodies}, attachments {files}. The cache, message list included, is "
+"{total}."
+msgstr ""
 
 msgid "Search Settings"
 msgstr "Keresési Beállítások"
@@ -5602,6 +5771,16 @@ msgstr ""
 "követi, és ahol nincs fordítás, ott az angol nyelv jelenik meg. A módosítás "
 "a Hylki következő indításakor lép érvénybe."
 
+#, fuzzy
+msgid "Renderer"
+msgstr "Feladók"
+
+msgid ""
+"How the windows are drawn. OpenGL or Software can help on older graphics "
+"hardware where Vulkan is incomplete. A change applies the next time Hylki "
+"starts."
+msgstr ""
+
 msgid "Keep running in the background"
 msgstr "Futás a háttérben"
 
@@ -5680,6 +5859,15 @@ msgstr ""
 "lapozáshoz, r a válaszhoz, a az archiváláshoz. A teljes lista "
 "megtekintéséhez nyomd meg a Ctrl+? billentyűkombinációt."
 
+#, fuzzy
+msgid "Gmail keys"
+msgstr "E-mail-cím"
+
+msgid ""
+"Single-key shortcuts as Gmail has them: j/k move without opening, o opens, e "
+"archives, # deletes, g then a letter goes to a folder."
+msgstr ""
+
 msgid "Console mode"
 msgstr "Konzol mód"
 
@@ -5696,6 +5884,22 @@ msgid ""
 msgstr ""
 "Mentse el mindazt, amit a konzol Hylki elindulása óta rögzített, hogy "
 "csatolhassa egy hibajelentéshez. Az e-mail címeket a domainre rövidítjük."
+
+#, fuzzy
+msgid "Downloaded mail"
+msgstr "Letöltés…"
+
+#, fuzzy
+msgid "Remove…"
+msgstr "Eltávolítás"
+
+msgid "Keep downloaded mail"
+msgstr ""
+
+msgid ""
+"Older messages and their attachments are removed from this computer and "
+"fetched again when opened."
+msgstr ""
 
 msgid "GNOME Files Integration"
 msgstr "A GNOME Fájlkezelő integrációja"
@@ -5796,6 +6000,9 @@ msgstr ""
 "fiókokat: az eltávolítás során a kulcstartó jelszavai is törlődnek, "
 "amelyekről nincs biztonsági másolat."
 
+msgid "Software"
+msgstr ""
+
 msgid "In the unified section"
 msgstr "Az összevont részben"
 
@@ -5841,6 +6048,20 @@ msgid ""
 msgstr ""
 "Az indítóprogram egy, a Hylki-n kívüli ikonkészletet jelenít meg. Ha itt "
 "kiválasztasz egyet, az felváltja a jelenlegit."
+
+#, fuzzy
+msgid "Always"
+msgstr "Mindig látható"
+
+#, fuzzy
+msgid "A year"
+msgstr "1 év"
+
+msgid "90 days"
+msgstr ""
+
+msgid "30 days"
+msgstr ""
 
 msgid "When displayed"
 msgstr "Megjelenítés ideje"
@@ -5924,6 +6145,14 @@ msgstr "{percent}%"
 
 msgid "Could not install the extension"
 msgstr "A bővítmény telepítése nem sikerült"
+
+msgid "Remove downloaded mail?"
+msgstr ""
+
+msgid ""
+"Every message and attachment kept on this computer is removed, and fetched "
+"again from the server when it is opened. Nothing on the server changes."
+msgstr ""
 
 msgid "Could not remove the extension"
 msgstr "A bővítményt nem sikerült eltávolítani"
@@ -6144,9 +6373,6 @@ msgstr "Még nincsenek fiókok"
 
 msgid "New Message from Template…"
 msgstr ""
-
-msgid "Outbox"
-msgstr "Kimenő"
 
 msgid "Mark Inbox as Read"
 msgstr "Beérkezett megjelölése olvasottként"
@@ -7027,9 +7253,6 @@ msgstr "Hyprlab"
 
 #~ msgid "Undoing move…"
 #~ msgstr "Áthelyezés visszavonása…"
-
-#~ msgid "Undo the last move or delete"
-#~ msgstr "Legutóbbi áthelyezés vagy törlés visszavonása"
 
 #, fuzzy
 #~ msgid "Plain text: send without formatting"

@@ -31,6 +31,7 @@ mod mutf7;
 mod nautilus_ext;
 mod notify;
 mod oauth;
+mod outlook_msg;
 mod percent;
 mod pgp;
 mod platform;
@@ -81,6 +82,29 @@ pub const WIZARD_AGAIN_VAR: &str = "HYLKI_WIZARD_AGAIN";
 /// Whether this run started hidden. Read once the UI is built, to keep the first
 /// activation from presenting the window that was deliberately not shown.
 pub static HIDDEN_START: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// Marks a `GSK_RENDERER` that Hylki set itself, so a restart, which
+/// inherits the environment, does not take it for the session's own.
+const RENDERER_SET: &str = "HYLKI_GSK_RENDERER_SET";
+
+/// Settings → System → Renderer (#403), into `GSK_RENDERER` before GTK
+/// starts. One the session already has (a `flatpak override --env`) wins.
+/// Single-threaded here, so setting the environment is safe.
+fn apply_renderer() {
+    if std::env::var_os(RENDERER_SET).is_some() {
+        std::env::remove_var("GSK_RENDERER");
+        std::env::remove_var(RENDERER_SET);
+    }
+    if std::env::var_os("GSK_RENDERER").is_some() {
+        return;
+    }
+    let renderer = config::load_renderer();
+    if !renderer.is_empty() {
+        tracing::info!("renderer: {renderer}, from Settings");
+        std::env::set_var("GSK_RENDERER", &renderer);
+        std::env::set_var(RENDERER_SET, "1");
+    }
+}
 
 fn main() {
     // The allocator's tunables before the first allocation that matters (see
@@ -146,6 +170,15 @@ fn main() {
     args.retain(|a| a != HIDDEN_FLAG);
     HIDDEN_START.store(hidden, std::sync::atomic::Ordering::Relaxed);
 
+    // On X11 the window class is the program name, which defaults to the
+    // binary's, "hylki"; docks match it against the launcher's
+    // StartupWMClass, the app ID, and showed a second icon without it (#402).
+    // Wayland takes the app ID from the application, so nothing changes there.
+    // The display name keeps sound mixers from showing the app ID instead.
+    apply_renderer();
+    gtk::glib::set_prgname(Some(APP_ID));
+    gtk::glib::set_application_name("Hylki");
+
     let adw_app = adw::Application::builder()
         .application_id(APP_ID)
         // mailto: links land here (the desktop file registers the scheme) —
@@ -164,6 +197,9 @@ fn main() {
                 } else if uri.starts_with("mid:") || uri.starts_with("MID:") {
                     // A Message-ID link (#130): open that message.
                     app::queue_mid(uri);
+                } else if let Some(path) = f.path().filter(|p| app::is_message_file(p)) {
+                    // A saved message (#398): read it, rather than attach it.
+                    app::queue_message_file(path);
                 } else if let Some(path) = f.path() {
                     // A file handed in from a file manager's "Open With" (or
                     // the command line): open a fresh composer with it

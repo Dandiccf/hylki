@@ -204,6 +204,10 @@ msgstr "Abbrechen"
 msgid "Delete All"
 msgstr "Löschen"
 
+#, fuzzy
+msgid "The renderer applies the next time Hylki starts."
+msgstr "Die Sprache wird beim nächsten Start von Hylki übernommen."
+
 msgid "The language applies the next time Hylki starts."
 msgstr "Die Sprache wird beim nächsten Start von Hylki übernommen."
 
@@ -280,6 +284,10 @@ msgstr "Import fehlgeschlagen: {e}"
 msgid "Could not import account: {e}"
 msgstr "Konnte kein Konto importieren: {e}"
 
+#, fuzzy
+msgid "Could not save the message: {e}"
+msgstr "Nachricht konnte nicht aktualisiert werden: {e}"
+
 msgid "No address book available"
 msgstr "Kein Adressbuch verfügbar"
 
@@ -322,6 +330,104 @@ msgid "Remove Tags"
 msgstr "Tags entfernen"
 
 #, fuzzy
+msgid "Action"
+msgstr "Aktionen"
+
+msgid "New Message"
+msgstr "Neue Nachricht"
+
+#, fuzzy
+msgid "New Message from Template"
+msgstr "Stattdessen neue Nachricht verfassen"
+
+#, fuzzy
+msgid "Reply to All"
+msgstr "Allen antworten"
+
+msgid "Edit as New Message"
+msgstr "Als neue Nachricht bearbeiten"
+
+msgid "View Source"
+msgstr "Quelltext anzeigen"
+
+msgid "Print"
+msgstr "Drucken"
+
+msgid "Print Preview"
+msgstr "Druckvorschau"
+
+msgid "Find in Message"
+msgstr "In Nachricht suchen"
+
+msgid "Delete"
+msgstr "Löschen"
+
+#, fuzzy
+msgid "Star or Remove Star"
+msgstr "Stern entfernen"
+
+#, fuzzy
+msgid "Mark as Read or Unread"
+msgstr "Als gelesen oder ungelesen markieren"
+
+#, fuzzy
+msgid "Move to Folder"
+msgstr "Ordner verschieben"
+
+#, fuzzy
+msgid "Open Message File…"
+msgstr "Nachricht drucken…"
+
+msgid "Undo"
+msgstr "Rückgängig"
+
+msgid "Redo"
+msgstr "Wiederholen"
+
+#, fuzzy
+msgid "Check for New Mail"
+msgstr "Auf neue Nachrichten prüfen"
+
+#, fuzzy
+msgid "Search Messages"
+msgstr "Nachrichten durchsuchen…"
+
+#, fuzzy
+msgid "Show or Hide the Sidebar"
+msgstr "Konten in der Seitenleiste ein- oder ausblenden"
+
+msgid "Mail Accounts"
+msgstr "E-Mail-Konten"
+
+#, fuzzy
+msgid "About Hylki"
+msgstr "Über Hylki"
+
+#, fuzzy
+msgid "Turn Focus Mode On"
+msgstr "Fokusmodus"
+
+#, fuzzy
+msgid "Turn Focus Mode Off"
+msgstr "Fokusmodus"
+
+msgid "View"
+msgstr ""
+
+msgid "All accounts"
+msgstr "Alle Konten"
+
+msgid "Contacts"
+msgstr "Kontakte"
+
+msgid "Outbox"
+msgstr "Postausgang"
+
+#, fuzzy
+msgid "Tag"
+msgstr "Tags"
+
+#, fuzzy
 msgid ""
 "Single-key shortcuts are switched off. Turn them on in Settings → System."
 msgstr ""
@@ -331,9 +437,6 @@ msgstr ""
 msgid "Your tags"
 msgstr "Ihre Tags"
 
-msgid "Delete"
-msgstr "Löschen"
-
 msgid "Move to {name}"
 msgstr "Nach {name} verschieben"
 
@@ -342,12 +445,6 @@ msgstr "Tag {name} hinzufügen"
 
 msgid "Remove Tag {name}"
 msgstr "Tag {name} entfernen"
-
-msgid "Undo"
-msgstr "Rückgängig"
-
-msgid "Redo"
-msgstr "Wiederholen"
 
 msgid "Restarting Hylki"
 msgstr "Neustart von Hylki"
@@ -369,17 +466,8 @@ msgstr ""
 msgid "Restart Now"
 msgstr "Jetzt neu starten"
 
-msgid "View Source"
-msgstr "Quelltext anzeigen"
-
 msgid "Move to Inbox"
 msgstr "In den Posteingang verschieben"
-
-msgid "Find in Message"
-msgstr "In Nachricht suchen"
-
-msgid "Print Preview"
-msgstr "Druckvorschau"
 
 msgid "Search Messages…"
 msgstr "Nachrichten durchsuchen…"
@@ -396,9 +484,6 @@ msgstr ""
 #, fuzzy
 msgid "Edit Template"
 msgstr "Tag bearbeiten"
-
-msgid "Edit as New Message"
-msgstr "Als neue Nachricht bearbeiten"
 
 msgid "Add Sender to Contacts"
 msgstr "Absender zu Kontakten hinzufügen"
@@ -417,14 +502,36 @@ msgstr "In Nachricht suchen"
 msgid "Collapse All Messages"
 msgstr "Im Lesebereich einklappen"
 
+#, fuzzy
+msgid "Save as File…"
+msgstr "Als PDF speichern…"
+
 msgid "Print…"
 msgstr "Drucken…"
 
+#, fuzzy
+msgid "Save Message"
+msgstr "Neue Nachricht"
+
+#, fuzzy
+msgid "Open Message File"
+msgstr "Neue Nachricht"
+
+#, fuzzy
+msgid "Email messages"
+msgstr "{n} Nachrichten"
+
+#. Other programs name files .msg too (Tcl's catalogues).
+#, fuzzy
+msgid "it is not an Outlook message"
+msgstr "gpg hat die Nachricht nicht unterschrieben."
+
+#, fuzzy
+msgid "Could not open {file}: {e}"
+msgstr "Ordner konnte nicht verschoben werden: {e}"
+
 msgid "Delete {n} messages"
 msgstr "{n} Nachrichten löschen"
-
-msgid "New Message"
-msgstr "Neue Nachricht"
 
 msgid "Could not attach {names}: Hylki cannot read the file."
 msgid_plural "Could not attach {n} files (Hylki cannot read them): {names}"
@@ -484,10 +591,6 @@ msgstr "Trotzdem anhängen"
 
 msgid "Upload to Cloud Storage"
 msgstr "In Cloud-Speicher hochladen"
-
-#, fuzzy
-msgid "New Message from Template"
-msgstr "Stattdessen neue Nachricht verfassen"
 
 #, fuzzy
 msgid "The new message starts as a copy of the template you pick."
@@ -855,6 +958,12 @@ msgstr ""
 msgid "Unsubscribe"
 msgstr "Abmelden"
 
+#, fuzzy
+msgid "Also delete the message from {addr}"
+msgid_plural "Also delete the {n} messages from {addr}"
+msgstr[0] "Nachricht konnte nicht gelöscht werden: {e}"
+msgstr[1] "Nachricht konnte nicht gelöscht werden: {e}"
+
 msgid "the message offers no way to unsubscribe"
 msgstr "Die Nachricht bietet keine Möglichkeit, sich abzumelden"
 
@@ -867,23 +976,26 @@ msgstr "Vollständige Versionshinweise auf GitHub"
 msgid "Move around"
 msgstr "Navigation"
 
-msgid "Next message"
-msgstr "Nächste Nachricht"
+msgid "Move down or up the list without opening"
+msgstr ""
 
-msgid "Previous message"
-msgstr "Vorherige Nachricht"
-
-msgid "Open the selected message"
-msgstr "Öffnen Sie die ausgewählte Nachricht"
+#, fuzzy
+msgid "Open the message the cursor is on"
+msgstr "Öffnet die Nachricht zum Weiterleiten."
 
 msgid "Back to the message list"
 msgstr "Zurück zur Nachrichtenliste"
 
-msgid "Next message in the conversation"
-msgstr "Nächste Nachricht im Gespräch"
-
-msgid "Previous message in the conversation"
+#, fuzzy
+msgid "Next or previous message in the conversation"
 msgstr "Vorherige Nachricht im Gespräch"
+
+msgid "Go to Inbox, Starred, Sent, Drafts or Archive"
+msgstr ""
+
+#, fuzzy
+msgid "Go to Contacts"
+msgstr "Zu Kontakten hinzufügen"
 
 msgid "Search"
 msgstr "Suchen"
@@ -900,16 +1012,50 @@ msgstr "Als Spam markieren"
 msgid "Star or unstar"
 msgstr "Stern hinzufügen oder entfernen"
 
-msgid "Mark read or unread"
-msgstr "Als gelesen oder ungelesen markieren"
+msgid "Mark as read"
+msgstr "Als gelesen markieren"
+
+msgid "Mark as unread"
+msgstr "Als ungelesen markieren"
 
 msgid "Select this row (for a bulk action)"
 msgstr "Diese Zeile auswählen (für eine Sammelaktion)"
+
+msgid "Select every row, or none"
+msgstr ""
+
+#, fuzzy
+msgid "Move to a folder"
+msgstr "Ordner verschieben"
+
+msgid "Undo the last action"
+msgstr ""
 
 msgid "Add or remove a tag (the first nine, in Settings order)"
 msgstr ""
 "Hinzufügen oder Entfernen eines Tags (die ersten neun, in der Reihenfolge "
 "der Einstellungen)"
+
+msgid "Compose"
+msgstr "Verfassen"
+
+msgid "Next message"
+msgstr "Nächste Nachricht"
+
+msgid "Previous message"
+msgstr "Vorherige Nachricht"
+
+msgid "Open the selected message"
+msgstr "Öffnen Sie die ausgewählte Nachricht"
+
+msgid "Next message in the conversation"
+msgstr "Nächste Nachricht im Gespräch"
+
+msgid "Previous message in the conversation"
+msgstr "Vorherige Nachricht im Gespräch"
+
+msgid "Mark read or unread"
+msgstr "Als gelesen oder ungelesen markieren"
 
 msgid "Remove every tag"
 msgstr "Alle Tags entfernen"
@@ -923,9 +1069,6 @@ msgstr "Vorschau als PDF zuerst"
 #, fuzzy
 msgid "Writing"
 msgstr "Schreiben:"
-
-msgid "Compose"
-msgstr "Verfassen"
 
 #, fuzzy
 msgid "New message from a template"
@@ -991,6 +1134,9 @@ msgstr "Schließen Sie das Fenster (Hintergrund-Sync läuft weiter)"
 
 msgid "Quit Hylki entirely"
 msgstr "Beenden Sie Hylki ganz"
+
+msgid "Command palette: search actions, folders and tags"
+msgstr ""
 
 msgid "This list"
 msgstr "Diese Liste"
@@ -1100,9 +1246,6 @@ msgstr "Verschieben nach"
 
 msgid "Find"
 msgstr "Suchen"
-
-msgid "Print"
-msgstr "Drucken"
 
 #, fuzzy
 msgid "Hylki Address Book"
@@ -1453,11 +1596,12 @@ msgstr ""
 msgid "Enable POP/IMAP access in GMX settings first."
 msgstr "Aktivieren Sie zuerst den POP/IMAP-Zugriff in den GMX-Einstellungen."
 
-msgid "Mail Accounts"
-msgstr "E-Mail-Konten"
-
 msgid "Drag to set the order they appear in the sidebar."
 msgstr "Ziehen, um die Reihenfolge in der Seitenleiste festzulegen."
+
+#, fuzzy
+msgid "Check GNOME Online Accounts for new accounts"
+msgstr "GNOME Online Accounts"
 
 msgid "Add Account…"
 msgstr "Konto hinzufügen…"
@@ -1834,6 +1978,15 @@ msgid ""
 msgstr ""
 "Ältere Nachrichten im Papierkorb endgültig löschen; wird bei jeder "
 "Synchronisierung geprüft."
+
+#, fuzzy
+msgid "Move list mail to Trash"
+msgstr "Diesen Entwurf in den Papierkorb verschieben"
+
+msgid ""
+"Inbox mail from mailing lists and newsletters (anything with an unsubscribe "
+"link) older than this, unless starred. Checked at each sync."
+msgstr ""
 
 msgid "Folder Order"
 msgstr "Reihenfolge der Ordner"
@@ -2514,9 +2667,6 @@ msgstr "Mit der Standardanwendung öffnen"
 msgid "Go to Message"
 msgstr "Zur Nachricht wechseln"
 
-msgid "All accounts"
-msgstr "Alle Konten"
-
 msgid "Deleting…"
 msgstr "Lösche…"
 
@@ -2560,6 +2710,12 @@ msgstr "Um {old} zu entfernen, führen Sie aus:"
 
 msgid "Copy"
 msgstr "Kopieren"
+
+msgid "Command Palette"
+msgstr ""
+
+msgid "Type an action, a folder or a tag"
+msgstr ""
 
 msgid "Cloud Storage"
 msgstr "Cloud-Speicher"
@@ -3060,6 +3216,10 @@ msgstr "Zeigen Sie die Nachricht, wie sie gesendet wird"
 msgid "Translate what you wrote"
 msgstr "Übersetzt von"
 
+#, fuzzy
+msgid "Insert Signature"
+msgstr "Signatur importieren"
+
 msgid "More"
 msgstr "Mehr"
 
@@ -3099,6 +3259,14 @@ msgstr "{name} entfernen"
 
 msgid "Typing"
 msgstr "Eingabe"
+
+#, fuzzy
+msgid "Insert Before the Text"
+msgstr "In Text einfügen"
+
+#, fuzzy
+msgid "Insert After the Text"
+msgstr "In Text einfügen"
 
 #, fuzzy
 msgid "Show Original"
@@ -3239,9 +3407,6 @@ msgstr ""
 #, fuzzy
 msgid "Not found"
 msgstr "Nicht angezeigt"
-
-msgid "Contacts"
-msgstr "Kontakte"
 
 msgid "Open in GNOME Contacts"
 msgstr "In GNOME Kontakte öffnen"
@@ -3584,9 +3749,6 @@ msgstr ""
 msgid "Low importance"
 msgstr "Schlüssel importiert"
 
-msgid "Mark as read"
-msgstr "Als gelesen markieren"
-
 msgid "Move to…"
 msgstr "Verschieben nach…"
 
@@ -3595,9 +3757,6 @@ msgstr "Nicht Spam"
 
 msgid "Add sender to Contacts"
 msgstr "Absender zu Kontakten hinzufügen"
-
-msgid "Mark as unread"
-msgstr "Als ungelesen markieren"
 
 msgid "Remove star"
 msgstr "Stern entfernen"
@@ -4414,6 +4573,15 @@ msgstr ""
 
 msgid "Installed, but not this version's copy"
 msgstr "Installiert, aber nicht die Kopie dieser Version"
+
+#, fuzzy
+msgid "Measuring…"
+msgstr "Wird gesucht…"
+
+msgid ""
+"Messages {bodies}, attachments {files}. The cache, message list included, is "
+"{total}."
+msgstr ""
 
 msgid "Search Settings"
 msgstr "Einstellungen durchsuchen"
@@ -5618,6 +5786,16 @@ msgstr ""
 "Englisch, wo keine Übersetzung existiert. Eine Änderung gilt, wenn Hylki das "
 "nächste Mal beginnt."
 
+#, fuzzy
+msgid "Renderer"
+msgstr "Absender"
+
+msgid ""
+"How the windows are drawn. OpenGL or Software can help on older graphics "
+"hardware where Vulkan is incomplete. A change applies the next time Hylki "
+"starts."
+msgstr ""
+
 msgid "Keep running in the background"
 msgstr "Im Hintergrund weiterlaufen"
 
@@ -5695,6 +5873,15 @@ msgstr ""
 "Handeln Sie per Post mit einem Schlüssel und ohne Modifikator - j / k zu "
 "verschieben, r zu antworten, a zu archivieren."
 
+#, fuzzy
+msgid "Gmail keys"
+msgstr "E-Mail-Adresse"
+
+msgid ""
+"Single-key shortcuts as Gmail has them: j/k move without opening, o opens, e "
+"archives, # deletes, g then a letter goes to a folder."
+msgstr ""
+
 msgid "Console mode"
 msgstr "Konsolenmodus"
 
@@ -5712,6 +5899,22 @@ msgstr ""
 "Speichern Sie alles, was die Konsole seit dem Start von Hylki aufgenommen "
 "hat, um einen Fehlerbericht anzuhängen. E-Mail-Adressen werden auf ihre "
 "Domäne verkürzt."
+
+#, fuzzy
+msgid "Downloaded mail"
+msgstr "Herunterladen…"
+
+#, fuzzy
+msgid "Remove…"
+msgstr "Entfernen"
+
+msgid "Keep downloaded mail"
+msgstr ""
+
+msgid ""
+"Older messages and their attachments are removed from this computer and "
+"fetched again when opened."
+msgstr ""
 
 msgid "GNOME Files Integration"
 msgstr "GNOME-Dateiintegration"
@@ -5811,6 +6014,9 @@ msgstr ""
 "Sie Konten nicht zuerst: Entfernen löscht auch ihre Schlüsselanhänger-"
 "Passwörter, die kein Backup trägt."
 
+msgid "Software"
+msgstr ""
+
 msgid "In the unified section"
 msgstr "Im einheitlichen Abschnitt"
 
@@ -5856,6 +6062,20 @@ msgid ""
 msgstr ""
 "Der Starter zeigt ein Symbol, das außerhalb von Hylki festgelegt wurde. Wenn "
 "Sie hier eines auswählen, wird es ersetzt."
+
+#, fuzzy
+msgid "Always"
+msgstr "Immer sichtbar"
+
+#, fuzzy
+msgid "A year"
+msgstr "1 Jahr"
+
+msgid "90 days"
+msgstr ""
+
+msgid "30 days"
+msgstr ""
 
 msgid "When displayed"
 msgstr "Wenn angezeigt"
@@ -5939,6 +6159,14 @@ msgstr "{percent} %"
 
 msgid "Could not install the extension"
 msgstr "Konnte die Erweiterung nicht installieren"
+
+msgid "Remove downloaded mail?"
+msgstr ""
+
+msgid ""
+"Every message and attachment kept on this computer is removed, and fetched "
+"again from the server when it is opened. Nothing on the server changes."
+msgstr ""
 
 msgid "Could not remove the extension"
 msgstr "Erweiterung konnte nicht entfernt werden"
@@ -6159,9 +6387,6 @@ msgstr "Noch keine Konten"
 
 msgid "New Message from Template…"
 msgstr ""
-
-msgid "Outbox"
-msgstr "Postausgang"
 
 msgid "Mark Inbox as Read"
 msgstr "Posteingang als gelesen markieren"

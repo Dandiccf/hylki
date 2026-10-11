@@ -45,6 +45,8 @@ pub enum RowAction {
     /// Put a message from Trash or Junk back in its account's Inbox (#138).
     MoveToInbox,
     ViewSource,
+    /// Save the message whole, as a .eml file (#398).
+    SaveAsFile,
     AddContact,
 }
 
@@ -1477,9 +1479,13 @@ impl Row {
         (pos != gtk::INVALID_LIST_POSITION).then_some(pos as usize)
     }
 
+    /// Whether the keyboard is on this row: on it, inside it, or on the list
+    /// item around it, which is where the list view puts its focus.
     pub fn has_focus_within(&self) -> bool {
         let host = self.w.host.upcast_ref::<gtk::Widget>();
-        host.root().and_then(|r| r.focus()).is_some_and(|f| f == *host || f.is_ancestor(host))
+        host.root().and_then(|r| r.focus()).is_some_and(|f| {
+            f == *host || f.is_ancestor(host) || host.parent().is_some_and(|p| p == f)
+        })
     }
 
     /// Hook the row's own controllers up, once.

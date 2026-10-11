@@ -203,6 +203,10 @@ msgstr "Отмена"
 msgid "Delete All"
 msgstr "Удалить"
 
+#, fuzzy
+msgid "The renderer applies the next time Hylki starts."
+msgstr "Язык изменится при следующем запуске Hylki."
+
 msgid "The language applies the next time Hylki starts."
 msgstr "Язык изменится при следующем запуске Hylki."
 
@@ -277,6 +281,10 @@ msgstr "Ошибка импорта: {e}"
 msgid "Could not import account: {e}"
 msgstr "Не удалось импортировать учетную запись: {e}"
 
+#, fuzzy
+msgid "Could not save the message: {e}"
+msgstr "Не удалось обновить сообщение: {e}"
+
 msgid "No address book available"
 msgstr "Адресная книга недоступна"
 
@@ -318,6 +326,103 @@ msgstr "О программе"
 msgid "Remove Tags"
 msgstr "Удалить теги"
 
+#, fuzzy
+msgid "Action"
+msgstr "Действия"
+
+msgid "New Message"
+msgstr "Новое сообщение"
+
+msgid "New Message from Template"
+msgstr "Новое сообщение из шаблона"
+
+#, fuzzy
+msgid "Reply to All"
+msgstr "Ответить всем"
+
+msgid "Edit as New Message"
+msgstr "Изменить как новое сообщение"
+
+msgid "View Source"
+msgstr "Просмотр исходного кода"
+
+msgid "Print"
+msgstr "Печать"
+
+msgid "Print Preview"
+msgstr "Предпросмотр печати"
+
+msgid "Find in Message"
+msgstr "Найти в сообщении"
+
+msgid "Delete"
+msgstr "Удалить"
+
+#, fuzzy
+msgid "Star or Remove Star"
+msgstr "Снять отметку"
+
+#, fuzzy
+msgid "Mark as Read or Unread"
+msgstr "Отметить как прочитанное или непрочитанное"
+
+#, fuzzy
+msgid "Move to Folder"
+msgstr "Переместить папку"
+
+#, fuzzy
+msgid "Open Message File…"
+msgstr "Печать сообщения…"
+
+msgid "Undo"
+msgstr "Отменить"
+
+msgid "Redo"
+msgstr "Повторить"
+
+#, fuzzy
+msgid "Check for New Mail"
+msgstr "Проверка новой почты"
+
+#, fuzzy
+msgid "Search Messages"
+msgstr "Поиск сообщений…"
+
+#, fuzzy
+msgid "Show or Hide the Sidebar"
+msgstr "Показывать или скрывать учётные записи на боковой панели"
+
+msgid "Mail Accounts"
+msgstr "Почтовые учётные записи"
+
+#, fuzzy
+msgid "About Hylki"
+msgstr "О программе"
+
+#, fuzzy
+msgid "Turn Focus Mode On"
+msgstr "Режим фокусировки"
+
+#, fuzzy
+msgid "Turn Focus Mode Off"
+msgstr "Режим фокусировки"
+
+msgid "View"
+msgstr ""
+
+msgid "All accounts"
+msgstr "Все учётные записи"
+
+msgid "Contacts"
+msgstr "Контакты"
+
+msgid "Outbox"
+msgstr "Исходящие"
+
+#, fuzzy
+msgid "Tag"
+msgstr "Теги"
+
 msgid ""
 "Single-key shortcuts are switched off. Turn them on in Settings → System."
 msgstr ""
@@ -327,9 +432,6 @@ msgstr ""
 msgid "Your tags"
 msgstr "Ваши теги"
 
-msgid "Delete"
-msgstr "Удалить"
-
 msgid "Move to {name}"
 msgstr "Переместить в {name}"
 
@@ -338,12 +440,6 @@ msgstr "Добавить тег {name}"
 
 msgid "Remove Tag {name}"
 msgstr "Удалить тег {name}?"
-
-msgid "Undo"
-msgstr "Отменить"
-
-msgid "Redo"
-msgstr "Повторить"
 
 msgid "Restarting Hylki"
 msgstr "Перезапуск Hylki"
@@ -365,17 +461,8 @@ msgstr ""
 msgid "Restart Now"
 msgstr "Перезапустить сейчас"
 
-msgid "View Source"
-msgstr "Просмотр исходного кода"
-
 msgid "Move to Inbox"
 msgstr "Переместить во «Входящие»"
-
-msgid "Find in Message"
-msgstr "Найти в сообщении"
-
-msgid "Print Preview"
-msgstr "Предпросмотр печати"
 
 msgid "Search Messages…"
 msgstr "Поиск сообщений…"
@@ -392,9 +479,6 @@ msgstr "Использовать шаблон"
 msgid "Edit Template"
 msgstr "Редактировать шаблон"
 
-msgid "Edit as New Message"
-msgstr "Изменить как новое сообщение"
-
 msgid "Add Sender to Contacts"
 msgstr "Добавить отправителя в контакты"
 
@@ -410,14 +494,36 @@ msgstr "Развернуть все сообщения"
 msgid "Collapse All Messages"
 msgstr "Свернуть все сообщения"
 
+#, fuzzy
+msgid "Save as File…"
+msgstr "Сохранить как PDF…"
+
 msgid "Print…"
 msgstr "Печать…"
 
+#, fuzzy
+msgid "Save Message"
+msgstr "Новое сообщение"
+
+#, fuzzy
+msgid "Open Message File"
+msgstr "Новое сообщение"
+
+#, fuzzy
+msgid "Email messages"
+msgstr "{n} сообщений"
+
+#. Other programs name files .msg too (Tcl's catalogues).
+#, fuzzy
+msgid "it is not an Outlook message"
+msgstr "Программе gpg не удалось подписать сообщение."
+
+#, fuzzy
+msgid "Could not open {file}: {e}"
+msgstr "Не удалось переместить папку: {e}"
+
 msgid "Delete {n} messages"
 msgstr "Удалить {n} сообщений"
-
-msgid "New Message"
-msgstr "Новое сообщение"
 
 msgid "Could not attach {names}: Hylki cannot read the file."
 msgid_plural "Could not attach {n} files (Hylki cannot read them): {names}"
@@ -478,9 +584,6 @@ msgstr "Всё равно прикрепить"
 
 msgid "Upload to Cloud Storage"
 msgstr "Загрузить в облачное хранилище"
-
-msgid "New Message from Template"
-msgstr "Новое сообщение из шаблона"
 
 msgid "The new message starts as a copy of the template you pick."
 msgstr "Новое сообщение будет создано на основе выбранного шаблона."
@@ -859,6 +962,13 @@ msgstr ""
 msgid "Unsubscribe"
 msgstr "Отписаться"
 
+#, fuzzy
+msgid "Also delete the message from {addr}"
+msgid_plural "Also delete the {n} messages from {addr}"
+msgstr[0] "Не удалось удалить сообщение: {e}"
+msgstr[1] "Не удалось удалить сообщение: {e}"
+msgstr[2] "Не удалось удалить сообщение: {e}"
+
 msgid "the message offers no way to unsubscribe"
 msgstr "в сообщении нет способа отписаться"
 
@@ -871,23 +981,26 @@ msgstr "Полные примечания к выпуску на GitHub"
 msgid "Move around"
 msgstr "Перемещаться"
 
-msgid "Next message"
-msgstr "Следующее сообщение"
+msgid "Move down or up the list without opening"
+msgstr ""
 
-msgid "Previous message"
-msgstr "Предыдущее сообщение"
-
-msgid "Open the selected message"
-msgstr "Открыть выбранное сообщение"
+#, fuzzy
+msgid "Open the message the cursor is on"
+msgstr "Открывает сообщение с готовым черновиком пересылки."
 
 msgid "Back to the message list"
 msgstr "Вернуться к списку сообщений"
 
-msgid "Next message in the conversation"
-msgstr "Следующее сообщение в беседе"
-
-msgid "Previous message in the conversation"
+#, fuzzy
+msgid "Next or previous message in the conversation"
 msgstr "Предыдущее сообщение в беседе"
+
+msgid "Go to Inbox, Starred, Sent, Drafts or Archive"
+msgstr ""
+
+#, fuzzy
+msgid "Go to Contacts"
+msgstr "Добавить в Контакты"
 
 msgid "Search"
 msgstr "Поиск"
@@ -904,14 +1017,49 @@ msgstr "Отметить как спам"
 msgid "Star or unstar"
 msgstr "Поставить или снять отметку"
 
-msgid "Mark read or unread"
-msgstr "Отметить прочитанным/непрочитанным"
+msgid "Mark as read"
+msgstr "Отметить как прочитанное"
+
+msgid "Mark as unread"
+msgstr "Отметить как непрочитанное"
 
 msgid "Select this row (for a bulk action)"
 msgstr "Выбрать эту строку (для массового действия)"
 
+msgid "Select every row, or none"
+msgstr ""
+
+#, fuzzy
+msgid "Move to a folder"
+msgstr "Переместить папку"
+
+#, fuzzy
+msgid "Undo the last action"
+msgstr "Отменить последнее перемещение или удаление"
+
 msgid "Add or remove a tag (the first nine, in Settings order)"
 msgstr "Добавить или удалить тег (первые девять — в порядке настроек)"
+
+msgid "Compose"
+msgstr "Написать"
+
+msgid "Next message"
+msgstr "Следующее сообщение"
+
+msgid "Previous message"
+msgstr "Предыдущее сообщение"
+
+msgid "Open the selected message"
+msgstr "Открыть выбранное сообщение"
+
+msgid "Next message in the conversation"
+msgstr "Следующее сообщение в беседе"
+
+msgid "Previous message in the conversation"
+msgstr "Предыдущее сообщение в беседе"
+
+msgid "Mark read or unread"
+msgstr "Отметить прочитанным/непрочитанным"
 
 msgid "Remove every tag"
 msgstr "Удалить все теги"
@@ -924,9 +1072,6 @@ msgstr "Предпросмотр в формате PDF"
 
 msgid "Writing"
 msgstr "Составление писем"
-
-msgid "Compose"
-msgstr "Написать"
 
 msgid "New message from a template"
 msgstr "Новое сообщение из шаблона"
@@ -993,6 +1138,9 @@ msgstr "Закрыть окно (фоновая синхронизация пр�
 
 msgid "Quit Hylki entirely"
 msgstr "Полностью выйти из Hylki"
+
+msgid "Command palette: search actions, folders and tags"
+msgstr ""
 
 msgid "This list"
 msgstr "Этот список"
@@ -1100,9 +1248,6 @@ msgstr "Переместить в"
 
 msgid "Find"
 msgstr "Найти"
-
-msgid "Print"
-msgstr "Печать"
 
 #, fuzzy
 msgid "Hylki Address Book"
@@ -1434,11 +1579,12 @@ msgstr ""
 msgid "Enable POP/IMAP access in GMX settings first."
 msgstr "Сначала включите доступ по POP/IMAP в настройках GMX."
 
-msgid "Mail Accounts"
-msgstr "Почтовые учётные записи"
-
 msgid "Drag to set the order they appear in the sidebar."
 msgstr "Перетащите, чтобы изменить порядок отображения на боковой панели."
+
+#, fuzzy
+msgid "Check GNOME Online Accounts for new accounts"
+msgstr "Сетевые учётные записи GNOME"
 
 msgid "Add Account…"
 msgstr "Добавить учётную запись…"
@@ -1809,6 +1955,15 @@ msgid ""
 msgstr ""
 "Безвозвратно удалять письма из «Корзины» старше этого срока при каждой "
 "синхронизации."
+
+#, fuzzy
+msgid "Move list mail to Trash"
+msgstr "Переместить этот черновик в «Корзину»"
+
+msgid ""
+"Inbox mail from mailing lists and newsletters (anything with an unsubscribe "
+"link) older than this, unless starred. Checked at each sync."
+msgstr ""
 
 msgid "Folder Order"
 msgstr "Порядок папок"
@@ -2485,9 +2640,6 @@ msgstr "Открыть в приложении по умолчанию"
 msgid "Go to Message"
 msgstr "Перейти к сообщению"
 
-msgid "All accounts"
-msgstr "Все учётные записи"
-
 msgid "Deleting…"
 msgstr "Удаление…"
 
@@ -2531,6 +2683,12 @@ msgstr "Чтобы удалить {old}, выполните:"
 
 msgid "Copy"
 msgstr "Копировать"
+
+msgid "Command Palette"
+msgstr ""
+
+msgid "Type an action, a folder or a tag"
+msgstr ""
 
 msgid "Cloud Storage"
 msgstr "Облачное хранилище"
@@ -3026,6 +3184,10 @@ msgstr "Показать сообщение в том виде, в которо�
 msgid "Translate what you wrote"
 msgstr "Перевести написанный текст"
 
+#, fuzzy
+msgid "Insert Signature"
+msgstr "Импортировать подпись"
+
 msgid "More"
 msgstr "Ещё"
 
@@ -3065,6 +3227,14 @@ msgstr "Удалить {name}?"
 
 msgid "Typing"
 msgstr "Ввод текста"
+
+#, fuzzy
+msgid "Insert Before the Text"
+msgstr "Вставить в текст"
+
+#, fuzzy
+msgid "Insert After the Text"
+msgstr "Вставить в текст"
 
 msgid "Show Original"
 msgstr "Показать оригинал"
@@ -3195,9 +3365,6 @@ msgstr ""
 
 msgid "Not found"
 msgstr "Не найдено"
-
-msgid "Contacts"
-msgstr "Контакты"
 
 msgid "Open in GNOME Contacts"
 msgstr "Открыть в «Контактах GNOME»"
@@ -3546,9 +3713,6 @@ msgstr "Высокая важность"
 msgid "Low importance"
 msgstr "Низкая важность"
 
-msgid "Mark as read"
-msgstr "Отметить как прочитанное"
-
 msgid "Move to…"
 msgstr "Переместить в…"
 
@@ -3557,9 +3721,6 @@ msgstr "Не спам"
 
 msgid "Add sender to Contacts"
 msgstr "Добавить отправителя в «Контакты»"
-
-msgid "Mark as unread"
-msgstr "Отметить как непрочитанное"
 
 msgid "Remove star"
 msgstr "Снять отметку"
@@ -4357,6 +4518,15 @@ msgstr ""
 
 msgid "Installed, but not this version's copy"
 msgstr "Установлено, но используется копия от другой версии"
+
+#, fuzzy
+msgid "Measuring…"
+msgstr "Поиск…"
+
+msgid ""
+"Messages {bodies}, attachments {files}. The cache, message list included, is "
+"{total}."
+msgstr ""
 
 msgid "Search Settings"
 msgstr "Поиск по параметрам"
@@ -5570,6 +5740,16 @@ msgstr ""
 "при отсутствии перевода — английский. Изменения вступят в силу при следующем "
 "запуске Hylki."
 
+#, fuzzy
+msgid "Renderer"
+msgstr "Отправитель"
+
+msgid ""
+"How the windows are drawn. OpenGL or Software can help on older graphics "
+"hardware where Vulkan is incomplete. A change applies the next time Hylki "
+"starts."
+msgstr ""
+
 msgid "Keep running in the background"
 msgstr "Продолжать работу в фоновом режиме"
 
@@ -5648,6 +5828,15 @@ msgstr ""
 "перемещения, r — ответить, a — архивировать. Нажмите Ctrl+? для просмотра "
 "полного списка."
 
+#, fuzzy
+msgid "Gmail keys"
+msgstr "Адрес электронной почты"
+
+msgid ""
+"Single-key shortcuts as Gmail has them: j/k move without opening, o opens, e "
+"archives, # deletes, g then a letter goes to a folder."
+msgstr ""
+
 msgid "Console mode"
 msgstr "Режим консоли"
 
@@ -5664,6 +5853,22 @@ msgid ""
 msgstr ""
 "Сохранить все записи консоли с момента запуска Hylki для прикрепления к "
 "отчёту об ошибке. Адреса электронной почты сокращаются до домена."
+
+#, fuzzy
+msgid "Downloaded mail"
+msgstr "Скачать…"
+
+#, fuzzy
+msgid "Remove…"
+msgstr "Удалить"
+
+msgid "Keep downloaded mail"
+msgstr ""
+
+msgid ""
+"Older messages and their attachments are removed from this computer and "
+"fetched again when opened."
+msgstr ""
 
 msgid "GNOME Files Integration"
 msgstr "Интеграция с «Файлами» GNOME"
@@ -5761,6 +5966,9 @@ msgstr ""
 "предварительно: удаление также стирает их пароли из связки ключей, которые "
 "не содержатся в резервной копии."
 
+msgid "Software"
+msgstr ""
+
 msgid "In the unified section"
 msgstr "В общем разделе"
 
@@ -5804,6 +6012,20 @@ msgid ""
 "The launcher shows an icon set outside Hylki. Picking one here replaces it."
 msgstr ""
 "Ярлык использует значок, заданный вне Hylki. Выбор значка здесь заменит его."
+
+#, fuzzy
+msgid "Always"
+msgstr "Всегда показывать"
+
+#, fuzzy
+msgid "A year"
+msgstr "1 год"
+
+msgid "90 days"
+msgstr ""
+
+msgid "30 days"
+msgstr ""
 
 msgid "When displayed"
 msgstr "При отображении"
@@ -5885,6 +6107,14 @@ msgstr "{percent}%"
 
 msgid "Could not install the extension"
 msgstr "Не удалось установить расширение"
+
+msgid "Remove downloaded mail?"
+msgstr ""
+
+msgid ""
+"Every message and attachment kept on this computer is removed, and fetched "
+"again from the server when it is opened. Nothing on the server changes."
+msgstr ""
 
 msgid "Could not remove the extension"
 msgstr "Не удалось удалить расширение"
@@ -6089,9 +6319,6 @@ msgstr "Учётные записи пока не добавлены"
 
 msgid "New Message from Template…"
 msgstr "Новое сообщение из шаблона…"
-
-msgid "Outbox"
-msgstr "Исходящие"
 
 msgid "Mark Inbox as Read"
 msgstr "Отметить входящие как прочитанные"
@@ -6965,9 +7192,6 @@ msgstr "Hyprlab"
 
 #~ msgid "Undoing move…"
 #~ msgstr "Отменяем перемещение…"
-
-#~ msgid "Undo the last move or delete"
-#~ msgstr "Отменить последнее перемещение или удаление"
 
 #~ msgid "Plain text: send without formatting"
 #~ msgstr "Обычный текст: отправлять без форматирования"

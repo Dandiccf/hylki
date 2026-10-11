@@ -577,6 +577,12 @@ pub struct MessageList {
     /// Off by default: the row describes the newest message this folder holds,
     /// as it always has. The sizes on the badges are not affected either way.
     thread_row_newest: bool,
+    /// Every address you send from, lower case: with `thread_row_newest`
+    /// off, the mail you sent is not nested under a conversation's row
+    /// either (#388).
+    own_addresses: std::collections::HashSet<String>,
+    /// Gmail's keys are on (#392): Enter opens a row in the reader.
+    gmail_keys: bool,
     /// Each conversation the last rebuild listed, with the folder's own
     /// members: what the app needs to look its real size up when a row
     /// showing it comes on screen.
@@ -860,6 +866,19 @@ pub enum MessageListInput {
     /// Whether a conversation's row speaks for the newest message anywhere in
     /// the account, the replies you sent included (#236).
     SetThreadRowNewest(bool),
+    /// Gmail's keys (#392): Enter on a row the cursor is on opens it in the
+    /// reader rather than a window of its own.
+    SetGmailKeys(bool),
+    /// Move the keyboard cursor `delta` rows without selecting or opening
+    /// anything (Gmail's j/k, #392).
+    MoveCursor(i32),
+    /// Open the row the cursor is on in the reader (Gmail's o, #392).
+    OpenCursor,
+    /// Select every row shown (Gmail's * a).
+    SelectAllShown,
+    /// The addresses you send from, for leaving your own replies out of a
+    /// conversation's nested rows (#388).
+    SetOwnAddresses(std::collections::HashSet<String>),
     /// Whether conversations start expanded (true) or collapsed (false).
     SetThreadsExpanded(bool),
     SetGravatar(bool),
@@ -1425,6 +1444,8 @@ impl SimpleComponent for MessageList {
             source_threads: std::cell::RefCell::new(None),
             thread_summaries: std::collections::HashMap::new(),
             thread_row_newest: false,
+            own_addresses: Default::default(),
+            gmail_keys: crate::config::load_privacy().gmail_keys,
             groups: std::collections::HashMap::new(),
             listed_folders: std::collections::HashSet::new(),
             asked_threads: std::collections::HashSet::new(),
@@ -1719,6 +1740,14 @@ impl SimpleComponent for MessageList {
                 if self.thread_row_newest != on {
                     self.thread_row_newest = on;
                     if self.threading {
+                        self.queue_rebuild(true);
+                    }
+                }
+            }
+            MessageListInput::SetOwnAddresses(addresses) => {
+                if self.own_addresses != addresses {
+                    self.own_addresses = addresses;
+                    if self.threading && self.thread_expansion && !self.thread_row_newest {
                         self.queue_rebuild(true);
                     }
                 }
@@ -2103,15 +2132,39 @@ impl SimpleComponent for MessageList {
                 self.focus_row(next);
             }
 
+            MessageListInput::SetGmailKeys(on) => self.gmail_keys = on,
+            MessageListInput::MoveCursor(delta) => {
+                if self.shown.is_empty() {
+                    return;
+                }
+                if delta != 0 {
+                    self.nav_direction = delta.signum();
+                }
+                // From the row the keyboard is on, else the open one, else
+                // the top or the bottom.
+                let current = self
+                    .cursor_position()
+                    .or_else(|| self.selected_positions().first().copied())
+                    .map(|p| p as i64)
+                    .unwrap_or(if delta > 0 { -1 } else { self.shown.len() as i64 });
+                let next = (current + delta as i64).clamp(0, self.shown.len() as i64 - 1) as usize;
+                self.focus_row(next);
+            }
+            MessageListInput::OpenCursor => {
+                let Some(pos) = self.cursor_position().or_else(|| self.selected_positions().first().copied()) else {
+                    return;
+                };
+                self.shared.selection.select_item(pos as u32, true);
+                self.focus_row(pos);
+            }
+            MessageListInput::SelectAllShown => {
+                if !self.shown.is_empty() {
+                    self.shared.selection.select_all();
+                }
+            }
             MessageListInput::ToggleSelection => {
                 // The row the keyboard is on, or the first selected one.
-                let focused = self
-                    .shared
-                    .bound_rows()
-                    .into_iter()
-                    .find(|r| r.has_focus_within())
-                    .and_then(|r| r.position());
-                let Some(pos) = focused.or_else(|| self.selected_positions().first().copied()) else {
+                let Some(pos) = self.cursor_position().or_else(|| self.selected_positions().first().copied()) else {
                     return;
                 };
                 let selection = &self.shared.selection;
@@ -2327,6 +2380,12 @@ impl SimpleComponent for MessageList {
                 self.collapse_thread_rows(&key);
             }
             MessageListInput::RowActivated(index) => {
+                // With Gmail's keys, Enter on the row the cursor reached opens
+                // it here, as o does; a row already open goes to a window.
+                if self.gmail_keys && !self.shared.selection.is_selected(index as u32) {
+                    sender.input(MessageListInput::OpenCursor);
+                    return;
+                }
                 if let Some(m) = self.shown.get(index as usize).map(|m| Message::clone(m)) {
                     let (thread, _solo) = self.conversation_for(&m);
                     let _ = sender.output(MessageListOutput::Activated { message: m, thread });
@@ -2831,7 +2890,10 @@ impl MessageList {
                 &i18n("Add Sender to Contacts"),
                 "contact-new-symbolic",
             )],
-            vec![item(RowAction::ViewSource, &i18n("View Source"), "code-symbolic")],
+            vec![
+                item(RowAction::ViewSource, &i18n("View Source"), "code-symbolic"),
+                item(RowAction::SaveAsFile, &i18n("Save as File…"), "document-save-symbolic"),
+            ],
         ];
 
         self.popup_menu(x, y, None, sections);
@@ -3205,6 +3267,15 @@ impl MessageList {
     }
 
     /// The selected rows' positions, in list order.
+    /// The row the keyboard is on, if it is on one.
+    fn cursor_position(&self) -> Option<usize> {
+        self.shared
+            .bound_rows()
+            .into_iter()
+            .find(|r| r.has_focus_within())
+            .and_then(|r| r.position())
+    }
+
     fn selected_positions(&self) -> Vec<usize> {
         let set = self.shared.selection.selection();
         match gtk::BitsetIter::init_first(&set) {
@@ -3539,11 +3610,17 @@ impl MessageList {
         let mut msgs = own.to_vec();
         let summary = self.threading.then(|| self.thread_summaries.get(key)).flatten();
         // The parts of the conversation filed elsewhere, which the row opens
-        // out into along with this folder's own (#309).
+        // out into along with this folder's own (#309). What you sent comes
+        // with them only when "Show your own replies in the message list" is
+        // on: off, an Inbox row opened out into nothing but your answers
+        // from Sent (#388). Gmail's All Mail copy of them goes too.
+        let own = (!self.thread_row_newest).then_some(&self.own_addresses);
         let extras: Vec<Rc<Message>> = match summary {
-            Some(s) if self.thread_expansion => {
-                nested_members(&s.members, &msgs, &self.listed_folders, passes).into_iter().map(Rc::new).collect()
-            }
+            Some(s) if self.thread_expansion => nested_members(&s.members, &msgs, &self.listed_folders, passes)
+                .into_iter()
+                .filter(|m| !own.is_some_and(|own| own.contains(&m.from_addr.to_lowercase())))
+                .map(Rc::new)
+                .collect(),
             _ => Vec::new(),
         };
         let count = msgs.len() + extras.len();
@@ -3682,7 +3759,19 @@ impl MessageList {
         }
     }
 
+    /// `rebuild_rows`, keeping a list read from the very top at the top.
+    /// The view holds its place by a row, so a new message put in above the
+    /// first one landed out of sight, just above the view (#400). Scrolled
+    /// down, the view keeps the row it has, as before.
     fn rebuild(&mut self) {
+        let at_top = self.scroller.as_ref().is_some_and(|s| s.vadjustment().value() < 1.0);
+        self.rebuild_rows();
+        if at_top {
+            self.scroll_top();
+        }
+    }
+
+    fn rebuild_rows(&mut self) {
         let t_rebuild = std::time::Instant::now();
         let passes = self.filter();
         let source_len = self.active_source().len();

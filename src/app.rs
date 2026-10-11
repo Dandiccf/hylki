@@ -609,6 +609,11 @@ pub struct AppModel {
     /// Messages on their way to another account (#265), by token.
     transfers: HashMap<u64, Transfer>,
     next_transfer: u64,
+    /// Ids for messages opened from files (#398), counting down from the
+    /// top so they never meet a server's UIDs.
+    next_local_id: u32,
+    /// The `ExportRaw` tokens of Save as File, with the name to offer.
+    pending_saves: HashMap<u64, String>,
     /// How the moves to other accounts under way are going, for the status
     /// line and the one report at the end.
     transfer_tally: TransferTally,
@@ -802,6 +807,11 @@ pub struct AppModel {
     /// feature off, keystrokes must pass straight through rather than be consumed
     /// and dropped.
     single_key: std::rc::Rc<std::cell::Cell<bool>>,
+    /// Gmail's single-key map in place of Hylki's (#392), shared with the
+    /// key controller like `single_key`.
+    gmail_keys: std::rc::Rc<std::cell::Cell<bool>>,
+    /// Settings → System → Keep downloaded mail, in days; 0 keeps it (#394).
+    keep_downloads_days: u32,
     /// Whether messages are grouped into conversation threads.
     threading: bool,
     /// A conversation re-render is already scheduled, so further bodies arriving
@@ -1421,6 +1431,9 @@ pub enum AppMsg {
     DeleteThread(Vec<Message>),
     /// The thread-delete dialog was confirmed.
     DeleteThreadConfirmed(Vec<Message>),
+    /// Delete every message in an account from this address, after leaving
+    /// its list (#407).
+    DeleteFromAddress { account_id: u32, addr: String },
     /// Reader View on or off (the header's switch).
     SetReaderMode(bool),
     /// Message zoom (Ctrl+ / Ctrl- / Ctrl+0): a step up, a step down, or
@@ -1517,6 +1530,8 @@ pub enum AppMsg {
     Shortcut(Shortcut),
     /// Show the keyboard-shortcut reference.
     ShowShortcuts,
+    /// Ctrl+K: search what the app can do and where it can go (#399).
+    CommandPalette,
     /// Print the message in the reader (issue #16).
     PrintMessage,
     /// Render it to a PDF and open that, to see what will come out.
@@ -1596,6 +1611,11 @@ pub enum AppMsg {
     /// A `mid:` link (RFC 2392) from anywhere on the system (#130): open the
     /// message with that Message-ID.
     OpenMid(String),
+    /// A message file (.eml) handed in from a file manager or the command
+    /// line, or picked with Open Message File (#398).
+    OpenMessageFile(std::path::PathBuf),
+    /// Choose a message file to read (#398).
+    PickMessageFile,
     /// An account's answer to a server-side Message-ID search.
     MidLocated { account_id: u32, message_id: String, hit: Option<(String, u32)> },
     /// The tag finder: scan every account for keywords in use.
@@ -3100,6 +3120,8 @@ impl SimpleComponent for AppModel {
             pending_moves: std::cell::RefCell::new(HashMap::new()),
             transfers: HashMap::new(),
             next_transfer: 0,
+            next_local_id: u32::MAX - 1,
+            pending_saves: HashMap::new(),
             transfer_tally: TransferTally::default(),
             sidebar_split: None,
             app_title: None,
@@ -3204,6 +3226,8 @@ impl SimpleComponent for AppModel {
             single_key: std::rc::Rc::new(std::cell::Cell::new(
                 config::load_privacy().single_key_shortcuts,
             )),
+            gmail_keys: std::rc::Rc::new(std::cell::Cell::new(config::load_privacy().gmail_keys)),
+            keep_downloads_days: config::load_privacy().keep_downloads_days,
             threading: prefs.threading,
             thread_render_queued: false,
             thread_opened_at: None,
@@ -3349,6 +3373,16 @@ impl SimpleComponent for AppModel {
         model.refresh_own_faces();
         model.warm_own_gravatars(&sender);
         model.spawn_workers(&sender);
+        // Downloaded mail past Settings → System → Keep downloaded mail goes
+        // a little after start, once the first syncs are under way, and
+        // every six hours after (#394).
+        gtk::glib::timeout_add_seconds_local_once(120, || {
+            prune_downloads(config::load_privacy().keep_downloads_days);
+            gtk::glib::timeout_add_seconds_local(6 * 3600, || {
+                prune_downloads(config::load_privacy().keep_downloads_days);
+                gtk::glib::ControlFlow::Continue
+            });
+        });
         // GNOME keeps a notification after the app that posted it has quit,
         // and a new instance knows nothing of what it pointed at, so it
         // could only linger (#333). New mail since is notified afresh.
@@ -4153,6 +4187,9 @@ impl SimpleComponent for AppModel {
             let s = sender.clone();
             let window = root.clone();
             let enabled = model.single_key.clone();
+            let gmail = model.gmail_keys.clone();
+            // The first key of a Gmail sequence (g or *) and when it came.
+            let pending: std::rc::Rc<std::cell::Cell<Option<(char, std::time::Instant)>>> = Default::default();
             keys.connect_key_pressed(move |_, keyval, _, state| {
                 let ctrl = state.contains(gtk::gdk::ModifierType::CONTROL_MASK);
                 let shift = state.contains(gtk::gdk::ModifierType::SHIFT_MASK);
@@ -4213,8 +4250,40 @@ impl SimpleComponent for AppModel {
                     s.input(AppMsg::Shortcut(Shortcut::BackToList));
                     return gtk::glib::Propagation::Stop;
                 }
-                if !enabled.get() || focus_takes_keys(&window) {
+                if !enabled.get() || focus_is_text(&window) || focus_in_compose(&window) {
                     return gtk::glib::Propagation::Proceed;
+                }
+                if focus_takes_keys(&window) && reader_keeps(keyval) {
+                    return gtk::glib::Propagation::Proceed;
+                }
+                if gmail.get() {
+                    // Shift alone starts nothing and ends nothing.
+                    if matches!(keyval, gtk::gdk::Key::Shift_L | gtk::gdk::Key::Shift_R) {
+                        return gtk::glib::Propagation::Proceed;
+                    }
+                    let first = pending.take().filter(|(_, at)| at.elapsed() < std::time::Duration::from_millis(1500));
+                    if let Some((first, _)) = first {
+                        if let Some(action) = gmail_sequence(first, keyval) {
+                            s.input(AppMsg::Shortcut(action));
+                        }
+                        return gtk::glib::Propagation::Stop;
+                    }
+                    let start = match keyval {
+                        gtk::gdk::Key::g => Some('g'),
+                        gtk::gdk::Key::asterisk => Some('*'),
+                        _ => None,
+                    };
+                    if let Some(c) = start {
+                        pending.set(Some((c, std::time::Instant::now())));
+                        return gtk::glib::Propagation::Stop;
+                    }
+                    return match gmail_shortcut_for(keyval, shift) {
+                        Some(action) => {
+                            s.input(AppMsg::Shortcut(action));
+                            gtk::glib::Propagation::Stop
+                        }
+                        None => gtk::glib::Propagation::Proceed,
+                    };
                 }
                 match shortcut_for(keyval, shift) {
                     Some(action) => {
@@ -5269,6 +5338,9 @@ impl SimpleComponent for AppModel {
         }
         for uri in MID_PENDING.lock().unwrap().drain(..) {
             sender.input(AppMsg::OpenMid(uri));
+        }
+        for path in FILE_PENDING.lock().unwrap().drain(..) {
+            sender.input(AppMsg::OpenMessageFile(path));
         }
         for paths in ATTACH_PENDING.lock().unwrap().drain(..) {
             sender.input(AppMsg::OpenWithFiles(paths));
@@ -6860,6 +6932,16 @@ impl SimpleComponent for AppModel {
                             });
                         }
                     }
+                    RowAction::SaveAsFile => {
+                        // The whole message as the server keeps it, asked
+                        // for first: the save dialog opens once it is here.
+                        if let Some(path) = self.resolve_folder_path(&m) {
+                            let token = self.next_transfer;
+                            self.next_transfer += 1;
+                            self.pending_saves.insert(token, eml_file_name(&m.subject));
+                            self.send_to(m.account_id, MailRequest::ExportRaw { token, path, uid: m.uid, for_reader: true });
+                        }
+                    }
                     RowAction::AddContact => {
                         self.show_add_contact_dialog(&m.from_name, &m.from_addr, &sender);
                     }
@@ -7345,6 +7427,19 @@ impl SimpleComponent for AppModel {
                 }
             }
 
+            AppMsg::Pref(PrefOutput::SetRenderer(renderer)) => {
+                // The combo notifies as its model is set too: only a real
+                // change is saved and announced.
+                if config::load_renderer() != renderer {
+                    config::save_renderer(&renderer);
+                    self.notifications.emit(NotifyInput::Push {
+                        text: i18n("The renderer applies the next time Hylki starts."),
+                        error: false,
+                        connectivity: false,
+                    });
+                }
+            }
+
             AppMsg::Pref(PrefOutput::SetLanguage(code)) => {
                 // The combo also notifies as its model is set; only a real
                 // change is saved and announced.
@@ -7585,7 +7680,27 @@ impl SimpleComponent for AppModel {
                 }
             }
 
+            AppMsg::Pref(PrefOutput::SetKeepDownloads(days)) => {
+                if self.keep_downloads_days != days {
+                    self.keep_downloads_days = days;
+                    self.save_settings();
+                    prune_downloads(days);
+                }
+            }
+
+            AppMsg::Pref(PrefOutput::SetGmailKeys(on)) => {
+                if self.gmail_keys.get() != on {
+                    self.gmail_keys.set(on);
+                    self.message_list.emit(MessageListInput::SetGmailKeys(on));
+                    self.save_settings();
+                }
+            }
+
             AppMsg::ShowShortcuts => self.show_shortcuts(),
+            AppMsg::CommandPalette => {
+                let entries = self.command_palette_entries(&sender);
+                crate::ui::command_palette::show(&self.window, entries);
+            }
 
             AppMsg::PrintPreview | AppMsg::PrintMessage => {
                 // Only the reader can print: it holds the rendered message, and
@@ -7807,6 +7922,14 @@ impl SimpleComponent for AppModel {
 
             AppMsg::DeleteThreadConfirmed(messages) => {
                 self.delete_messages(messages, &sender);
+            }
+
+            AppMsg::DeleteFromAddress { account_id, addr } => {
+                let messages = self.mail_from_address(account_id, &addr);
+                tracing::info!("unsubscribe: deleting {} message(s) from {addr}", messages.len());
+                if !messages.is_empty() {
+                    self.delete_messages(messages, &sender);
+                }
             }
 
             AppMsg::Pref(PrefOutput::SetCardActionsMode { hover_toggle, hover_auto }) => {
@@ -8602,6 +8725,9 @@ impl SimpleComponent for AppModel {
                 self.message_view.emit(MessageViewInput::CopySelection);
             }
 
+            AppMsg::OpenMessageFile(path) => self.open_message_file(&path, &sender),
+            AppMsg::PickMessageFile => self.pick_message_file(&sender),
+
             AppMsg::OpenMid(uri) => {
                 // The cache first: it holds every message Hylki has listed,
                 // across accounts, and answers at once. Only a miss asks the
@@ -9014,6 +9140,13 @@ impl SimpleComponent for AppModel {
                 }
                 let open_unified = self.unified.then_some(self.unified_view);
                 let new_email = account.email.clone();
+                // An edit that only changes how the account looks or signs
+                // (#382) is applied in place: reconnecting every account for
+                // it emptied the list and the reader until they had synced.
+                let display_only = original_email
+                    .as_ref()
+                    .and_then(|orig| self.config.iter().find(|c| &c.email == orig))
+                    .is_some_and(|old| display_only_change(old, &account));
                 // Remember the secret we expect to persist, so we can verify the
                 // keyring actually stored it (a silent keyring failure would
                 // otherwise leave the account unable to log in after a restart).
@@ -9088,7 +9221,11 @@ impl SimpleComponent for AppModel {
                         // changed with this edit (#189).
                         self.warm_own_gravatars(&sender);
                         self.refresh_faces();
-                        self.reconnect_all(&sender);
+                        if display_only {
+                            tracing::info!("{new_email}: saved without reconnecting, only its look or signature changed");
+                        } else {
+                            self.reconnect_all(&sender);
+                        }
                         if unified_changed {
                             self.reload_unified_views(open_unified, &sender);
                         }
@@ -9687,6 +9824,10 @@ impl SimpleComponent for AppModel {
             }
 
             AppMsg::GoaChanged(live) => {
+                // An account added there shows in Settings' import list.
+                if let Some(acc) = &self.accounts_win {
+                    acc.emit(crate::ui::accounts::AccountsInput::RefreshGoa);
+                }
                 // GOA changed in GNOME Settings. Drop any imported account that
                 // no longer exists there; pause/resume any whose Mail service
                 // was toggled. (Adding an account to GOA never auto-imports —
@@ -10073,6 +10214,17 @@ impl SimpleComponent for AppModel {
             }
 
             AppMsg::RawExported { token, raw } => {
+                if let Some(name) = self.pending_saves.remove(&token) {
+                    match raw {
+                        Ok(raw) => self.save_message_file(name, raw),
+                        Err(e) => self.notifications.emit(NotifyInput::Push {
+                            text: i18n_f("Could not save the message: {e}", &[("e", &e)]),
+                            error: true,
+                            connectivity: false,
+                        }),
+                    }
+                    return;
+                }
                 if self.pending_draft_token == Some(token) {
                     self.pending_draft_token = None;
                     let Some((m, inline, extra)) = self.pending_draft.take() else { return };
@@ -11476,6 +11628,8 @@ impl AppModel {
             list_headings: self.list_headings,
             list_column_widths: config::list_column_widths_to(&self.list_column_widths),
             single_key_shortcuts: self.single_key.get(),
+            gmail_keys: self.gmail_keys.get(),
+            keep_downloads_days: self.keep_downloads_days,
             run_in_background: self.run_in_background.get(),
             autostart: self.autostart,
             tray: self.tray_enabled,
@@ -11522,9 +11676,38 @@ impl AppModel {
             Shortcut::ToggleSelect => self.message_list.emit(MessageListInput::ToggleSelection),
             Shortcut::BackToList => self.message_list.emit(MessageListInput::FocusList),
             Shortcut::Search => self.message_list.emit(MessageListInput::FocusSearch),
-            Shortcut::OpenMessage => {
-                if let Some(view) = self.message_view.widget().first_child() {
-                    view.grab_focus();
+            // The open message's own view, not the reader's first page,
+            // which is the "No message selected" one and takes no focus.
+            Shortcut::OpenMessage => self.message_view.emit(MessageViewInput::FocusBody),
+            Shortcut::MoveCursor(delta) => self.message_list.emit(MessageListInput::MoveCursor(delta)),
+            Shortcut::OpenCursor => self.message_list.emit(MessageListInput::OpenCursor),
+            Shortcut::MarkRead(read) => {
+                let mut targets = self.multi_selection();
+                if targets.is_empty() {
+                    targets.extend(self.reply_target());
+                }
+                targets.retain(|m| m.unread == read);
+                if !targets.is_empty() {
+                    self.user_set_flags(read_label(read), &targets, FlagKind::Read, read);
+                }
+            }
+            Shortcut::Undo => sender.input(AppMsg::Undo),
+            Shortcut::MoveTo => sender.input(AppMsg::MoveToMenu),
+            Shortcut::Label => sender.input(AppMsg::ReaderTagMenu),
+            Shortcut::SelectAll => self.message_list.emit(MessageListInput::SelectAllShown),
+            Shortcut::SelectNone => self.message_list.emit(MessageListInput::ClearSelection),
+            Shortcut::GoTo(GoTarget::Contacts) => sender.input(AppMsg::OpenContacts),
+            Shortcut::GoTo(GoTarget::Kind(kind)) => {
+                // The merged view when the sidebar lists one, else the
+                // account's own folder of that kind.
+                let merged = match kind {
+                    FolderKind::Inbox => self.unified_inboxes_shown(),
+                    _ => self.unified_kinds.has(kind),
+                };
+                if merged {
+                    self.open_unified(UnifiedView::Kind(kind));
+                } else {
+                    sender.input(AppMsg::ShowcaseFolder { kind, account: None });
                 }
             }
             Shortcut::NextInThread => self.step_thread(1),
@@ -11592,28 +11775,147 @@ impl AppModel {
         }
     }
 
-    /// Move to the next (or previous) message of the open conversation.
+    /// What the command palette offers now (#399): the actions that apply
+    /// to what is open or selected, then the views, every account's folders
+    /// and the tags.
+    fn command_palette_entries(&self, sender: &ComponentSender<Self>) -> Vec<crate::ui::command_palette::Entry> {
+        use crate::ui::command_palette::Entry;
+        let mut out = Vec::new();
+        let action = i18n("Action");
+        let mut add = |title: String, detail: &str, key: &str, msg: fn() -> AppMsg| {
+            let s = sender.input_sender().clone();
+            out.push(Entry {
+                title,
+                detail: detail.to_string(),
+                key: key.to_string(),
+                run: Box::new(move || {
+                    let _ = s.send(msg());
+                }),
+            });
+        };
+        add(i18n("New Message"), &action, "Ctrl+N", || AppMsg::Compose);
+        add(i18n("New Message from Template"), &action, "Ctrl+Shift+N", || AppMsg::NewFromTemplate);
+        if self.reply_target().is_some() {
+            add(i18n("Reply"), &action, "Ctrl+R", || AppMsg::Reply);
+            add(i18n("Reply to All"), &action, "Ctrl+Shift+R", || AppMsg::ReplyAll);
+            add(i18n("Forward"), &action, "", || AppMsg::Forward);
+            add(i18n("Edit as New Message"), &action, "", || AppMsg::EditAsNewCurrent);
+            add(i18n("View Source"), &action, "Ctrl+U", || AppMsg::ViewSource);
+            add(i18n("Print"), &action, "Ctrl+P", || AppMsg::PrintMessage);
+            add(i18n("Print Preview"), &action, "Ctrl+Shift+P", || AppMsg::PrintPreview);
+            add(i18n("Find in Message"), &action, "", || AppMsg::OpenReaderFind);
+        }
+        if self.acts_on_selection() {
+            add(i18n("Archive"), &action, "", || AppMsg::Archive);
+            add(i18n("Delete"), &action, "Delete", || AppMsg::Delete);
+            add(i18n("Mark as Spam"), &action, "", || AppMsg::MarkSpam);
+            add(i18n("Star or Remove Star"), &action, "", || AppMsg::ToggleStar);
+            add(i18n("Mark as Read or Unread"), &action, "", || AppMsg::ToggleReadCurrent);
+            add(i18n("Move to Folder"), &action, "", || AppMsg::MoveToMenu);
+            add(i18n("Tags"), &action, "", || AppMsg::ReaderTagMenu);
+        }
+        add(i18n("Open Message File…"), &action, "", || AppMsg::PickMessageFile);
+        add(i18n("Undo"), &action, "Ctrl+Z", || AppMsg::Undo);
+        add(i18n("Redo"), &action, "Ctrl+Shift+Z", || AppMsg::Redo);
+        add(i18n("Check for New Mail"), &action, "", || AppMsg::Refresh);
+        add(i18n("Search Messages"), &action, "Ctrl+F", || AppMsg::OpenListSearch);
+        add(i18n("Show or Hide the Sidebar"), &action, "", || AppMsg::ToggleSidebar);
+        add(i18n("Settings"), &action, "Ctrl+,", || AppMsg::OpenPreferences);
+        add(i18n("Mail Accounts"), &action, "", || AppMsg::OpenAccounts);
+        add(i18n("Keyboard Shortcuts"), &action, "Ctrl+?", || AppMsg::ShowShortcuts);
+        add(i18n("About Hylki"), &action, "", || AppMsg::OpenAbout);
+        {
+            let mut focus = self.focus;
+            focus.enabled = !focus.enabled;
+            let s = sender.input_sender().clone();
+            out.push(Entry {
+                title: if focus.enabled { i18n("Turn Focus Mode On") } else { i18n("Turn Focus Mode Off") },
+                detail: action.clone(),
+                key: "Ctrl+Shift+F".into(),
+                run: Box::new(move || {
+                    let _ = s.send(AppMsg::Pref(PrefOutput::SetFocusMode(focus)));
+                }),
+            });
+        }
+
+        let view = i18n("View");
+        let mut go = |title: String, detail: String, msg: Box<dyn Fn() -> AppMsg>| {
+            let s = sender.input_sender().clone();
+            out.push(Entry {
+                title,
+                detail,
+                key: String::new(),
+                run: Box::new(move || {
+                    let _ = s.send(msg());
+                }),
+            });
+        };
+        // The merged views the sidebar lists, under the sidebar's names.
+        let every = i18n("All accounts");
+        for kind in [
+            FolderKind::Inbox,
+            FolderKind::Starred,
+            FolderKind::Sent,
+            FolderKind::Drafts,
+            FolderKind::Archive,
+            FolderKind::Junk,
+            FolderKind::Trash,
+        ] {
+            let listed = if kind == FolderKind::Inbox { self.unified_inboxes_shown() } else { self.unified_kinds.has(kind) };
+            if listed {
+                go(
+                    crate::ui::sidebar::kind_label(kind),
+                    every.clone(),
+                    Box::new(move || AppMsg::UnifiedSelected(UnifiedView::Kind(kind))),
+                );
+            }
+        }
+        go(i18n("Contacts"), view.clone(), Box::new(|| AppMsg::OpenContacts));
+        go(i18n("Attachments"), view.clone(), Box::new(|| AppMsg::ShowAttachments));
+        go(i18n("Outbox"), view.clone(), Box::new(|| AppMsg::ShowOutbox));
+        for email in self.ordered_emails() {
+            let Some(account) = self.accounts.iter().find(|a| a.email == email) else { continue };
+            for f in self.folders.get(&account.id).into_iter().flatten() {
+                let (account_id, folder_id, name, path) = (account.id, f.id, f.name.clone(), f.path.clone());
+                go(
+                    f.name.clone(),
+                    format!("{} · {}", account.label, f.path),
+                    Box::new(move || AppMsg::FolderSelected {
+                        account_id,
+                        folder_id,
+                        name: name.clone(),
+                        path: path.clone(),
+                    }),
+                );
+            }
+        }
+        let tag = i18n("Tag");
+        for t in &self.tags {
+            let keyword = t.keyword.clone();
+            go(
+                t.name.clone(),
+                tag.clone(),
+                Box::new(move || AppMsg::TagSelected { keyword: Some(keyword.clone()), account: None }),
+            );
+        }
+        out
+    }
+
+    /// Move to the next (or previous) message of the open conversation:
+    /// its card in the reader, opened and scrolled to, which is what actions
+    /// then apply to. Selecting the message in the list instead landed on
+    /// the conversation's row again, so the keys went nowhere (#392).
     fn step_thread(&mut self, delta: i32) {
-        let Some(current) = self.current.clone() else {
-            return;
-        };
-        let thread = self.current_thread.clone();
-        let Some(index) = thread
-            .iter()
-            .position(|m| m.id == current.id && m.account_id == current.account_id)
-        else {
-            // Not in a conversation: fall back to moving through the list, which
-            // is what someone pressing "next" almost certainly meant.
-            self.message_list.emit(MessageListInput::MoveSelection(delta));
-            return;
-        };
-        let next = index as i32 + delta;
-        if next < 0 || next as usize >= thread.len() {
+        if self.current.is_none() {
             return;
         }
-        let target = &thread[next as usize];
-        self.message_list
-            .emit(MessageListInput::SelectAndLoad((target.account_id, target.id)));
+        if self.current_thread.len() > 1 {
+            self.message_view.emit(MessageViewInput::StepCard(delta));
+        } else {
+            // Not in a conversation: moving through the list is what someone
+            // pressing "next" almost certainly meant.
+            self.message_list.emit(MessageListInput::MoveSelection(delta));
+        }
     }
 
     /// Open the keyboard-shortcut reference, or close it if it is already up:
@@ -11656,7 +11958,12 @@ impl AppModel {
             page.append(&off);
         }
 
-        for (section, keys) in SHORTCUT_HELP {
+        let sections: Vec<&(&str, &[(&str, &str)])> = if self.gmail_keys.get() {
+            GMAIL_HELP.iter().chain(SHORTCUT_HELP.iter().skip(2)).collect()
+        } else {
+            SHORTCUT_HELP.iter().collect()
+        };
+        for (section, keys) in sections {
             let title = gtk::Label::new(Some(i18n(section).as_str()));
             title.add_css_class("heading");
             title.set_halign(gtk::Align::Start);
@@ -11931,6 +12238,20 @@ impl AppModel {
 
     /// Spawn one worker per configured account (or a single mock worker when no
     /// account is configured).
+    /// Before anything reads the cache on disk: an account removed since the
+    /// last start has moved the ones after it up a place, and their cached
+    /// mail has to move with them (see `Cache::claim_accounts`).
+    fn claim_cached_accounts(&self) {
+        if self.config.is_empty() {
+            return;
+        }
+        let owners: Vec<(u32, String)> =
+            self.config.iter().enumerate().map(|(i, a)| (i as u32 + 1, a.email.clone())).collect();
+        if let Err(e) = crate::cache::Cache::open().and_then(|cache| cache.claim_accounts(&owners)) {
+            tracing::warn!("cache: could not match the cached mail to the accounts: {e}");
+        }
+    }
+
     /// Paint the mail panes straight from the disk cache, before any worker
     /// has spoken: every enabled account's folder list and inbox slice is
     /// loaded synchronously at startup, so "All Inboxes" (the launch view) is
@@ -11938,6 +12259,7 @@ impl AppModel {
     /// loads and syncs then replace each slice with whatever changed since
     /// the app last ran.
     fn prime_from_cache(&mut self) {
+        self.claim_cached_accounts();
         let Ok(cache) = crate::cache::Cache::open() else { return };
         for (i, c) in self.config.iter().enumerate() {
             if !c.enabled {
@@ -11983,6 +12305,7 @@ impl AppModel {
 
     fn spawn_workers(&mut self, sender: &ComponentSender<Self>) {
         self.workers.clear();
+        self.message_list.emit(MessageListInput::SetOwnAddresses(self.own_addresses()));
         // account_id is the config index + 1 (a load-bearing invariant), so we keep
         // every account's slot but only spawn a worker for enabled ones — disabled
         // accounts simply have no worker (no sync, no sidebar presence). With no
@@ -11996,6 +12319,7 @@ impl AppModel {
                 }
             }
         } else {
+            self.claim_cached_accounts();
             for (i, account) in self.config.iter().enumerate() {
                 if !account.enabled {
                     continue;
@@ -12087,6 +12411,20 @@ impl AppModel {
     /// still there.
     /// The configs the UI describes accounts from: the real ones, or the
     /// demo's in-memory stand-ins while no account is configured.
+    /// Every address the accounts send from, their aliases included, lower
+    /// case.
+    fn own_addresses(&self) -> std::collections::HashSet<String> {
+        self.effective_config()
+            .iter()
+            .flat_map(|a| {
+                std::iter::once(a.email.clone())
+                    .chain(a.aliases.iter().map(|alias| config::split_identity(&alias.identity).1))
+            })
+            .map(|e| e.trim().to_lowercase())
+            .filter(|e| !e.is_empty())
+            .collect()
+    }
+
     fn effective_config(&self) -> &[AccountConfig] {
         if self.config.is_empty() && demo_mode() {
             &self.demo_config
@@ -14557,6 +14895,7 @@ impl AppModel {
             );
         }
         last.push(item(RowAction::ViewSource, i18n("View Source"), "code"));
+        last.push(item(RowAction::SaveAsFile, i18n("Save as File…"), "document-save"));
         sections.push(last);
         // Printing prints what the reader shows, the whole conversation in
         // it, so the reader that was right-clicked is the one asked (#359).
@@ -14854,6 +15193,90 @@ impl AppModel {
             .collect()
     }
 
+    /// Ask where to put a message's bytes, and write them there (#398).
+    fn save_message_file(&self, name: String, raw: Vec<u8>) {
+        let dialog = gtk::FileDialog::new();
+        dialog.set_title(&i18n("Save Message"));
+        dialog.set_initial_name(Some(&name));
+        let notifications = self.notifications.sender().clone();
+        dialog.save(Some(&self.window), gtk::gio::Cancellable::NONE, move |res| {
+            let Ok(file) = res else { return };
+            let Some(path) = file.path() else { return };
+            if let Err(e) = std::fs::write(&path, &raw) {
+                tracing::warn!("save {}: {e}", path.display());
+                let _ = notifications.send(NotifyInput::Push {
+                    text: i18n_f("Could not save the message: {e}", &[("e", &e.to_string())]),
+                    error: true,
+                    connectivity: false,
+                });
+            }
+        });
+    }
+
+    /// Pick a message file to read (#398).
+    fn pick_message_file(&self, sender: &ComponentSender<Self>) {
+        let dialog = gtk::FileDialog::new();
+        dialog.set_title(&i18n("Open Message File"));
+        let filter = gtk::FileFilter::new();
+        filter.set_name(Some(&i18n("Email messages")));
+        filter.add_mime_type("message/rfc822");
+        filter.add_mime_type("application/vnd.ms-outlook");
+        filter.add_suffix("eml");
+        filter.add_suffix("msg");
+        let filters = gtk::gio::ListStore::new::<gtk::FileFilter>();
+        filters.append(&filter);
+        dialog.set_filters(Some(&filters));
+        let s = sender.input_sender().clone();
+        dialog.open(Some(&self.window), gtk::gio::Cancellable::NONE, move |res| {
+            if let Some(path) = res.ok().and_then(|f| f.path()) {
+                let _ = s.send(AppMsg::OpenMessageFile(path));
+            }
+        });
+    }
+
+    /// Read a message file in a window of its own (#398), rendered as the
+    /// reader renders mail from a server. It belongs to the account in view,
+    /// which is where Reply and Forward send from, and to no folder.
+    fn open_message_file(&mut self, path: &std::path::Path, sender: &ComponentSender<Self>) {
+        // An Outlook .msg is turned into a message first (see outlook_msg).
+        let read = std::fs::read(path).and_then(|bytes| {
+            let outlook = path.extension().is_some_and(|e| e.eq_ignore_ascii_case("msg"));
+            if crate::outlook_msg::is_msg(&bytes) {
+                crate::outlook_msg::to_eml(&bytes).map_err(std::io::Error::other)
+            } else if outlook {
+                // Other programs name files .msg too (Tcl's catalogues).
+                Err(std::io::Error::other(i18n("it is not an Outlook message")))
+            } else {
+                Ok(bytes)
+            }
+        });
+        let raw = match read {
+            Ok(raw) => raw,
+            Err(e) => {
+                tracing::warn!("open {}: {e}", path.display());
+                self.notifications.emit(NotifyInput::Push {
+                    text: i18n_f("Could not open {file}: {e}", &[("file", &path.display().to_string()), ("e", &e.to_string())]),
+                    error: true,
+                    connectivity: false,
+                });
+                return;
+            }
+        };
+        let id = self.next_local_id;
+        self.next_local_id -= 1;
+        let mut m = crate::worker::summary_from_raw(self.active_account(), FILE_FOLDER, id, &raw);
+        let (body, check, has_attachment) = crate::worker::render_raw(&raw);
+        m.unread = false;
+        m.has_attachment = has_attachment;
+        m.body = body.clone();
+        let key = body_key(&m);
+        self.body_cache.insert(key, body);
+        self.attachment_cache.insert(key, crate::worker::extract_attachments_of(&raw));
+        self.sender_cache.insert(key, Box::new(check));
+        tracing::info!("open: {} as a message", path.display());
+        self.open_message_window(m, Vec::new(), sender);
+    }
+
     /// Pop a message out into its own standalone window with a dedicated
     /// reader. `thread` is the whole conversation when `m` heads one (the
     /// window then shows every card); empty for a single message.
@@ -14961,6 +15384,7 @@ impl AppModel {
 
         let allow_remote = self.remote_allowed(&display);
         let folder_kind = self.folder_kind(display.account_id, display.folder_id);
+        let init_from_file = display.folder_id == FILE_FOLDER;
         let init = MessageWindowInit {
             message: display,
             thread,
@@ -14972,7 +15396,16 @@ impl AppModel {
             attachments_loading: atts_loading,
             drawer_enabled: self.drawer_enabled,
             card_attachments: self.card_attachments,
-            toolbar: self.reader_toolbar.clone(),
+            // A message from a file is in no folder: there is nothing to
+            // star, file or delete on a server.
+            toolbar: if init_from_file {
+                config::ReaderToolbar {
+                    left: vec![config::ToolbarItem::Reply, config::ToolbarItem::ReplyAll, config::ToolbarItem::Forward],
+                    right: vec![config::ToolbarItem::Find, config::ToolbarItem::Print],
+                }
+            } else {
+                self.reader_toolbar.clone()
+            },
             in_junk: folder_kind == Some(FolderKind::Junk),
             restorable: matches!(folder_kind, Some(FolderKind::Trash | FolderKind::Junk)),
             content_dark: self.message_theme.dark_override(),
@@ -15337,6 +15770,7 @@ impl AppModel {
             inline_files: Vec::new(),
             block_remote_images: false,
             resumed: false,
+            no_signature: false,
             template: false,
         };
         // The Outbox stays the folder on screen: its list is still what's listed,
@@ -15393,6 +15827,7 @@ impl AppModel {
             inline_files: Vec::new(),
             block_remote_images: false,
             resumed: true,
+            no_signature: false,
             // A template that failed to save comes back cut loose from it.
             template: false,
         };
@@ -15607,6 +16042,7 @@ impl AppModel {
                 attachments,
                 from_address: if template { m.from_addr.clone() } else { String::new() },
                 resumed: template,
+                no_signature: true,
                 ..Default::default()
             },
         );
@@ -18658,6 +19094,8 @@ impl AppModel {
             list_columns: self.list_columns.clone(),
             list_headings: self.list_headings,
             single_key_shortcuts: self.single_key.get(),
+            gmail_keys: self.gmail_keys.get(),
+            keep_downloads_days: self.keep_downloads_days,
             run_in_background: self.run_in_background.get(),
             autostart: self.autostart,
             tray: self.tray_enabled,
@@ -20437,6 +20875,27 @@ impl AppModel {
         })
     }
 
+    /// The mail in an account from `addr` that leaving a list can take with
+    /// it (#407): every folder but Sent, Drafts, Templates and Trash, where
+    /// it is either the user's own or already on its way out.
+    fn mail_from_address(&self, account_id: u32, addr: &str) -> Vec<Message> {
+        let Some(cache) = self.cache.as_ref() else { return Vec::new() };
+        let Some(folders) = self.folders.get(&account_id) else { return Vec::new() };
+        let mut by_path: HashMap<String, std::collections::HashSet<u32>> = HashMap::new();
+        for (path, uid) in cache.messages_from_address(account_id, addr) {
+            by_path.entry(path).or_default().insert(uid);
+        }
+        let mut out = Vec::new();
+        for f in folders {
+            if matches!(f.kind, FolderKind::Sent | FolderKind::Drafts | FolderKind::Templates | FolderKind::Trash) {
+                continue;
+            }
+            let Some(uids) = by_path.get(&f.path) else { continue };
+            out.extend(cache.load_messages(account_id, &f.path, f.id).into_iter().filter(|m| uids.contains(&m.uid)));
+        }
+        out
+    }
+
     /// Ask before leaving a list: what will happen depends on the route the
     /// list offers, and a mail sent in the user's name is said so up front.
     fn confirm_unsubscribe(
@@ -20472,12 +20931,32 @@ impl AppModel {
         dialog.set_default_response(Some("unsub"));
         dialog.set_close_response("cancel");
         dialog.set_response_appearance("unsub", adw::ResponseAppearance::Suggested);
+        // The mail already received from the list's address can go with it
+        // (#407). Off unless ticked: the address may send other mail too.
+        let n = self.mail_from_address(message.account_id, &message.from_addr).len();
+        let delete_too = (n > 0).then(|| {
+            let check = gtk::CheckButton::with_label(&ni18n_f(
+                "Also delete the message from {addr}",
+                "Also delete the {n} messages from {addr}",
+                n as u32,
+                &[("n", &n.to_string()), ("addr", &message.from_addr)],
+            ));
+            check.set_halign(gtk::Align::Center);
+            dialog.set_extra_child(Some(&check));
+            check
+        });
         let s = sender.clone();
         let message = Box::new(message);
         let info = Box::new(info);
         dialog.connect_response(None, move |_, resp| {
             if resp == "unsub" {
                 s.input(AppMsg::UnsubscribeGo { message: message.clone(), info: info.clone() });
+                if delete_too.as_ref().is_some_and(|c| c.is_active()) {
+                    s.input(AppMsg::DeleteFromAddress {
+                        account_id: message.account_id,
+                        addr: message.from_addr.clone(),
+                    });
+                }
             }
         });
         dialog.present();
@@ -21243,6 +21722,94 @@ pub enum Shortcut {
     Tag(u8),
     /// Take every tag off the message being read.
     ClearTags,
+    /// Gmail's j/k (#392): the keyboard cursor moves, nothing opens.
+    MoveCursor(i32),
+    /// Gmail's o: open the row the cursor is on.
+    OpenCursor,
+    /// Gmail's Shift+I (read) and Shift+U or _ (unread).
+    MarkRead(bool),
+    /// Gmail's z.
+    Undo,
+    /// Gmail's v: the Move To picker.
+    MoveTo,
+    /// Gmail's l: the tag menu.
+    Label,
+    /// Gmail's g then a letter.
+    GoTo(GoTarget),
+    /// Gmail's * then a or n.
+    SelectAll,
+    SelectNone,
+}
+
+/// Where Gmail's g sequences go (#392).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum GoTarget {
+    Kind(FolderKind),
+    Contacts,
+}
+
+/// Gmail's single keys (#392), in place of `shortcut_for` when Settings asks
+/// for them: support.google.com/mail/answer/6594. j/k move a cursor without
+/// opening, o or Enter opens, and the action keys are Gmail's. The digits
+/// still toggle tags. `g` and `*` start a sequence (`gmail_sequence`).
+fn gmail_shortcut_for(key: gtk::gdk::Key, shift: bool) -> Option<Shortcut> {
+    use gtk::gdk::Key;
+    let action = match key {
+        Key::j => Shortcut::MoveCursor(1),
+        Key::k => Shortcut::MoveCursor(-1),
+        Key::o => Shortcut::OpenCursor,
+        Key::u if !shift => Shortcut::BackToList,
+        Key::n => Shortcut::NextInThread,
+        Key::p => Shortcut::PrevInThread,
+        Key::x => Shortcut::ToggleSelect,
+        Key::s => Shortcut::Star,
+        Key::e => Shortcut::Archive,
+        Key::numbersign => Shortcut::Delete,
+        Key::exclam => Shortcut::Spam,
+        Key::r => Shortcut::Reply,
+        Key::a => Shortcut::ReplyAll,
+        Key::f => Shortcut::Forward,
+        Key::c => Shortcut::Compose,
+        Key::slash => Shortcut::Search,
+        Key::question => Shortcut::Shortcuts,
+        Key::U | Key::underscore => Shortcut::MarkRead(false),
+        Key::I => Shortcut::MarkRead(true),
+        Key::z => Shortcut::Undo,
+        Key::v => Shortcut::MoveTo,
+        Key::l => Shortcut::Label,
+        Key::Down => Shortcut::NextMessage,
+        Key::Up => Shortcut::PrevMessage,
+        _ => return shortcut_for(key, shift).filter(|s| matches!(s, Shortcut::Tag(_) | Shortcut::ClearTags)),
+    };
+    Some(action)
+}
+
+/// The second key of a Gmail sequence: `g` goes to a folder, `*` selects.
+fn gmail_sequence(first: char, key: gtk::gdk::Key) -> Option<Shortcut> {
+    use gtk::gdk::Key;
+    match (first, key) {
+        ('g', Key::i) => Some(Shortcut::GoTo(GoTarget::Kind(FolderKind::Inbox))),
+        ('g', Key::s) => Some(Shortcut::GoTo(GoTarget::Kind(FolderKind::Starred))),
+        ('g', Key::t) => Some(Shortcut::GoTo(GoTarget::Kind(FolderKind::Sent))),
+        ('g', Key::d) => Some(Shortcut::GoTo(GoTarget::Kind(FolderKind::Drafts))),
+        ('g', Key::a) => Some(Shortcut::GoTo(GoTarget::Kind(FolderKind::Archive))),
+        ('g', Key::c) => Some(Shortcut::GoTo(GoTarget::Contacts)),
+        ('*', Key::a) => Some(Shortcut::SelectAll),
+        ('*', Key::n) => Some(Shortcut::SelectNone),
+        _ => None,
+    }
+}
+
+/// Keys the reader keeps while it has focus, because they scroll it or move
+/// through its links. Letters and the rest go to the shortcuts, so a click
+/// in a message no longer turns them off (#392).
+fn reader_keeps(key: gtk::gdk::Key) -> bool {
+    use gtk::gdk::Key;
+    matches!(
+        key,
+        Key::Up | Key::Down | Key::Left | Key::Right | Key::Page_Up | Key::Page_Down | Key::Home | Key::End
+            | Key::space | Key::Return | Key::KP_Enter | Key::Tab | Key::ISO_Left_Tab | Key::BackSpace
+    )
 }
 
 /// The shortcut for a key press, if any. `shift` distinguishes `r` from `R`.
@@ -21292,9 +21859,48 @@ fn ctrl_shortcut_for(key: gtk::gdk::Key, shift: bool) -> Option<AppMsg> {
         Key::r | Key::R if !shift => Some(AppMsg::Shortcut(Shortcut::Reply)),
         Key::r | Key::R => Some(AppMsg::Shortcut(Shortcut::ReplyAll)),
         Key::u | Key::U if !shift => Some(AppMsg::ViewSource),
+        Key::k | Key::K if !shift => Some(AppMsg::CommandPalette),
         _ => None,
     }
 }
+
+/// Gmail's keys (#392), shown in place of the first two sections of
+/// `SHORTCUT_HELP` when Settings turns them on.
+const GMAIL_HELP: &[(&str, &[(&str, &str)])] = &[
+    (
+        i18n_noop("Move around"),
+        &[
+            ("j  /  k", i18n_noop("Move down or up the list without opening")),
+            ("o  or  Enter", i18n_noop("Open the message the cursor is on")),
+            ("u", i18n_noop("Back to the message list")),
+            ("n  /  p", i18n_noop("Next or previous message in the conversation")),
+            ("g  i  /  g  s  /  g  t  /  g  d  /  g  a", i18n_noop("Go to Inbox, Starred, Sent, Drafts or Archive")),
+            ("g  c", i18n_noop("Go to Contacts")),
+            ("/", i18n_noop("Search")),
+        ],
+    ),
+    (
+        i18n_noop("Act on a message"),
+        &[
+            ("r", i18n_noop("Reply")),
+            ("a", i18n_noop("Reply to all")),
+            ("f", i18n_noop("Forward")),
+            ("e", i18n_noop("Archive")),
+            ("#", i18n_noop("Delete")),
+            ("!", i18n_noop("Mark as spam")),
+            ("s", i18n_noop("Star or unstar")),
+            ("Shift+I", i18n_noop("Mark as read")),
+            ("Shift+U  or  _", i18n_noop("Mark as unread")),
+            ("x", i18n_noop("Select this row (for a bulk action)")),
+            ("*  a  /  *  n", i18n_noop("Select every row, or none")),
+            ("v", i18n_noop("Move to a folder")),
+            ("l", i18n_noop("Tags")),
+            ("z", i18n_noop("Undo the last action")),
+            ("1 … 9", i18n_noop("Add or remove a tag (the first nine, in Settings order)")),
+            ("c", i18n_noop("Compose")),
+        ],
+    ),
+];
 
 /// Every shortcut with its key and description, for the reference window.
 const SHORTCUT_HELP: &[(&str, &[(&str, &str)])] = &[
@@ -21363,6 +21969,7 @@ const SHORTCUT_HELP: &[(&str, &[(&str, &str)])] = &[
             ("Ctrl+Shift+C", i18n_noop("Console mode (when enabled in Settings)")),
             ("Ctrl+W", i18n_noop("Close the window (background sync keeps running)")),
             ("Ctrl+Q", i18n_noop("Quit Hylki entirely")),
+            ("Ctrl+K", i18n_noop("Command palette: search actions, folders and tags")),
             ("?  or  Ctrl+?  or  F1", i18n_noop("This list")),
         ],
     ),
@@ -21442,6 +22049,48 @@ fn set_split_shrink(split: &gtk::Paned, bottom: bool, shrink: bool) {
 /// The demo's stand-in accounts as last edited in the Accounts panel, or
 /// the stock ones. The stand-in secret is not serialised, so it is put
 /// back on load (the editor will not save an account without one).
+/// Whether saving `new` over `old` changes only what the app itself draws
+/// or puts in the composer: the signature, the color, emoji or picture, the
+/// Gravatar switch, the label, or a place in the unified section. Workers
+/// never read those, so the account need not reconnect for them (#382). A
+/// password counts as changed unless it is the one already stored.
+fn display_only_change(old: &AccountConfig, new: &AccountConfig) -> bool {
+    let mut probe = new.clone();
+    probe.signature = old.signature.clone();
+    probe.signature_html = old.signature_html;
+    probe.color = old.color.clone();
+    probe.emoji = old.emoji.clone();
+    probe.avatar = old.avatar.clone();
+    probe.gravatar = old.gravatar;
+    probe.label = old.label.clone();
+    probe.in_unified = old.in_unified;
+    // Compared as values: a map's order on the way out is no change.
+    let same = match (toml::Value::try_from(&probe), toml::Value::try_from(old)) {
+        (Ok(a), Ok(b)) => a == b,
+        _ => false,
+    };
+    if !same {
+        return false;
+    }
+    // The editor hands every secret back, read from the keyring, while the
+    // config in hand may hold none: compare with what is stored.
+    let kept = |new: &str, old: &str, stored: &dyn Fn() -> Option<String>| {
+        new.is_empty() || new == old || stored().as_deref() == Some(new)
+    };
+    kept(&new.password, &old.password, &|| config::load_password(&old.email))
+        && kept(&new.smtp_password, &old.smtp_password, &|| config::load_smtp_password(&old.email))
+        && kept(&new.oauth_refresh, &old.oauth_refresh, &|| config::load_oauth_refresh(&old.email))
+        && new.aliases.iter().all(|alias| {
+            let addr = alias.address();
+            let before = old
+                .aliases
+                .iter()
+                .find(|a| a.address().eq_ignore_ascii_case(&addr))
+                .map_or("", |a| a.smtp_password.as_str());
+            kept(&alias.smtp_password, before, &|| config::load_alias_smtp_password(&old.email, &addr))
+        })
+}
+
 fn demo_account_configs_saved() -> Vec<AccountConfig> {
     match config::load_demo_accounts() {
         Some(mut saved) => {
@@ -21499,6 +22148,7 @@ fn demo_account_configs() -> Vec<AccountConfig> {
         server_saves_sent: false,
         empty_junk_days: 0,
         empty_trash_days: 0,
+        clean_lists_days: 0,
         pgp_key: None,
         in_unified: true,
         folder_sort: None,
@@ -21661,6 +22311,58 @@ pub fn queue_attach_files(paths: Vec<std::path::PathBuf>) {
         None => ATTACH_PENDING.lock().unwrap().push(paths),
     }
 }
+
+/// Remove downloaded mail older than `days` (#394), off the main thread;
+/// 0 keeps it all.
+fn prune_downloads(days: u32) {
+    if days == 0 {
+        return;
+    }
+    let before = crate::datefmt::now() - i64::from(days) * 86_400;
+    std::thread::spawn(move || {
+        match crate::cache::Cache::open().and_then(|c| c.remove_downloaded(Some(before))) {
+            Ok(0) => {}
+            Ok(n) => tracing::info!("storage: removed {n} downloaded message(s) older than {days} days"),
+            Err(e) => tracing::warn!("storage: could not remove old downloaded mail: {e}"),
+        }
+    });
+}
+
+/// Message files that arrived before the component was up (see `MAILTO_PENDING`).
+static FILE_PENDING: std::sync::Mutex<Vec<std::path::PathBuf>> = std::sync::Mutex::new(Vec::new());
+
+/// Route a message file (.eml) to the app (from main's `connect_open`, #398).
+pub fn queue_message_file(path: std::path::PathBuf) {
+    match MAILTO_SENDER.get() {
+        Some(s) => {
+            let _ = s.send(AppMsg::OpenMessageFile(path));
+        }
+        None => FILE_PENDING.lock().unwrap().push(path),
+    }
+}
+
+/// The name Save as File offers: the subject, without what a file name
+/// cannot hold, and `.eml`.
+fn eml_file_name(subject: &str) -> String {
+    let stem: String = subject
+        .chars()
+        .map(|c| if matches!(c, '/' | '\\' | ':' | '*' | '?' | '"' | '<' | '>' | '|') || c.is_control() { '-' } else { c })
+        .collect();
+    let stem = stem.trim().trim_matches('.');
+    let stem: String = stem.chars().take(80).collect();
+    if stem.is_empty() { "message.eml".to_string() } else { format!("{stem}.eml") }
+}
+
+/// Whether a file handed in is a message to read rather than one to attach:
+/// a `.eml`, the usual name for a message saved whole, or Outlook's `.msg`
+/// (#398).
+pub fn is_message_file(path: &std::path::Path) -> bool {
+    path.extension().is_some_and(|e| e.eq_ignore_ascii_case("eml") || e.eq_ignore_ascii_case("msg"))
+}
+
+/// The folder id a message read from a file carries (#398): no folder has
+/// it, so nothing moves, deletes or refetches the message.
+pub const FILE_FOLDER: u32 = u32::MAX;
 
 /// `mid:` links that arrived before the component was up (see `MAILTO_PENDING`).
 static MID_PENDING: std::sync::Mutex<Vec<String>> = std::sync::Mutex::new(Vec::new());
@@ -23189,6 +23891,29 @@ fn next_after_vanish(
 
 #[cfg(test)]
 mod tests {
+    /// Saving a new signature or color leaves the account connected (#382);
+    /// a server, a name or a new password reconnects it.
+    #[test]
+    fn display_only_account_edits() {
+        let old = super::demo_account_configs().remove(0);
+        let mut new = old.clone();
+        new.signature = Some("Jason".into());
+        new.color = Some("#ff0000".into());
+        new.in_unified = !old.in_unified;
+        // The editor hands the secret back; the same one is no change.
+        new.password = old.password.clone();
+        assert!(super::display_only_change(&old, &new));
+        let mut host = new.clone();
+        host.imap_host = "imap.elsewhere.org".into();
+        assert!(!super::display_only_change(&old, &host));
+        let mut name = new.clone();
+        name.name = "Someone Else".into();
+        assert!(!super::display_only_change(&old, &name));
+        let mut alias = new.clone();
+        alias.aliases.push(crate::config::AliasConfig { identity: "me@alias.org".into(), ..Default::default() });
+        assert!(!super::display_only_change(&old, &alias));
+    }
+
     /// A copy to edit carries the message's own content, not a quote of it:
     /// the HTML survives its sanitizing, and plain text becomes a paragraph
     /// with its line breaks kept.
@@ -23670,6 +24395,41 @@ mod tests {
         assert_eq!(next_after_vanish(None, &after, 8), None);
         // Nothing left at all.
         assert_eq!(next_after_vanish(Some(&previous), &[], 8), None);
+    }
+
+    #[test]
+    fn save_as_file_offers_the_subject() {
+        assert_eq!(super::eml_file_name("Re: Q3 roadmap / review?"), "Re- Q3 roadmap - review-.eml");
+        assert_eq!(super::eml_file_name("   "), "message.eml");
+        assert_eq!(super::eml_file_name("..."), "message.eml");
+        assert!(super::is_message_file(std::path::Path::new("/tmp/A.EML")));
+        assert!(!super::is_message_file(std::path::Path::new("/tmp/a.pdf")));
+    }
+
+    #[test]
+    fn gmail_map_matches_gmail() {
+        use gtk::gdk::Key;
+        assert_eq!(gmail_shortcut_for(Key::j, false), Some(Shortcut::MoveCursor(1)));
+        assert_eq!(gmail_shortcut_for(Key::k, false), Some(Shortcut::MoveCursor(-1)));
+        assert_eq!(gmail_shortcut_for(Key::o, false), Some(Shortcut::OpenCursor));
+        assert_eq!(gmail_shortcut_for(Key::e, false), Some(Shortcut::Archive));
+        assert_eq!(gmail_shortcut_for(Key::numbersign, true), Some(Shortcut::Delete));
+        assert_eq!(gmail_shortcut_for(Key::a, false), Some(Shortcut::ReplyAll));
+        assert_eq!(gmail_shortcut_for(Key::U, true), Some(Shortcut::MarkRead(false)));
+        assert_eq!(gmail_shortcut_for(Key::underscore, true), Some(Shortcut::MarkRead(false)));
+        assert_eq!(gmail_shortcut_for(Key::I, true), Some(Shortcut::MarkRead(true)));
+        assert_eq!(gmail_shortcut_for(Key::n, false), Some(Shortcut::NextInThread));
+        assert_eq!(gmail_shortcut_for(Key::_3, false), Some(Shortcut::Tag(3)));
+        // Hylki's own keys that Gmail does not have stay off.
+        assert_eq!(gmail_shortcut_for(Key::d, false), None);
+        assert_eq!(gmail_shortcut_for(Key::w, false), None);
+        assert_eq!(gmail_sequence('g', Key::i), Some(Shortcut::GoTo(GoTarget::Kind(FolderKind::Inbox))));
+        assert_eq!(gmail_sequence('g', Key::t), Some(Shortcut::GoTo(GoTarget::Kind(FolderKind::Sent))));
+        assert_eq!(gmail_sequence('*', Key::a), Some(Shortcut::SelectAll));
+        assert_eq!(gmail_sequence('g', Key::q), None);
+        // The reader keeps what scrolls it, and only that.
+        assert!(reader_keeps(Key::space) && reader_keeps(Key::Down));
+        assert!(!reader_keeps(Key::r) && !reader_keeps(Key::j));
     }
 
     #[test]

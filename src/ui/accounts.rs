@@ -284,6 +284,9 @@ struct AliasDialog {
 
 #[derive(Debug)]
 pub enum AccountsInput {
+    /// Read GNOME Online Accounts again, for accounts added there since the
+    /// list was made: the refresh button, and GOA saying one was added.
+    RefreshGoa,
     /// An account's folder order was changed from the sidebar: this copy of
     /// the account, and its editor if open, follow, so saving the editor
     /// later doesn't put the old order back.
@@ -533,7 +536,12 @@ const SENT_COPY_HINT: &str =
 /// account is offered again and re-importing repairs it. Accounts GOA can
 /// neither serve IMAP nor Graph mail for can never connect and aren't listed.
 fn importable_goa_accounts(configured: &[AccountConfig]) -> Vec<crate::goa::GoaMailAccount> {
-    crate::goa::list_mail_accounts()
+    importable_of(crate::goa::list_mail_accounts(), configured)
+}
+
+/// The importable ones among `listed` (see [`importable_goa_accounts`]).
+fn importable_of(listed: Vec<crate::goa::GoaMailAccount>, configured: &[AccountConfig]) -> Vec<crate::goa::GoaMailAccount> {
+    listed
         .into_iter()
         .filter(|g| {
             !configured.iter().any(|a| {
@@ -557,6 +565,9 @@ pub enum AccountsCmd {
     OAuth(Result<(String, Option<(String, String)>), String>),
     /// Alias SMTP test result (#34).
     AliasTested(Result<(), String>),
+    /// GNOME Online Accounts read again: its mail accounts, for the import
+    /// list.
+    GoaListed(Vec<crate::goa::GoaMailAccount>),
     /// An account's secrets, read from the keyring for its editor.
     Secrets(AccountSecrets),
     /// The Gravatar looked up for the address in the editor (#189).
@@ -702,10 +713,20 @@ impl Component for AccountsWindow {
                                     // Cloud Storage panels place theirs.
                                     #[wrap(Some)]
                                     set_header_suffix = &gtk::Box {
-                                        set_orientation: gtk::Orientation::Vertical,
+                                        set_orientation: gtk::Orientation::Horizontal,
+                                        set_spacing: 6,
                                         set_valign: gtk::Align::Start,
                                         set_halign: gtk::Align::End,
                                         set_margin_start: 24,
+                                        // An account just added in GNOME
+                                        // Settings, without waiting for GOA
+                                        // to say so.
+                                        #[name = "goa_refresh_btn"]
+                                        gtk::Button {
+                                            set_icon_name: "view-refresh-symbolic",
+                                            set_tooltip_text: Some(&i18n("Check GNOME Online Accounts for new accounts")),
+                                            connect_clicked => AccountsInput::RefreshGoa,
+                                        },
                                         gtk::Button {
                                             set_label: &i18n("Add Account…"),
                                             set_size_request: (130, -1),
@@ -1536,6 +1557,15 @@ impl Component for AccountsWindow {
                                     set_subtitle: &i18n("Delete mail in the Trash older than this for \
                                                    good, checked at each sync."),
                                 },
+                                // Mailing-list mail past the chosen age goes
+                                // to the Trash (#407).
+                                #[name = "clean_lists_row"]
+                                adw::ComboRow {
+                                    set_title: &i18n("Move list mail to Trash"),
+                                    set_subtitle: &i18n("Inbox mail from mailing lists and newsletters \
+                                                   (anything with an unsubscribe link) older than this, \
+                                                   unless starred. Checked at each sync."),
+                                },
                             },
 
                             // Its own folder order, or Settings → Sidebar's.
@@ -1834,6 +1864,10 @@ impl Component for AccountsWindow {
             row.set_model(Some(&gtk::StringList::new(&empty_labels)));
             row.set_list_factory(Some(&non_ellipsizing_factory()));
         }
+        let list_labels = age_labels(CLEAN_LISTS_DAYS);
+        let list_labels: Vec<&str> = list_labels.iter().map(String::as_str).collect();
+        widgets.clean_lists_row.set_model(Some(&gtk::StringList::new(&list_labels)));
+        widgets.clean_lists_row.set_list_factory(Some(&non_ellipsizing_factory()));
 
         // Show the SMTP credential fields only when the toggle is on.
         widgets
@@ -1904,6 +1938,15 @@ impl Component for AccountsWindow {
         match message {
             AccountsInput::ShowPage(id) => {
                 widgets.list_stack.set_visible_child_name(&id);
+            }
+            AccountsInput::RefreshGoa => {
+                // Off the main thread: GOA answers over D-Bus, and a busy
+                // goa-daemon is slow to.
+                widgets.goa_refresh_btn.set_sensitive(false);
+                sender.oneshot_command(async move {
+                    let listed = tokio::task::spawn_blocking(crate::goa::list_mail_accounts).await.unwrap_or_default();
+                    AccountsCmd::GoaListed(listed)
+                });
             }
             AccountsInput::CloseEditor => {
                 if widgets
@@ -3007,6 +3050,13 @@ impl Component for AccountsWindow {
                 }
             }
 
+            AccountsCmd::GoaListed(listed) => {
+                widgets.goa_refresh_btn.set_sensitive(true);
+                self.goa = importable_of(listed, &self.accounts);
+                self.rebuild_goa_list(&widgets.goa_list, &sender);
+                widgets.goa_group.set_visible(!self.goa.is_empty());
+            }
+
             AccountsCmd::Secrets(secrets) => {
                 // Still editing that account: fill in what the user hasn't
                 // typed over meanwhile.
@@ -3798,6 +3848,9 @@ impl AccountsWindow {
             _ => form_protocol(widgets),
         };
         widgets.push_row.set_visible(matches!(protocol, Protocol::Imap | Protocol::Jmap));
+        // The list-mail search is a server search for a header, which
+        // Microsoft 365 does not offer and POP3 has no folders for.
+        widgets.clean_lists_row.set_visible(matches!(protocol, Protocol::Imap | Protocol::Jmap));
     }
 
     fn apply_provider(&self, widgets: &AccountsWindowWidgets) {
@@ -4267,6 +4320,10 @@ fn read_account(
             .get(widgets.empty_trash_row.selected() as usize)
             .copied()
             .unwrap_or(0),
+        clean_lists_days: CLEAN_LISTS_DAYS
+            .get(widgets.clean_lists_row.selected() as usize)
+            .copied()
+            .unwrap_or(0),
         // Row 0 is Automatic; the rest follow PGP_KEY_CHOICES. Until gpg
         // has answered, the account keeps the key it had.
         pgp_key: PGP_KEY_CHOICES.with(|c| {
@@ -4381,9 +4438,17 @@ fn auto_empty_index(days: u32) -> u32 {
     AUTO_EMPTY_DAYS.iter().position(|d| *d == days).unwrap_or(0) as u32
 }
 
+/// Moving list mail to the Trash (#407): never, then the ages.
+const CLEAN_LISTS_DAYS: &[u32] = &[0, 30, 60, 90, 180];
+
 /// The combo's labels, translated.
 fn auto_empty_labels() -> Vec<String> {
-    AUTO_EMPTY_DAYS
+    age_labels(AUTO_EMPTY_DAYS)
+}
+
+/// "Never", then "After N days" for each age.
+fn age_labels(days: &[u32]) -> Vec<String> {
+    days
         .iter()
         .map(|d| {
             if *d == 0 {
@@ -4483,6 +4548,9 @@ fn fill_editor(widgets: &AccountsWindowWidgets, acc: &AccountConfig) {
     });
     widgets.empty_junk_row.set_selected(auto_empty_index(acc.empty_junk_days));
     widgets.empty_trash_row.set_selected(auto_empty_index(acc.empty_trash_days));
+    widgets
+        .clean_lists_row
+        .set_selected(CLEAN_LISTS_DAYS.iter().position(|d| *d == acc.clean_lists_days).unwrap_or(0) as u32);
     fill_pgp_key_row(widgets, acc.pgp_key.as_deref());
     widgets.in_unified_row.set_active(acc.in_unified);
     widgets.folder_sort_row.set_selected(acc.folder_sort.map_or(0, |s| s.index() + 1));
@@ -4577,6 +4645,7 @@ fn clear_editor(widgets: &AccountsWindowWidgets) {
     widgets.push_row.set_selected(0);
     widgets.empty_junk_row.set_selected(0);
     widgets.empty_trash_row.set_selected(0);
+    widgets.clean_lists_row.set_selected(0);
     fill_pgp_key_row(widgets, None);
     widgets.in_unified_row.set_active(true);
     widgets.folder_sort_row.set_selected(0);

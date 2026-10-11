@@ -45,7 +45,9 @@ Any mail account set up in *GNOME Settings → Online Accounts* can be
 imported: Google, Microsoft 365 and plain **IMAP and SMTP** accounts alike.
 They are listed on the first-run wizard's first account page, which can be
 skipped, and under **Settings → Accounts → GNOME Online Accounts**, where a
-switch brings one into Hylki.
+switch brings one into Hylki. An account added in GNOME Settings while Hylki
+is open joins the list as soon as GNOME announces it; the refresh button
+beside **Add Account…** looks again at once.
 
 GNOME keeps such an account's address, servers and password, and Hylki
 follows it. The password is read from GNOME Online Accounts each time the
@@ -568,6 +570,15 @@ dashes and a space) between them, as Hylki did before 1.42. Thunderbird,
 Evolution and Mutt use that line to show the signature dimmed and to leave it
 out when they quote your message; Gmail, Apple Mail and Outlook ignore it.
 
+**Edit as New** leaves the signature out, since the copied message already
+has one. **Insert Signature**, the button beside Translate at the end of the
+formatting row, puts the From account's signature where the cursor is, on a
+line of its own. Right-click the button for **Insert Before the Text** or
+**Insert After the Text**, the top or the end of the message. A signature
+already in the message moves rather than doubling; one inside a quoted
+message is left alone. The button is there only for an account that has a
+signature.
+
 ### Replies and forwards
 
 A reply or a forward opens in the reading pane, beside the message it
@@ -986,6 +997,27 @@ gathers the files of every message in it. Its Reader View switch changes
 that window alone; the main window and the choice Hylki remembers stay as
 they were. **Ctrl+F** finds in the message and **Ctrl+P** prints it.
 
+### Message files (.eml and .msg)
+
+A message saved whole, as a `.eml` file or Outlook's `.msg`, opens in a
+window of its own:
+double-click it in GNOME Files (Hylki is offered for email files), pass it to
+`hylki` on the command line, or pick **Open Message File…** in the command
+palette (**Ctrl+K**). It is drawn as mail from a server is, with its
+attachments in the drawer, and **Reply**, **Reply All** and **Forward**
+write from the account in view. It belongs to no folder, so there is nothing
+to star, move or delete.
+
+**Save as File…**, in a message's right-click menu in the list or on its card,
+saves the message whole, as the server keeps it, under its subject with
+`.eml` on the end.
+
+A `.msg` keeps the headers the mail server sent when Outlook has them, and
+otherwise its sender, recipients, subject and date are read from the file.
+Its HTML or plain text, its attachments and the pictures in its text all
+come through. A message whose text Outlook kept only as RTF shows no text,
+and a message attached to it is left out.
+
 ### One message light or dark
 
 **Settings → Reading → Message appearance** draws every message light, dark
@@ -1108,6 +1140,44 @@ manager shows it, and so do the Dash to Dock and Dash to Panel extensions
 for GNOME; GNOME's own dash has no badges. **Settings → System → Unread count
 on the app icon** turns it off. Stored as `launcher_count` in `privacy.toml`.
 
+### Renderer
+
+**Settings → System → Renderer** chooses how the windows are drawn:
+**Automatic** (GTK's own choice, Vulkan where it works), **Vulkan**,
+**OpenGL** or **Software**. On older graphics hardware where Vulkan support
+is incomplete (Intel HD 4000 and its generation, for instance), OpenGL or
+Software can draw more reliably. The choice applies the next time Hylki
+starts. A `GSK_RENDERER` set for the session wins over it, so this still
+works:
+
+```sh
+flatpak override --user --env=GSK_RENDERER=gl co.hyprlab.Hylki
+```
+
+### Newsletters and list mail
+
+The Unsubscribe banner on mail from a list asks before it leaves the list, and
+can take the mail already received from that address to the Trash with it:
+tick **Also delete the messages from …** in that dialog.
+
+For the rest, each account's settings have **Move list mail to Trash**, under
+Syncing: Inbox mail with an unsubscribe link (a List-Unsubscribe header) that
+is older than 30, 60, 90 or 180 days goes to the Trash, checked at each sync
+and at most every six hours. Starred mail stays, and so does anything without
+the header, however old. It works for IMAP and JMAP accounts; Microsoft 365
+offers no way to search for the header, so the choice is not shown there.
+
+### Storage
+
+Messages and attachments that have been opened, or fetched ahead for the
+newest mail in each folder, are kept on the computer so they open at once and
+offline. **Settings → System → Storage** shows what they take up.
+**Remove…** clears them all; **Keep downloaded mail** (Always, a year, 90 days
+or 30 days) removes older ones a couple of minutes after Hylki starts and
+every six hours after. Either way the list of every message stays, so the
+message list and search are unchanged, and a removed message is fetched again
+when it is opened. Nothing on the server changes.
+
 ### Notifications
 
 A new-mail notification opens the message when clicked. When it is about a
@@ -1146,8 +1216,9 @@ live in the system keyring (secret-service), never in plain files.
 
 **Where things live.** Settings are TOML files in `~/.config/hylki/`
 (`accounts.toml`, `privacy.toml`, `filters.toml`, `tags.toml` and friends), the
-mail index and cached messages in `~/.cache/hylki/`, and account avatars in
-`~/.local/share/hylki/`. A Flatpak install keeps the same layout under
+mail index and cached messages in `~/.local/share/hylki/cache.db`, the web
+views' caches in `~/.cache/hylki/`, and account pictures in
+`~/.local/share/avatars/`. A Flatpak install keeps the same layout under
 `~/.var/app/co.hyprlab.Hylki/`. Nothing else on the computer is written to, and
 `./uninstall.sh --purge` (or removing those directories) takes it all away.
 

@@ -51,7 +51,8 @@ The full list. The [README](../README.md) carries a shorter one.
 - **Unified and filtered folders:** Inboxes, Starred, Sent, Drafts, Archive,
   Junk and Trash across accounts, plus a folder per filter and any folders
   you keep in Favorites.
-- **Empty Trash and Junk**, by hand or automatically after a number of days.
+- **Empty Trash and Junk**, by hand or automatically after a number of days,
+  and move old newsletter and mailing-list mail out of the Inbox the same way.
 - **Attachment gallery:** every attachment in an account or folder in one
   place, with PDF first-page thumbnails, scoped by account and folder, and a
   deep archive scan that finds old attachments without downloading them.
@@ -127,7 +128,8 @@ The full list. The [README](../README.md) carries a shorter one.
   the language of the message you are answering. See
   [Translating messages](DOCUMENTATION.md#translating-messages).
 - **One-click unsubscribe:** a banner on list mail that leaves the list for
-  you, by request or by email, without a browser where the list allows it.
+  you, by request or by email, without a browser where the list allows it,
+  and can delete the mail already received from the same address.
 - **OpenPGP:** read encrypted and signed mail, sign and encrypt what you
   send, and manage keys from Settings, through the GnuPG already on your
   computer. See [OpenPGP](DOCUMENTATION.md#openpgp-encrypted-and-signed-mail).
