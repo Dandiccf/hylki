@@ -491,7 +491,12 @@ so a directory set up in Evolution is listed here as well, and one added
 here shows in Evolution. Removing one removes it for both.
 
 - **Server** and **Port**: 389 for StartTLS or no encryption, 636 for TLS
-  (LDAPS). The port follows the encryption unless you set another.
+  (LDAPS). The port follows the encryption unless you set another. A server
+  written as a URL, such as `ldaps://ldap.example.com:636`, sets the
+  encryption and the port from it.
+- **Encryption**: StartTLS checks the server's certificate against the
+  system's trusted certificates, so a server with a self-signed one needs
+  TLS (LDAPS), which Evolution Data Server connects to without that check.
 - **Search base**: where in the directory people are, such as
   `ou=people,dc=example,dc=com`. **Search** takes the whole tree under it or
   only its first level.
@@ -502,7 +507,8 @@ here shows in Evolution. Removing one removes it for both.
   for it.
 
 Saving checks the connection and says whether the directory answered, or
-why not (a password it refused, a server it could not reach). The Flatpak
+why not (a password it refused, a server it could not reach or find, TLS
+that could not start). The check gives up after 30 seconds. The Flatpak
 reaches the desktop's Evolution Data Server, which has to be installed on
 the system, as it is with GNOME.
 
@@ -1021,11 +1027,14 @@ and a message attached to it is left out.
 ### One message light or dark
 
 **Settings → Reading → Message appearance** draws every message light, dark
-or as the system is. With **Light / Dark Mode switch**, in the same group,
-the message header gets a switch that draws the message on screen in the
-other scheme, for that message alone, until Hylki is closed. In a
-conversation the choice follows the message the conversation was opened on.
-It works in a message's own window too. The switch is off by default.
+or as the system is. The message header has a switch beside Reader View
+that draws the message on screen in the other scheme, for that message
+alone, until Hylki is closed. The switch starts off for every message; on
+draws the message opposite the theme. A message keeps the scheme chosen for
+it when the theme changes afterwards, and the switch then reads off if the
+message matches the new theme. In a conversation the choice follows the
+message the conversation was opened on. It works in a message's own window
+too. **Light / Dark Mode switch**, in the same group, hides the switch.
 
 ### Printing
 
@@ -1120,6 +1129,15 @@ launcher: the default, the same envelope on a blue, navy or yellow square,
 or the classic icon. An icon set on the launcher some other way, with a menu
 editor or by editing its `.desktop` file, is left alone when Hylki starts;
 Settings says so above the gallery, and picking an icon there replaces it.
+
+### Icons
+
+Hylki draws its icons, and those of the buttons, arrows and checkmarks GTK
+draws for it, from copies built into the app, so it looks the same on every
+desktop whatever icon theme is set. **Settings → Appearance → Use the
+desktop's icons** draws them from the desktop's icon theme instead, with
+Hylki's copies standing in for any icon the theme lacks. It applies at once
+and is stored as `desktop_icons` in `privacy.toml`.
 
 ### New and seen unread mail
 

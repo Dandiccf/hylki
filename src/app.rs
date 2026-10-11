@@ -55,6 +55,12 @@ const READER_MIN_WIDTH: i32 = 400;
 /// and read mail used to turn unread again in the meantime (#255).
 const PENDING_SEEN_MAX: std::time::Duration = std::time::Duration::from_secs(60);
 
+/// The same for a tag, which the worker confirms: a confirmed tag still
+/// wins for a few seconds over a list another connection fetched before
+/// the STORE, and an unconfirmed one for as long as a busy queue can take.
+const PENDING_TAG_MAX: std::time::Duration = std::time::Duration::from_secs(300);
+const PENDING_TAG_SETTLED: std::time::Duration = std::time::Duration::from_secs(10);
+
 /// How wide the list pane has to be dragged before Automatic lays the list
 /// out on one line, and how far back before it returns to cards (#334).
 const LIST_WIDE_ON: i32 = 600;
@@ -590,8 +596,8 @@ pub struct AppModel {
     /// ahead of the STORE still shows the old state; while an entry is
     /// young the app's own state for that message and folder wins over it.
     pending_seen: HashMap<(u32, String, u32), (bool, std::time::Instant)>,
-    /// (account, folder path, uid, lower-cased keyword) → (on, when sent):
-    /// the same for tags. A folder list fetched ahead of the STORE took a
+    /// (account, folder path, uid, lower-cased keyword) → (on, held until,
+    /// keyword): the same for tags. A folder list fetched ahead of the STORE took a
     /// tag just set off the row until the next sync put it back.
     pending_tags: HashMap<(u32, String, u32, String), (bool, std::time::Instant, String)>,
     /// Folders (account, folder) whose server unread count arrived while a
@@ -950,6 +956,8 @@ pub struct AppModel {
     reader_switch: bool,
     /// The Light / Dark Mode switch is shown in the reader header (PR #386).
     theme_switch: bool,
+    /// Icons come from the desktop's icon theme, not Hylki's own (Settings).
+    desktop_icons: bool,
     /// What Reader View does when a message is opened (Settings).
     reader_default: config::ReaderDefault,
     /// Each conversation message lists its own attachments (#213).
@@ -1078,6 +1086,9 @@ pub struct AppModel {
     /// Every message currently selected (list rows or reader cards), newest
     /// report wins. Lets the toolbar's Delete act on the whole multi-selection.
     list_selection: Vec<(u32, u32)>,
+    /// The list's own selection as it last reported it; `list_selection`
+    /// also follows the reader's cards.
+    list_heard: Vec<(u32, u32)>,
     /// Undoable actions (#200): moves, flag changes, and folder creates and
     /// renames, newest last. Unlimited: entries are a few strings each.
     /// Ctrl+Z pops one, applies it, and pushes its inverse onto `redo_stack`.
@@ -1743,6 +1754,9 @@ pub enum AppMsg {
     SetTagMany { messages: Vec<Message>, keyword: String, add: bool },
     /// The reader toolbar's tag menu: toggle a tag on the reader's target.
     ToggleTagCurrent(String),
+    /// A tag's number key, with the list rows selected when it was pressed
+    /// (#416).
+    TagKey { n: u8, keys: Vec<(u32, u32)> },
     /// Put the reader's target back in its Inbox (from Trash or Junk, #138).
     MoveToInbox,
     /// Pop the tag menu on the reader toolbar's tag button.
@@ -1808,6 +1822,7 @@ pub enum AppMsg {
     /// The worker stored (or failed to store) a read/unread change the app
     /// had applied ahead of it.
     SeenSettled { account_id: u32, path: String, uid: u32 },
+    TagSettled { account_id: u32, path: String, uid: u32, keyword: String },
     /// The worker has run (or failed) the move that took these messages
     /// out of `path`: its lists can be believed about them again.
     MovesSettled { account_id: u32, path: String, uids: Vec<u32> },
@@ -2569,7 +2584,7 @@ impl SimpleComponent for AppModel {
         // Every setting in privacy.toml, read once.
         let prefs = config::load_privacy();
         relm4::set_global_css(include_str!("styles.css"));
-        register_icons();
+        register_icons(prefs.desktop_icons);
         // Before install_scheme_css and before the reader exists: both read
         // the theme's colors back, and both listen for the light/dark flip
         // that swaps a theme's two palettes — GTK runs those handlers in
@@ -3102,6 +3117,7 @@ impl SimpleComponent for AppModel {
             popouts: HashMap::new(),
             current_thread: Vec::new(),
             list_selection: Vec::new(),
+            list_heard: Vec::new(),
             undo_stack: Vec::new(),
             redo_stack: Vec::new(),
             compose_history: (None, None),
@@ -3300,6 +3316,7 @@ impl SimpleComponent for AppModel {
             zoom_default: config::load_reader_zoom(),
             reader_switch: prefs.reader_switch,
             theme_switch: prefs.theme_switch,
+            desktop_icons: prefs.desktop_icons,
             reader_default: prefs.reader_default,
             card_attachments: prefs.card_attachments,
             drawer_enabled: prefs.attachment_drawer,
@@ -4188,6 +4205,12 @@ impl SimpleComponent for AppModel {
             let window = root.clone();
             let enabled = model.single_key.clone();
             let gmail = model.gmail_keys.clone();
+            let probe = model.message_list.model().selection_probe();
+            // A tag key carries the rows selected as it is pressed (#416).
+            let shortcut = move |action: Shortcut| match action {
+                Shortcut::Tag(n) => AppMsg::TagKey { n, keys: probe.keys() },
+                action => AppMsg::Shortcut(action),
+            };
             // The first key of a Gmail sequence (g or *) and when it came.
             let pending: std::rc::Rc<std::cell::Cell<Option<(char, std::time::Instant)>>> = Default::default();
             keys.connect_key_pressed(move |_, keyval, _, state| {
@@ -4264,7 +4287,7 @@ impl SimpleComponent for AppModel {
                     let first = pending.take().filter(|(_, at)| at.elapsed() < std::time::Duration::from_millis(1500));
                     if let Some((first, _)) = first {
                         if let Some(action) = gmail_sequence(first, keyval) {
-                            s.input(AppMsg::Shortcut(action));
+                            s.input(shortcut(action));
                         }
                         return gtk::glib::Propagation::Stop;
                     }
@@ -4279,7 +4302,7 @@ impl SimpleComponent for AppModel {
                     }
                     return match gmail_shortcut_for(keyval, shift) {
                         Some(action) => {
-                            s.input(AppMsg::Shortcut(action));
+                            s.input(shortcut(action));
                             gtk::glib::Propagation::Stop
                         }
                         None => gtk::glib::Propagation::Proceed,
@@ -4287,7 +4310,7 @@ impl SimpleComponent for AppModel {
                 }
                 match shortcut_for(keyval, shift) {
                     Some(action) => {
-                        s.input(AppMsg::Shortcut(action));
+                        s.input(shortcut(action));
                         gtk::glib::Propagation::Stop
                     }
                     None => gtk::glib::Propagation::Proceed,
@@ -8228,6 +8251,11 @@ impl SimpleComponent for AppModel {
                     }
                 }
             }
+            AppMsg::Pref(PrefOutput::SetDesktopIcons(on)) => {
+                if pref!(self.desktop_icons = on) {
+                    apply_icon_theme(on);
+                }
+            }
             AppMsg::Pref(PrefOutput::SetReaderDefault(policy)) => {
                 if pref!(self.reader_default = policy) {
                     // Focus Mode's Reader View outranks it while on.
@@ -9421,20 +9449,29 @@ impl SimpleComponent for AppModel {
             }
 
             AppMsg::ToggleTagCurrent(keyword) => {
-                // Several selected: the tag goes on all of them, or comes off
-                // all of them once every one carries it (#313).
-                let many = self.multi_selection();
-                if !many.is_empty() {
-                    let add = !many.iter().all(|m| m.has_keyword(&keyword));
-                    let what = self.tag_label(&keyword, add);
-                    self.user_set_flags(what, &many, FlagKind::Tag(keyword), add);
+                let targets = self.selected_targets();
+                self.toggle_tag(keyword, &targets);
+            }
+
+            AppMsg::TagKey { n, keys } => {
+                // Settings order, first nine. A number past the list does
+                // nothing rather than something surprising.
+                let Some(keyword) = self.tags.get(usize::from(n).saturating_sub(1)).map(|t| t.keyword.clone()) else {
                     return;
-                }
-                if let Some(m) = self.reply_target() {
-                    let add = !m.has_keyword(&keyword);
-                    let what = self.tag_label(&keyword, add);
-                    self.user_set_flags(what, &[m], FlagKind::Tag(keyword), add);
-                }
+                };
+                // Arrowing quickly, the key can arrive before the app has
+                // heard the list moved: the rows selected at the key press are
+                // the ones meant, or the tag lands on the row before and the
+                // next press takes it back off (#416).
+                let targets = if !keys.is_empty() && keys != self.list_heard && keys != self.list_selection {
+                    keys.iter()
+                        .filter_map(|&(account_id, id)| self.shown_copy(account_id, id))
+                        .filter(|m| self.outbox_item(m.account_id, m.id).is_none())
+                        .collect()
+                } else {
+                    self.selected_targets()
+                };
+                self.toggle_tag(keyword, &targets);
             }
 
             AppMsg::ReaderTagMenu => {
@@ -10213,6 +10250,13 @@ impl SimpleComponent for AppModel {
                 }
             }
 
+            AppMsg::TagSettled { account_id, path, uid, keyword } => {
+                let soon = std::time::Instant::now() + PENDING_TAG_SETTLED;
+                if let Some((_, until, _)) = self.pending_tags.get_mut(&(account_id, path, uid, keyword.to_lowercase())) {
+                    *until = (*until).min(soon);
+                }
+            }
+
             AppMsg::RawExported { token, raw } => {
                 if let Some(name) = self.pending_saves.remove(&token) {
                     match raw {
@@ -10847,6 +10891,7 @@ impl SimpleComponent for AppModel {
             }
 
             AppMsg::SelectionKeys(keys) => {
+                self.list_heard = keys.clone();
                 self.list_selection = keys.clone();
                 self.selection_from_cards = false;
                 self.message_view.emit(MessageViewInput::SetSelectedCards(keys));
@@ -11579,6 +11624,7 @@ impl AppModel {
             reader_mode: self.reader_mode,
             reader_switch: self.reader_switch,
             theme_switch: self.theme_switch,
+            desktop_icons: self.desktop_icons,
             reader_default: self.reader_default,
             reader_zoom: self.zoom_default,
             card_attachments: self.card_attachments,
@@ -14696,6 +14742,8 @@ impl AppModel {
                     .unwrap_or_default();
                 if !from_disk.is_empty() {
                     let from_disk = self.merge_local_tags(*account_id, from_disk);
+                    let from_disk = self.apply_pending_seen(*account_id, *folder_id, from_disk);
+                    let from_disk = self.apply_pending_tags(*account_id, *folder_id, from_disk);
                     self.message_cache.insert((*account_id, *folder_id), from_disk);
                 }
             }
@@ -14969,7 +15017,8 @@ impl AppModel {
     /// [`apply_pending_seen`] for tags: a list fetched before a tag reached
     /// the server keeps the tag as the user just set it.
     fn apply_pending_tags(&mut self, account_id: u32, folder_id: u32, mut messages: Vec<Message>) -> Vec<Message> {
-        self.pending_tags.retain(|_, (_, at, _)| at.elapsed() < PENDING_SEEN_MAX);
+        let now = std::time::Instant::now();
+        self.pending_tags.retain(|_, (_, until, _)| *until > now);
         if !self.pending_tags.keys().any(|(a, _, _, _)| *a == account_id) {
             return messages;
         }
@@ -18151,6 +18200,10 @@ impl AppModel {
         let Some(folders) = self.folders.get(&account_id) else {
             return String::new();
         };
+        Self::infer_folder_namespace(folders)
+    }
+
+    fn infer_folder_namespace(folders: &[Folder]) -> String {
         let delim = folders
             .iter()
             .find_map(|f| f.path.chars().find(|c| matches!(c, '/' | '.' | '\\')))
@@ -18160,7 +18213,9 @@ impl AppModel {
             folders.iter().filter(|f| f.kind == FolderKind::Custom).collect();
         if !customs.is_empty()
             && customs.iter().all(|f| {
-                f.path.len() >= root.len() && f.path[..root.len()].eq_ignore_ascii_case(&root)
+                f.path
+                    .get(..root.len())
+                    .is_some_and(|prefix| prefix.eq_ignore_ascii_case(&root))
             })
         {
             root
@@ -18820,6 +18875,27 @@ impl AppModel {
         self.tag_provider.load(css);
     }
 
+    /// What a flag action means: every message of a multi-selection, else
+    /// the reply target.
+    fn selected_targets(&self) -> Vec<Message> {
+        let mut targets = self.multi_selection();
+        if targets.is_empty() {
+            targets.extend(self.reply_target());
+        }
+        targets
+    }
+
+    /// Toggle a tag on `targets`: on all of them, or off all of them once
+    /// every one carries it (#313).
+    fn toggle_tag(&mut self, keyword: String, targets: &[Message]) {
+        if targets.is_empty() {
+            return;
+        }
+        let add = !targets.iter().all(|m| m.has_keyword(&keyword));
+        let what = self.tag_label(&keyword, add);
+        self.user_set_flags(what, targets, FlagKind::Tag(keyword), add);
+    }
+
     /// Put a tag on a message or take it off (#71): the server (or the local
     /// store, where the server keeps none), then every copy the UI holds —
     /// the list row, the reader, a pop-out — so nothing waits for a sync.
@@ -18830,7 +18906,7 @@ impl AppModel {
         let Some(path) = self.resolve_folder_path(m) else { return };
         self.pending_tags.insert(
             (m.account_id, path.clone(), m.uid, keyword.to_lowercase()),
-            (add, std::time::Instant::now(), keyword.to_string()),
+            (add, std::time::Instant::now() + PENDING_TAG_MAX, keyword.to_string()),
         );
         self.send_to(m.account_id, MailRequest::SetKeyword {
             path,
@@ -19022,6 +19098,7 @@ impl AppModel {
             single_message_card: self.single_message_card,
             reader_switch: self.reader_switch,
             theme_switch: self.theme_switch,
+            desktop_icons: self.desktop_icons,
             reader_default: self.reader_default,
             reader_zoom: self.zoom_default,
             card_attachments: self.card_attachments,
@@ -22838,17 +22915,41 @@ fn apply_app_theme(theme: config::AppTheme) {
     adw::StyleManager::default().set_color_scheme(scheme);
 }
 
-/// Register the app icon so windows and dialogs can find it by name.
+/// Hylki's icon theme: a name no theme on disk carries, so the user's icon
+/// theme is never consulted and the app looks the same on every desktop.
+/// Lookups fall through to hicolor, which holds the bundle below, GTK's and
+/// libadwaita's built-in icons, and the app icons of every installed app.
+const ICON_THEME: &str = "Hylki";
+
+/// Where the bundled icons sit in the app's GResource (registered in `main`).
+const ICON_RESOURCE: &str = "/co/hyprlab/Hylki/icons";
+
+/// Draw every icon from the copies built into the binary, and register the
+/// app icon so windows and dialogs can find it by name.
 ///
-/// Hylki's toolbar/list icons are shipped inside the binary as a GResource
-/// (registered in `main`), so they no longer depend on the host icon theme.
-/// GTK auto-adds the bundle's resource path (`/co/hyprlab/Hylki/icons`) to the
-/// default theme; we add it explicitly too, so lookups work even if that
-/// convention ever changes.
-fn register_icons() {
+/// The bundle (tools/gen-icon-gresource.sh) holds every icon Hylki names and
+/// every one GTK and libadwaita draw for their own widgets, as found on the
+/// build machine. Icons once followed the user's theme (#260); a theme that
+/// restyled some of them made the app look different from one distribution
+/// to the next, so by default none of them do. `desktop` (Settings →
+/// Appearance) gives the desktop's theme back, the bundle filling in what it
+/// lacks.
+fn register_icons(desktop: bool) {
+    apply_icon_theme(desktop);
     if let Some(display) = gtk::gdk::Display::default() {
         let theme = gtk::IconTheme::for_display(&display);
-        theme.add_resource_path("/co/hyprlab/Hylki/icons");
+        // Ahead of GTK's and libadwaita's own copies, so their widgets take
+        // the bundle's: those copies come with whatever GTK the system has.
+        let mut paths = vec![ICON_RESOURCE.to_string()];
+        paths.extend(
+            theme
+                .resource_path()
+                .into_iter()
+                .map(|p| p.to_string())
+                .filter(|p| p.trim_end_matches('/') != ICON_RESOURCE),
+        );
+        let paths: Vec<&str> = paths.iter().map(String::as_str).collect();
+        theme.set_resource_path(&paths);
         // Dev-only: lets the window/about app icon resolve when running from the
         // source tree (uninstalled). Silently ignored on installed systems.
         theme.add_search_path(concat!(env!("CARGO_MANIFEST_DIR"), "/data/icons"));
@@ -22859,18 +22960,21 @@ fn register_icons() {
             theme.add_search_path(std::path::Path::new(&home).join(".local/share/icons"));
         }
     }
-    // HYLKI_SHOWCASE_ICON_THEME=<name> draws the app in that icon theme, to
-    // check a theme's icons replace Hylki's and the bundle fills in any it
-    // lacks (#260).
-    if let (Ok(name), Some(settings)) =
-        (std::env::var("HYLKI_SHOWCASE_ICON_THEME"), gtk::Settings::default())
-    {
-        settings.set_gtk_icon_theme_name(Some(&name));
-    }
-    if let Some(display) = gtk::gdk::Display::default() {
-        crate::icon_fallback::install(&display);
-    }
     gtk::Window::set_default_icon_name(crate::APP_ID);
+}
+
+/// Draw icons from Hylki's own theme, or from the desktop's. Applies at once:
+/// GTK redraws every icon when the name changes.
+fn apply_icon_theme(desktop: bool) {
+    let Some(settings) = gtk::Settings::default() else { return };
+    if desktop {
+        // Back to whatever the desktop says, now and when it changes.
+        settings.reset_property("gtk-icon-theme-name");
+    } else {
+        // Set by the app, the name outranks the desktop's setting, now and
+        // whenever it changes: GTK would otherwise switch the theme back to it.
+        settings.set_gtk_icon_theme_name(Some(ICON_THEME));
+    }
 }
 
 /// One message being moved to another account (#265): copied out of its
@@ -23019,6 +23123,7 @@ fn map_event(account_id: u32, event: WorkerEvent) -> AppMsg {
             AppMsg::FolderUnreadByPath { account_id, path, unread }
         }
         WorkerEvent::SeenSettled { path, uid } => AppMsg::SeenSettled { account_id, path, uid },
+        WorkerEvent::TagSettled { path, uid, keyword } => AppMsg::TagSettled { account_id, path, uid, keyword },
         WorkerEvent::MovesSettled { path, uids } => AppMsg::MovesSettled { account_id, path, uids },
         WorkerEvent::RawExported { token, raw } => AppMsg::RawExported { token, raw },
         WorkerEvent::RawImported { token, result } => AppMsg::RawImported { token, result },
@@ -23778,11 +23883,11 @@ pub fn message_text(body: &str) -> String {
 }
 
 fn kind_label(kind: FolderKind) -> String {
-    i18n(match kind {
-        FolderKind::Archive => "archive",
-        FolderKind::Trash => "trash",
-        _ => "destination",
-    })
+    match kind {
+        FolderKind::Archive => i18n("archive"),
+        FolderKind::Trash => i18n("trash"),
+        _ => i18n("destination"),
+    }
 }
 
 /// Flatten every folder's indexed messages into one pool for cross-folder search.
@@ -23947,6 +24052,48 @@ mod tests {
         assert_eq!(super::parse_mid("mid:"), None);
         assert_eq!(super::parse_mid("mid:not-an-id"), None);
         assert_eq!(super::parse_mid("mailto:a@b.c"), None);
+    }
+
+    #[test]
+    fn folder_namespace_handles_utf8_paths() {
+        use crate::models::{Folder, FolderKind};
+        let custom = |path: &str| Folder {
+            id: 1,
+            account_id: 1,
+            name: path.to_string(),
+            path: path.to_string(),
+            kind: FolderKind::Custom,
+            unread: 0,
+        };
+        // Byte six falls inside a character in these top-level paths.
+        for path in ["abcd摘要", "a收摘要", "📧摘要", "é日語"] {
+            assert_eq!(super::AppModel::infer_folder_namespace(&[custom(path)]), "", "{path}");
+        }
+        for (path, expected) in [
+            ("INBOX/中文", "INBOX/"),
+            ("inbox/中文", "INBOX/"),
+            ("INBOX.中文", "INBOX."),
+            ("INBOX\\中文", "INBOX\\"),
+            ("INBOX/Projects/Nested", "INBOX/"),
+            ("Other/中文", ""),
+            ("收件摘要", ""),
+            ("INBOX", ""),
+            ("", ""),
+        ] {
+            assert_eq!(super::AppModel::infer_folder_namespace(&[custom(path)]), expected, "{path}");
+        }
+        assert_eq!(
+            super::AppModel::infer_folder_namespace(&[custom("INBOX/中文"), custom("abcd摘要")]),
+            ""
+        );
+        assert_eq!(super::AppModel::infer_folder_namespace(&[]), "");
+        let mut inbox = custom("INBOX");
+        inbox.kind = FolderKind::Inbox;
+        assert_eq!(super::AppModel::infer_folder_namespace(&[inbox.clone()]), "");
+        assert_eq!(
+            super::AppModel::infer_folder_namespace(&[inbox, custom("INBOX/中文")]),
+            "INBOX/"
+        );
     }
 
     #[test]

@@ -643,6 +643,8 @@ pub enum WorkerEvent {
     /// A `SetSeen` has been stored (or failed): the app stops holding its own
     /// read state for that message over what the server reports.
     SeenSettled { path: String, uid: u32 },
+    /// A `SetKeyword` has been stored (or failed), the same for a tag.
+    TagSettled { path: String, uid: u32, keyword: String },
     /// The answer to [`MailRequest::Settle`]: whatever took these messages
     /// out of `path` has been done or has failed.
     MovesSettled { path: String, uids: Vec<u32> },
@@ -2022,6 +2024,7 @@ async fn run_imap(
                         lost = true;
                     }
                 }
+                emit(WorkerEvent::TagSettled { path, uid, keyword });
             }
 
             MailRequest::MarkAllRead { folder_id, path } => {
@@ -4780,7 +4783,7 @@ fn build_message(
                 Some(name) => Attachment::new_inline_with_name(img.cid, name),
                 None => Attachment::new_inline(img.cid),
             };
-            related = related.singlepart(part.body(img.data, ct));
+            related = related.singlepart(part.body(file_body(img.data), ct));
         }
         related
     });
@@ -4801,7 +4804,9 @@ fn build_message(
     let email = if msg.attachments.is_empty() {
         match content {
             Some(content) => builder.multipart(content)?,
-            None => builder.body(msg.body.clone())?,
+            // A bare body() writes no MIME-Version and no charset, so a
+            // client that doesn't guess UTF-8 garbles every accent (#412).
+            None => builder.singlepart(SinglePart::plain(msg.body.clone()))?,
         }
     } else {
         builder.multipart(attachments_multipart(content, msg)?)?
@@ -4832,9 +4837,18 @@ fn attachments_multipart(
             .unwrap_or_else(|| "attachment".to_string());
         let ct = ContentType::parse(&guess_mime(&name))
             .unwrap_or(ContentType::TEXT_PLAIN);
-        multipart = multipart.singlepart(Attachment::new(name).body(bytes, ct));
+        multipart = multipart.singlepart(Attachment::new(name).body(file_body(bytes), ct));
     }
     Ok(multipart)
+}
+
+/// A file's bytes as base64, whatever they hold. lettre sends ASCII bytes as
+/// 7bit without touching their line endings, so a text file with Unix ones
+/// went out with bare LFs that strict servers refuse (#414); rewriting them
+/// would change the file.
+fn file_body(bytes: Vec<u8>) -> lettre::message::Body {
+    use lettre::message::{header::ContentTransferEncoding, Body};
+    Body::new_with_encoding(bytes, ContentTransferEncoding::Base64).expect("base64 takes any bytes")
 }
 
 /// A message body before OpenPGP wrapping: one MIME entity either way.
@@ -4916,7 +4930,7 @@ fn pgp_wrap(
             .body(String::from("Version: 1\r\n"));
         let payload = SinglePart::builder()
             .header(ContentType::parse("application/octet-stream; name=\"encrypted.asc\"").expect("static content type"))
-            .body(ciphertext);
+            .body(armored(ciphertext));
         return Ok(MultiPart::encrypted("application/pgp-encrypted".into())
             .singlepart(control)
             .singlepart(payload));
@@ -4934,8 +4948,15 @@ fn pgp_wrap(
     };
     let sig_part = SinglePart::builder()
         .header(ContentType::parse("application/pgp-signature; name=\"signature.asc\"").expect("static content type"))
-        .body(signature);
+        .body(armored(signature));
     Ok(signed.singlepart(sig_part))
+}
+
+/// gpg's ASCII armour as text, so lettre gives it CRLF line endings: as raw
+/// bytes its LF-only lines reached the wire and Stalwart refused the whole
+/// message for bare newlines (#414).
+fn armored(bytes: Vec<u8>) -> String {
+    String::from_utf8_lossy(&bytes).into_owned()
 }
 
 /// One image the composer embedded, lifted out of the outgoing HTML: its
@@ -11177,7 +11198,7 @@ NIL NIL NIL NIL NIL NIL NIL))\r\n";
     }
 
 
-    fn sample_outgoing() -> OutgoingMessage {
+    pub(super) fn sample_outgoing() -> OutgoingMessage {
         OutgoingMessage {
             from_account_id: 1,
             from_alias: None,
@@ -11329,6 +11350,7 @@ NIL NIL NIL NIL NIL NIL NIL))\r\n";
         let text = String::from_utf8_lossy(&raw);
         assert!(text.contains("multipart/signed"), "{text}");
         assert!(text.contains("micalg=\"pgp-sha"), "{text}");
+        assert!(!has_bare_lf(&raw), "{text}");
         let u = crate::pgp::unwrap_message(&raw, &gpg).expect("recognised");
         assert!(matches!(u.status.signature, crate::models::PgpSignature::Good { .. }), "{:?}", u.status);
         assert!(!u.status.encrypted);
@@ -11352,6 +11374,7 @@ NIL NIL NIL NIL NIL NIL NIL))\r\n";
         let text = String::from_utf8_lossy(&raw);
         assert!(text.contains("multipart/encrypted"), "{text}");
         assert!(!text.contains("secret body text"), "plaintext must not appear: {text}");
+        assert!(!has_bare_lf(&raw), "{text}");
         let u = crate::pgp::unwrap_message(&raw, &gpg).expect("recognised");
         assert!(u.status.encrypted && u.status.decrypted, "{:?}", u.status);
         assert!(matches!(u.status.signature, crate::models::PgpSignature::Good { .. }), "{:?}", u.status);
@@ -12191,6 +12214,50 @@ NIL NIL NIL NIL NIL NIL NIL))\r\n";
         // Base64 of the bytes written above.
         assert!(raw.contains("base64"), "{raw}");
         assert!(raw.contains("JVBERi0xLjQAgP8="), "{raw}");
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    /// Every line on the wire ends CRLF: JMAP servers refuse a message with a
+    /// lone LF anywhere in it (#414).
+    fn has_bare_lf(raw: &[u8]) -> bool {
+        raw.iter().enumerate().any(|(i, &b)| b == b'\n' && (i == 0 || raw[i - 1] != b'\r'))
+    }
+
+    /// #412: plain text with nothing attached still says it is UTF-8 text,
+    /// or a client that doesn't guess garbles every accent.
+    #[test]
+    fn plain_text_declares_its_charset() {
+        let msg = OutgoingMessage {
+            to: "ada@example.com".into(),
+            body: "Plain text with öäü and 🙂\nsecond line".into(),
+            ..sample_outgoing()
+        };
+        let raw = build_email(&sample_account(), &msg).expect("email builds").formatted();
+        let text = String::from_utf8_lossy(&raw);
+        assert!(text.contains("MIME-Version: 1.0\r\n"), "{text}");
+        assert!(text.contains("Content-Type: text/plain; charset=utf-8\r\n"), "{text}");
+        assert!(!has_bare_lf(&raw), "{text}");
+        let parsed = mail_parser::MessageParser::default().parse(&raw).expect("parses");
+        assert_eq!(parsed.body_text(0).as_deref().map(str::trim_end), Some("Plain text with öäü and 🙂\r\nsecond line"));
+    }
+
+    /// #414: a text file with Unix line endings goes out as base64, so its
+    /// bytes arrive unchanged and no lone LF reaches the wire.
+    #[test]
+    fn a_unix_text_attachment_leaves_no_bare_newline() {
+        let dir = std::env::temp_dir().join(format!("hylki-lf-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let file = dir.join("notes.txt");
+        std::fs::write(&file, b"one\ntwo\n").unwrap();
+        let msg = OutgoingMessage {
+            to: "ada@example.com".into(),
+            attachments: vec![file.to_string_lossy().to_string()],
+            ..sample_outgoing()
+        };
+        let raw = build_email(&sample_account(), &msg).expect("email builds").formatted();
+        assert!(!has_bare_lf(&raw), "{}", String::from_utf8_lossy(&raw));
+        let parsed = mail_parser::MessageParser::default().parse(&raw).expect("parses");
+        assert_eq!(parsed.attachment(0).map(|a| a.contents()), Some(&b"one\ntwo\n"[..]));
         std::fs::remove_dir_all(&dir).ok();
     }
 

@@ -1168,6 +1168,18 @@ msgstr "Поиск по отправителю, теме или учётной �
 msgid "(no subject)"
 msgstr "(без темы)"
 
+#, fuzzy
+msgid "archive"
+msgstr "Архив"
+
+#, fuzzy
+msgid "trash"
+msgstr "Корзина"
+
+#, fuzzy
+msgid "destination"
+msgstr "Обновлённое приглашение"
+
 msgid "Default"
 msgstr "По умолчанию"
 
@@ -1265,13 +1277,37 @@ msgstr "{date} в {time}"
 msgid "Evolution Data Server is not available"
 msgstr "Сервис Evolution Data Server недоступен"
 
+msgid "The directory did not accept the password."
+msgstr "Каталог не принял пароль."
+
+#, fuzzy
+msgid "The directory's certificate could not be verified."
+msgstr "Не удалось прочитать ответ сервиса."
+
+#, fuzzy
+msgid "The directory's certificate could not be verified: {error}"
+msgstr "Не удалось связаться с сервисом: {e}"
+
+msgid ""
+"Could not connect to {server} over TLS. Check the server, the port and that "
+"it takes LDAPS."
+msgstr ""
+
+msgid "Could not connect to {server}. Check the server and the port."
+msgstr ""
+
+msgid ""
+"Could not start StartTLS with {server}: the server does not offer it, or its "
+"certificate is not trusted."
+msgstr ""
+
+msgid "Could not reach {server}. Check the server's name and the network."
+msgstr ""
+
 msgid "The directory needs a password. Add it in Settings → LDAP Directories."
 msgstr ""
 "Для доступа к каталогу требуется пароль. Добавьте его в меню Параметры → "
 "Каталоги LDAP."
-
-msgid "The directory did not accept the password."
-msgstr "Каталог не принял пароль."
 
 msgid "A contact needs a name or an email address"
 msgstr ""
@@ -1294,6 +1330,21 @@ msgstr "Использовано {used} из {limit}"
 
 msgid "{free} free ({pct}%)"
 msgstr "Свободно {free} ({pct}%)"
+
+#, fuzzy
+msgid "Verified sender"
+msgstr "Поиск отправителей"
+
+#, fuzzy
+msgid "Sender not verified"
+msgstr "Отправить сейчас вместо запланированного"
+
+#, fuzzy
+msgid "Check this sender"
+msgstr "Заблокировать этого отправителя"
+
+msgid "Possible forgery"
+msgstr ""
 
 msgid "Encrypted message"
 msgstr "Зашифрованное сообщение"
@@ -1381,6 +1432,17 @@ msgstr "Срок действия подписи истёк"
 msgid "This message hasn't been checked."
 msgstr "Это сообщение не проверялось."
 
+msgid "just now"
+msgstr ""
+
+#, fuzzy
+msgid "{n} minutes ago"
+msgstr "{n} ч. назад"
+
+#, fuzzy
+msgid "an hour ago"
+msgstr "{n} ч. назад"
+
 msgid "{n} hours ago"
 msgstr "{n} ч. назад"
 
@@ -1454,6 +1516,32 @@ msgstr "Подписано ключом {id}."
 
 msgid "Import the sender's public key to verify it."
 msgstr "Импортируйте открытый ключ отправителя, чтобы проверить подпись."
+
+msgid "Revoked"
+msgstr ""
+
+#, fuzzy
+msgid "Expired"
+msgstr "Срок действия"
+
+#, fuzzy
+msgid "Not trusted yet"
+msgstr "Не переведено"
+
+#, fuzzy
+msgid "Marked as not trusted"
+msgstr "Отметить как непрочитанное"
+
+#, fuzzy
+msgid "Marginally trusted"
+msgstr "Ключ отмечен как доверенный."
+
+msgid "Trusted"
+msgstr "Доверенный"
+
+#, fuzzy
+msgid "Your own key"
+msgstr "Ваши ключи"
 
 msgid "No key was found in that file."
 msgstr "В этом файле не найдено ни одного ключа."
@@ -2162,6 +2250,14 @@ msgid ""
 msgstr ""
 "Хранится на сервере; измените через веб-интерфейс почтового провайдера."
 
+#, fuzzy
+msgid "Edit Alias"
+msgstr "Редактировать тег"
+
+#, fuzzy
+msgid "Add Alias"
+msgstr "Добавить псевдоним…"
+
 msgid "Display name (optional)"
 msgstr "Необязательно. Отображается вместо инициалов."
 
@@ -2216,8 +2312,14 @@ msgstr "Импортировано из «Сетевых учётных запи
 msgid "Added directly in Hylki"
 msgstr "Добавлено непосредственно в Hylki"
 
+msgid "Paused: Mail is switched off for this account in GNOME Settings"
+msgstr ""
+
 msgid "Enable this account"
 msgstr "Включить эту учётную запись"
+
+msgid "Mail"
+msgstr ""
 
 msgid "Use this account in Hylki"
 msgstr "Использовать эту учётную запись в Hylki"
@@ -2531,6 +2633,10 @@ msgstr "Показать в сообщении"
 msgid "Delete from Server…"
 msgstr "Удалить с сервера…"
 
+#, fuzzy
+msgid "Download"
+msgstr "Скачать…"
+
 msgid "Import OpenPGP key"
 msgstr "Импортировать ключ OpenPGP"
 
@@ -2555,6 +2661,12 @@ msgid ""
 msgstr ""
 "Попробуйте изменить поисковый запрос или проверьте, из каких учётных записей "
 "и папок подвал получает данные."
+
+msgid "Type"
+msgstr ""
+
+msgid "Size"
+msgstr ""
 
 msgid "Thumbnail grid"
 msgstr "Сетка миниатюр"
@@ -2642,6 +2754,12 @@ msgstr "Перейти к сообщению"
 
 msgid "Deleting…"
 msgstr "Удаление…"
+
+msgid "Unknown"
+msgstr ""
+
+msgid "File"
+msgstr ""
 
 #. Deliberately counts messages, not attachments: until a message has
 #. been described there is no telling how many files it holds.
@@ -3429,17 +3547,48 @@ msgstr "Удалить…"
 msgid "View photo"
 msgstr "Просмотреть фото"
 
+msgid "Phone"
+msgstr "Телефон"
+
+msgid "Address"
+msgstr "Адрес"
+
+msgid "Birthday"
+msgstr ""
+
+#. ---- note ----
+msgid "Note"
+msgstr ""
+
+#, fuzzy
+msgid "Address Book"
+msgstr "Адресная книга"
+
+msgid "Details"
+msgstr ""
+
 msgid "Edit Contact"
 msgstr "Редактировать контакт"
 
 msgid "New Contact"
 msgstr "Новый контакт"
 
+#. ---- identity fields ----
+msgid "Identity"
+msgstr ""
+
+msgid "Nickname"
+msgstr ""
+
+#, fuzzy
+msgid "Organization"
+msgstr "Перевод"
+
+msgid "Title"
+msgstr ""
+
 msgid "Add email"
 msgstr "Добавить адрес"
-
-msgid "Phone"
-msgstr "Телефон"
 
 msgid "Add phone"
 msgstr "Добавить телефон"
@@ -3501,6 +3650,9 @@ msgstr "Подключено к {name}"
 
 msgid "{name} did not answer: {error}"
 msgstr "Сервер {name} не ответил: {error}"
+
+msgid "The server took too long to answer."
+msgstr ""
 
 msgid "Edit Directory"
 msgstr "Редактировать каталог"
@@ -3698,6 +3850,14 @@ msgstr "Отметить все как прочитанные"
 
 msgid "Mark All as Unread"
 msgstr "Отметить все как непрочитанные"
+
+#, fuzzy
+msgid "Search all folders"
+msgstr "Папки поиска"
+
+#, fuzzy
+msgid "Search this folder"
+msgstr "Папки поиска"
 
 msgid "Due"
 msgstr "Срок"
@@ -3979,8 +4139,7 @@ msgstr ""
 "Ctrl+0 возвращает значение по умолчанию из Параметров."
 
 msgid ""
-"Shows this message dark or light, whatever the message theme. Other messages "
-"are not affected."
+"Show this message in light or dark mode. Other messages are not affected."
 msgstr ""
 
 msgid "Light / Dark Mode"
@@ -4091,6 +4250,10 @@ msgstr "Показать цитируемый текст"
 msgid "Hide quoted text"
 msgstr "Скрыть цитируемый текст"
 
+#, fuzzy
+msgid "Message"
+msgstr "Сообщения"
+
 msgid "Save Image"
 msgstr "Сохранить изображение"
 
@@ -4135,6 +4298,22 @@ msgstr "Копировать изображение"
 
 msgid "Copy Image Address"
 msgstr "Копировать адрес изображения"
+
+#, fuzzy
+msgid "From:"
+msgstr "От"
+
+#, fuzzy
+msgid "To:"
+msgstr "Кому"
+
+#, fuzzy
+msgid "Cc:"
+msgstr "Копия"
+
+#, fuzzy
+msgid "Date:"
+msgstr "Дата"
 
 msgid "Clear all"
 msgstr "Очистить всё"
@@ -4305,9 +4484,6 @@ msgstr ""
 msgid "Generate"
 msgstr "Сгенерировать"
 
-msgid "Address"
-msgstr "Адрес"
-
 msgid "Expires"
 msgstr "Срок действия"
 
@@ -4346,9 +4522,6 @@ msgstr "Экспортировать открытый ключ…"
 
 msgid "Delete this key"
 msgstr "Удалить этот ключ"
-
-msgid "Trusted"
-msgstr "Доверенный"
 
 msgid "Trust…"
 msgstr "Доверять…"
@@ -4709,6 +4882,14 @@ msgstr ""
 
 msgid "Theme"
 msgstr "Тема"
+
+msgid "Use the desktop's icons"
+msgstr ""
+
+msgid ""
+"Draw icons from the desktop's icon theme instead of Hylki's own, so the app "
+"may look different on another desktop."
+msgstr ""
 
 msgid "This window opens to"
 msgstr "При открытии окна показывать"

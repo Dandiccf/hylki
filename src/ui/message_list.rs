@@ -2695,7 +2695,36 @@ impl SimpleComponent for MessageList {
     }
 }
 
+/// The rows GTK has selected right now, read without a trip through the
+/// component's queue: a key pressed straight after an arrow key belongs to
+/// the row the arrow reached, even when the app has not heard of it yet
+/// (#416).
+#[derive(Clone)]
+pub struct SelectionProbe {
+    selection: gtk::MultiSelection,
+    model: crate::ui::message_row::MessageModel,
+}
+
+impl SelectionProbe {
+    /// `(account_id, id)` of each selected row, in list order.
+    pub fn keys(&self) -> Vec<(u32, u32)> {
+        let set = self.selection.selection();
+        let Some((iter, first)) = gtk::BitsetIter::init_first(&set) else {
+            return Vec::new();
+        };
+        std::iter::once(first)
+            .chain(iter)
+            .filter_map(|p| self.model.row(p as usize))
+            .map(|r| (r.msg.account_id, r.msg.id))
+            .collect()
+    }
+}
+
 impl MessageList {
+    pub fn selection_probe(&self) -> SelectionProbe {
+        SelectionProbe { selection: self.shared.selection.clone(), model: self.shared.model.clone() }
+    }
+
     /// What the list holds in RAM, for the memory section of an export: the
     /// folder's index, the rows listed from it, and the whole-mailbox search
     /// pool (empty unless a search is open), each as (messages, bytes). The
@@ -3564,10 +3593,10 @@ impl MessageList {
     }
 
     fn search_placeholder(&self) -> String {
-        i18n(match self.scope {
-            SearchScope::AllFolders => "Search all folders",
-            SearchScope::ThisFolder => "Search this folder",
-        })
+        match self.scope {
+            SearchScope::AllFolders => i18n("Search all folders"),
+            SearchScope::ThisFolder => i18n("Search this folder"),
+        }
     }
 
     /// Drop any active search: clear the query and the entry text so a folder
@@ -4204,13 +4233,15 @@ impl MessageList {
 
     /// Update the display-wide CSS that rings each account's avatar with its
     /// color (used in the unified "All Inboxes" view to identify the account).
+    /// The ring is the sidebar's, a pixel off the disc, so an account's
+    /// avatar reads the same in both places.
     fn refresh_tint_css(&self) {
         // In account order, so the same colors read as the same rules.
         let colors: std::collections::BTreeMap<_, _> = self.account_colors.iter().collect();
         let mut css = String::new();
         for (id, color) in colors {
             css.push_str(&format!(
-                ".vireo-acct-ring-{0} {{ border-radius: 9999px; box-shadow: 0 0 0 3px {1}; }}\n",
+                ".vireo-acct-ring-{0} {{ border-radius: 9999px; outline: 2px solid {1}; outline-offset: 1px; }}\n",
                 id, color
             ));
         }

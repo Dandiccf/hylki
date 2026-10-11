@@ -1163,6 +1163,18 @@ msgstr "Suche nach Absender, Betreff oder Konto"
 msgid "(no subject)"
 msgstr "(kein Betreff)"
 
+#, fuzzy
+msgid "archive"
+msgstr "Archivieren"
+
+#, fuzzy
+msgid "trash"
+msgstr "Papierkorb"
+
+#, fuzzy
+msgid "destination"
+msgstr "Aktualisierte Einladung"
+
 msgid "Default"
 msgstr "Standard"
 
@@ -1263,13 +1275,37 @@ msgstr "{date} um {time}"
 msgid "Evolution Data Server is not available"
 msgstr "Evolution Data Server ist nicht verfügbar"
 
+msgid "The directory did not accept the password."
+msgstr "Das Verzeichnis hat das Passwort nicht akzeptiert."
+
+#, fuzzy
+msgid "The directory's certificate could not be verified."
+msgstr "Die E-Mail-Adresse der Liste konnte nicht gelesen werden"
+
+#, fuzzy
+msgid "The directory's certificate could not be verified: {error}"
+msgstr "Die Datei konnte nicht geöffnet werden"
+
+msgid ""
+"Could not connect to {server} over TLS. Check the server, the port and that "
+"it takes LDAPS."
+msgstr ""
+
+msgid "Could not connect to {server}. Check the server and the port."
+msgstr ""
+
+msgid ""
+"Could not start StartTLS with {server}: the server does not offer it, or its "
+"certificate is not trusted."
+msgstr ""
+
+msgid "Could not reach {server}. Check the server's name and the network."
+msgstr ""
+
 msgid "The directory needs a password. Add it in Settings → LDAP Directories."
 msgstr ""
 "Für das Verzeichnis ist ein Passwort erforderlich. Fügen Sie es unter "
 "Einstellungen → LDAP-Verzeichnisse hinzu."
-
-msgid "The directory did not accept the password."
-msgstr "Das Verzeichnis hat das Passwort nicht akzeptiert."
 
 msgid "A contact needs a name or an email address"
 msgstr ""
@@ -1292,6 +1328,21 @@ msgstr "{used} von {limit} verwendet"
 
 msgid "{free} free ({pct}%)"
 msgstr "{free} frei ({pct} %)"
+
+#, fuzzy
+msgid "Verified sender"
+msgstr "Absender suchen"
+
+#, fuzzy
+msgid "Sender not verified"
+msgstr "Stattdessen jetzt senden"
+
+#, fuzzy
+msgid "Check this sender"
+msgstr "Diesen Absender sperren"
+
+msgid "Possible forgery"
+msgstr ""
 
 msgid "Encrypted message"
 msgstr "Verschlüsselte Nachricht"
@@ -1385,6 +1436,17 @@ msgstr "Signatur abgelaufen"
 msgid "This message hasn't been checked."
 msgstr "Diese Nachricht wurde nicht überprüft."
 
+msgid "just now"
+msgstr ""
+
+#, fuzzy
+msgid "{n} minutes ago"
+msgstr "vor {n} Stunden"
+
+#, fuzzy
+msgid "an hour ago"
+msgstr "vor {n} Stunden"
+
 msgid "{n} hours ago"
 msgstr "vor {n} Stunden"
 
@@ -1467,6 +1529,32 @@ msgid "Import the sender's public key to verify it."
 msgstr ""
 "Importieren Sie den öffentlichen Schlüssel des Absenders, um ihn zu "
 "überprüfen."
+
+msgid "Revoked"
+msgstr ""
+
+#, fuzzy
+msgid "Expired"
+msgstr "Läuft ab"
+
+#, fuzzy
+msgid "Not trusted yet"
+msgstr "Übersetzt von"
+
+#, fuzzy
+msgid "Marked as not trusted"
+msgstr "Als ungelesen markieren"
+
+#, fuzzy
+msgid "Marginally trusted"
+msgstr "Schlüssel als vertrauenswürdig markiert."
+
+msgid "Trusted"
+msgstr "Vertrauenswürdig"
+
+#, fuzzy
+msgid "Your own key"
+msgstr "Ihre Schlüssel"
 
 msgid "No key was found in that file."
 msgstr "In dieser Datei wurde kein Schlüssel gefunden."
@@ -2188,6 +2276,14 @@ msgid ""
 "Kept on the server; change it through your provider's webmail interface."
 msgstr ""
 
+#, fuzzy
+msgid "Edit Alias"
+msgstr "Tag bearbeiten"
+
+#, fuzzy
+msgid "Add Alias"
+msgstr "Alias hinzufügen…"
+
 msgid "Display name (optional)"
 msgstr "Anzeigename (optional)"
 
@@ -2242,8 +2338,14 @@ msgstr "Importiertes GNOME Online Konto"
 msgid "Added directly in Hylki"
 msgstr "Direkt hinzugefügt in Hylki"
 
+msgid "Paused: Mail is switched off for this account in GNOME Settings"
+msgstr ""
+
 msgid "Enable this account"
 msgstr "Aktivieren Sie dieses Konto"
+
+msgid "Mail"
+msgstr ""
 
 msgid "Use this account in Hylki"
 msgstr "Verwenden Sie dieses Konto in Hylki"
@@ -2558,6 +2660,10 @@ msgstr "In Nachricht anzeigen"
 msgid "Delete from Server…"
 msgstr "Vom Server löschen…"
 
+#, fuzzy
+msgid "Download"
+msgstr "Herunterladen…"
+
 msgid "Import OpenPGP key"
 msgstr "OpenPGP-Schlüssel importieren"
 
@@ -2582,6 +2688,12 @@ msgid ""
 msgstr ""
 "Versuchen Sie eine andere Suche, oder überprüfen Sie, aus welchen Konten und "
 "Ordnern die Fußzeile gezogen wird."
+
+msgid "Type"
+msgstr ""
+
+msgid "Size"
+msgstr ""
 
 msgid "Thumbnail grid"
 msgstr "Vorschaubildraster"
@@ -2669,6 +2781,12 @@ msgstr "Zur Nachricht wechseln"
 
 msgid "Deleting…"
 msgstr "Lösche…"
+
+msgid "Unknown"
+msgstr ""
+
+msgid "File"
+msgstr ""
 
 #. Deliberately counts messages, not attachments: until a message has
 #. been described there is no telling how many files it holds.
@@ -3471,17 +3589,48 @@ msgstr "Löschen…"
 msgid "View photo"
 msgstr "Foto ansehen"
 
+msgid "Phone"
+msgstr "Telefon"
+
+msgid "Address"
+msgstr "Adresse"
+
+msgid "Birthday"
+msgstr ""
+
+#. ---- note ----
+msgid "Note"
+msgstr ""
+
+#, fuzzy
+msgid "Address Book"
+msgstr "Adressbuch"
+
+msgid "Details"
+msgstr ""
+
 msgid "Edit Contact"
 msgstr "Kontakt bearbeiten"
 
 msgid "New Contact"
 msgstr "Neuer Kontakt"
 
+#. ---- identity fields ----
+msgid "Identity"
+msgstr ""
+
+msgid "Nickname"
+msgstr ""
+
+#, fuzzy
+msgid "Organization"
+msgstr "Übersetzt von"
+
+msgid "Title"
+msgstr ""
+
 msgid "Add email"
 msgstr "E-Mail hinzufügen"
-
-msgid "Phone"
-msgstr "Telefon"
 
 msgid "Add phone"
 msgstr "Telefonnummer hinzufügen"
@@ -3545,6 +3694,9 @@ msgstr "Verbunden mit {name}"
 
 msgid "{name} did not answer: {error}"
 msgstr "{name} hat nicht geantwortet: {error}"
+
+msgid "The server took too long to answer."
+msgstr ""
 
 msgid "Edit Directory"
 msgstr "Verzeichnis bearbeiten"
@@ -3735,6 +3887,14 @@ msgstr "Alle als gelesen markieren"
 
 msgid "Mark All as Unread"
 msgstr "Alle als ungelesen markieren"
+
+#, fuzzy
+msgid "Search all folders"
+msgstr "Ordner durchsuchen"
+
+#, fuzzy
+msgid "Search this folder"
+msgstr "Ordner durchsuchen"
 
 msgid "Due"
 msgstr ""
@@ -4026,8 +4186,7 @@ msgstr ""
 "die Standardeinstellungen."
 
 msgid ""
-"Shows this message dark or light, whatever the message theme. Other messages "
-"are not affected."
+"Show this message in light or dark mode. Other messages are not affected."
 msgstr ""
 
 msgid "Light / Dark Mode"
@@ -4142,6 +4301,10 @@ msgstr "Externe Inhalte anzeigen"
 msgid "Hide quoted text"
 msgstr "Vorschautext ausblenden"
 
+#, fuzzy
+msgid "Message"
+msgstr "Keine Nachrichten"
+
 msgid "Save Image"
 msgstr "Bild speichern"
 
@@ -4187,6 +4350,21 @@ msgstr "Bild kopieren"
 
 msgid "Copy Image Address"
 msgstr "Bildadresse kopieren"
+
+#, fuzzy
+msgid "From:"
+msgstr "Von"
+
+#, fuzzy
+msgid "To:"
+msgstr "An"
+
+#, fuzzy
+msgid "Cc:"
+msgstr "Cc"
+
+msgid "Date:"
+msgstr ""
 
 msgid "Clear all"
 msgstr "Alles löschen"
@@ -4360,9 +4538,6 @@ msgstr ""
 msgid "Generate"
 msgstr "Erzeugen"
 
-msgid "Address"
-msgstr "Adresse"
-
 msgid "Expires"
 msgstr "Läuft ab"
 
@@ -4400,9 +4575,6 @@ msgstr "Öffentlichen Schlüssel exportieren..."
 
 msgid "Delete this key"
 msgstr "Diesen Schlüssel löschen"
-
-msgid "Trusted"
-msgstr "Vertrauenswürdig"
 
 msgid "Trust…"
 msgstr "Vertrauen..."
@@ -4762,6 +4934,14 @@ msgstr ""
 
 msgid "Theme"
 msgstr "Erscheinungsbild"
+
+msgid "Use the desktop's icons"
+msgstr ""
+
+msgid ""
+"Draw icons from the desktop's icon theme instead of Hylki's own, so the app "
+"may look different on another desktop."
+msgstr ""
 
 msgid "This window opens to"
 msgstr "Dieses Fenster öffnet sich für"

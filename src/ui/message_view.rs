@@ -67,10 +67,12 @@ pub struct MessageView {
     reader_switch_shown: bool,
     /// Whether the header's Light / Dark Mode switch is shown (Settings).
     theme_switch_shown: bool,
-    /// Messages the user asked to see in the other light/dark scheme than
-    /// the message theme would give them (the header's Light / Dark Mode
-    /// switch). Kept for the session, so a message reopened keeps the choice.
-    theme_flips: std::collections::HashSet<(u32, u32)>,
+    /// The scheme the user chose for a message with the header's Light /
+    /// Dark Mode switch, dark (`true`) or light. The scheme itself is kept,
+    /// not a flip of the theme, so a message turned light stays light when
+    /// the theme changes after. Kept for the session, so a message reopened
+    /// keeps the choice.
+    theme_picks: std::collections::HashMap<(u32, u32), bool>,
     /// Message zoom in percent (Ctrl+ / Ctrl-): the bodies alone are
     /// scaled, in Reader View and out of it; the chrome keeps its size.
     zoom: u32,
@@ -1014,9 +1016,10 @@ pub enum MessageViewInput {
     /// Reader View on or off (the header's toggle): re-renders the whole
     /// conversation stripped to its content, or back as sent.
     SetReaderMode(bool),
-    /// The header's Light / Dark Mode switch: show the message on screen
-    /// dark (`true`) or light, for that message alone.
-    SetMessageDark(bool),
+    /// The header's Light / Dark Mode switch: on shows the message on screen
+    /// in the scheme opposite the theme, off as the theme has it, for that
+    /// message alone.
+    SetMessageFlipped(bool),
     /// Message zoom in percent; the bodies on screen rescale in place.
     SetZoom(u32),
     /// The zoom Settings starts at, which the chip measures against.
@@ -1879,41 +1882,42 @@ impl Component for MessageView {
 
                         // Light / Dark Mode: the message on screen in the
                         // other scheme, for that message alone. Sits just
-                        // before the Reader View switch.
+                        // before the Reader View switch, the highlights icon
+                        // for a label.
                         gtk::Box {
                             set_orientation: gtk::Orientation::Horizontal,
-                            set_spacing: 8,
+                            set_spacing: 6,
                             set_halign: gtk::Align::End,
                             set_valign: gtk::Align::Center,
                             add_css_class: "reader-toggle",
-                            set_tooltip_text: Some(i18n("Shows this message dark or light, whatever the message theme. Other messages are not affected.").as_str()),
+                            set_tooltip_text: Some(i18n("Show this message in light or dark mode. Other messages are not affected.").as_str()),
                             #[watch]
                             set_visible: model.current.is_some() && model.theme_switch_shown,
 
-                            gtk::Label {
-                                set_label: &i18n("Light / Dark Mode"),
-                                add_css_class: "caption",
+                            gtk::Image {
+                                set_icon_name: Some("highlights-symbolic"),
                                 add_css_class: "dim-label",
                             },
                             gtk::Switch {
                                 set_valign: gtk::Align::Center,
+                                update_property: &[gtk::accessible::Property::Label(&i18n("Light / Dark Mode"))],
                                 #[watch]
-                                set_active: model.effective_dark(),
+                                set_active: model.message_flipped(),
                                 // Setting it to what is already shown (a new
                                 // message, a theme change) does nothing.
                                 connect_active_notify[sender] => move |sw| {
-                                    sender.input(MessageViewInput::SetMessageDark(sw.is_active()));
+                                    sender.input(MessageViewInput::SetMessageFlipped(sw.is_active()));
                                 },
                             },
                         },
 
                         // Reader View: the message(s) as content alone. A
-                        // labelled switch on the account chip's line, at its
-                        // right end — part of the message header, not the
-                        // action row.
+                        // switch behind a pair of reading glasses on the
+                        // account chip's line, at its right end — part of
+                        // the message header, not the action row.
                         gtk::Box {
                             set_orientation: gtk::Orientation::Horizontal,
-                            set_spacing: 8,
+                            set_spacing: 6,
                             set_halign: gtk::Align::End,
                             set_valign: gtk::Align::Center,
                             add_css_class: "reader-toggle",
@@ -1921,13 +1925,13 @@ impl Component for MessageView {
                             #[watch]
                             set_visible: model.current.is_some() && model.reader_switch_shown,
 
-                            gtk::Label {
-                                set_label: &i18n("Reader View"),
-                                add_css_class: "caption",
+                            gtk::Image {
+                                set_icon_name: Some("glasses-symbolic"),
                                 add_css_class: "dim-label",
                             },
                             gtk::Switch {
                                 set_valign: gtk::Align::Center,
+                                update_property: &[gtk::accessible::Property::Label(&i18n("Reader View"))],
                                 #[watch]
                                 set_active: model.reader_mode,
                                 // The owner decides what a flip does, so it
@@ -2063,7 +2067,7 @@ impl Component for MessageView {
             reader_mode: false,
             reader_switch_shown: true,
             theme_switch_shown: false,
-            theme_flips: std::collections::HashSet::new(),
+            theme_picks: std::collections::HashMap::new(),
             zoom: 100,
             zoom_default: 100,
             reader_default: crate::config::ReaderDefault::Remember,
@@ -2797,14 +2801,18 @@ impl Component for MessageView {
             MessageViewInput::SetReaderMode(on) => {
                 self.set_reader_mode(on);
             }
-            MessageViewInput::SetMessageDark(dark) => {
-                if self.effective_dark() == dark {
+            MessageViewInput::SetMessageFlipped(on) => {
+                if self.message_flipped() == on {
                     return;
                 }
                 let Some(key) = self.current.as_ref().map(|m| (m.account_id, m.id)) else { return };
-                if !self.theme_flips.remove(&key) {
-                    self.theme_flips.insert(key);
+                // Off forgets the choice: the message follows the theme again.
+                if on {
+                    self.theme_picks.insert(key, !self.theme_dark());
+                } else {
+                    self.theme_picks.remove(&key);
                 }
+                let dark = self.effective_dark();
                 self.apply_webview_bg(dark);
                 if !self.loading {
                     self.render();
@@ -3669,17 +3677,28 @@ impl MessageView {
             .evaluate_javascript(&js, None, None, None::<&gtk::gio::Cancellable>, |_| {});
     }
 
-    /// Whether the message on screen is drawn dark: the message theme (or
-    /// the system's), turned over when the user flipped it for this message.
+    /// Whether the theme draws messages dark: the message theme, or the
+    /// system's when it follows the system.
+    fn theme_dark(&self) -> bool {
+        self.content_dark
+            .unwrap_or_else(|| adw::StyleManager::default().is_dark())
+    }
+
+    /// Whether the message on screen is drawn dark: the scheme the user
+    /// chose for it, else the theme's.
     fn effective_dark(&self) -> bool {
-        let base = self
-            .content_dark
-            .unwrap_or_else(|| adw::StyleManager::default().is_dark());
-        let flipped = self
-            .current
+        self.current
             .as_ref()
-            .is_some_and(|m| self.theme_flips.contains(&(m.account_id, m.id)));
-        base != flipped
+            .and_then(|m| self.theme_picks.get(&(m.account_id, m.id)).copied())
+            .unwrap_or_else(|| self.theme_dark())
+    }
+
+    /// The Light / Dark Mode switch's position: on only while the message is
+    /// shown opposite the theme. A message the user turned light reads off
+    /// once the theme turns light too, and still stays light if it turns
+    /// back.
+    fn message_flipped(&self) -> bool {
+        self.effective_dark() != self.theme_dark()
     }
 
     /// Whether cards list their own attachments (#213): by preference, and
@@ -4932,7 +4951,7 @@ impl MessageView {
             .as_ref()
             .map(|m| m.subject.clone())
             .filter(|s| !s.trim().is_empty())
-            .unwrap_or_else(|| "Message".to_string())
+            .unwrap_or_else(|| i18n("Message"))
     }
 
     /// The document that gets printed: the header, then each message inlined
@@ -7646,7 +7665,7 @@ fn print_header_html(message: Option<&Message>) -> String {
         format!("{} <{}>", m.from_name, m.from_addr)
     };
     let subject = if m.subject.trim().is_empty() {
-        "(no subject)".to_string()
+        i18n("(no subject)")
     } else {
         m.subject.clone()
     };
@@ -7655,10 +7674,10 @@ fn print_header_html(message: Option<&Message>) -> String {
            <div class=\"vireo-print-subject\">{subject}</div>{from}{to}{cc}{date}\
          </div>",
         subject = escape_text(&subject),
-        from = row("From:", &from),
-        to = row("To:", &m.to),
-        cc = row("Cc:", &m.cc),
-        date = row("Date:", &m.datetime_full()),
+        from = row(&i18n("From:"), &from),
+        to = row(&i18n("To:"), &m.to),
+        cc = row(&i18n("Cc:"), &m.cc),
+        date = row(&i18n("Date:"), &m.datetime_full()),
     )
 }
 
