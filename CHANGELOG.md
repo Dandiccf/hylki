@@ -1,5 +1,61 @@
 # Changelog
 
+## 1.44.0-beta.4 — 2026-10-11
+
+The fourth beta previewing 1.44.0.
+
+- **Changed: Hylki's icons look the same on every desktop.** Every icon is
+  drawn from copies built into the app, including those GTK and libadwaita
+  draw for their own buttons, arrows and checkmarks; the desktop's icon theme
+  no longer replaces any of them. **Settings → Appearance → Use the
+  desktop's icons** draws them from the icon theme again, as since #260.
+- **Fixed: Hylki crashed at startup on some folder names** (#409, by
+  Elliot). A folder whose name has a non-ASCII character in its first six
+  bytes, such as `abcd摘要`, crashed the app while it worked out the
+  account's folder namespace.
+- **Fixed: LDAP directories ignored the encryption chosen for them** (#307,
+  reported by 3v1n0). Hylki wrote it under a key Evolution Data Server never
+  reads, so EDS connected without encryption: an LDAPS directory failed
+  with "Not connected", and a StartTLS one sent its sign-in unencrypted.
+  Directories saved before are moved over the first time Hylki lists them.
+  A server typed as a URL (`ldaps://host:636/...`) now sets the encryption
+  and port, a failed check says why (the password, the server's name, the
+  port, TLS), and the new directory is listed as soon as it is saved, not
+  after the check, which gives up after 30 seconds.
+- **Fixed: tagging with the number keys while arrowing down the list could
+  tag the wrong message** (#416, reported by amadeusp). A key pressed just
+  after an arrow key could tag the message before, and the next press then
+  took that tag off again.
+- **Fixed: the search field and about 40 other strings could not be
+  translated** (#419, reported by frenchy82), among them the sender check,
+  OpenPGP key trust, the attachment gallery's columns and buttons, the
+  contact page's headings and the printed message header.
+- **Catalan translation** (PR #415 by jolupa), complete but for the
+  strings new in this beta.
+- **Translations:** French (PR #418 by frenchy82) brought up to date.
+
+## 1.43.2 — 2026-10-11
+
+Plain-text mail declares UTF-8, signed mail sends over JMAP, and an MP3 new-mail sound no longer crashes Hylki.
+
+- **Fixed: choosing an MP3 as the new-mail sound crashed Hylki** (#397,
+  reported by JavierLopezBravo). An MP3 that starts with an ID3v2 tag made
+  GStreamer abort the app when the sound was chosen, previewed or played for
+  new mail. The tag is taken off when the file is copied in, and off a sound
+  chosen with an earlier version before it next plays.
+- **Fixed: docks on X11 showed Hylki twice** (#402, reported by narcarsiss).
+  The window's class was `hylki` while the launcher names the app ID, so a
+  pinned launcher and the open window did not group. Wayland was not affected.
+- **Fixed: accents in plain-text mail arrived garbled in some apps** (#412,
+  reported by amadeusp). A plain-text message with nothing attached went
+  out without `MIME-Version` or `Content-Type: text/plain; charset=utf-8`,
+  so FairEmail and other clients that don't guess showed `ö` as `Ã¶`.
+- **Fixed: signed mail could not be sent from some JMAP servers** (#414,
+  reported by andreamoro). The server refused it: "Message contains bare
+  newlines". The OpenPGP signature, encrypted mail and text files with
+  Unix line endings now go out with CRLF line endings throughout, and every
+  message uploaded over JMAP is checked for lone LFs first.
+
 ## 1.44.0-beta.3 — 2026-10-10
 
 The third beta previewing 1.44.0.
