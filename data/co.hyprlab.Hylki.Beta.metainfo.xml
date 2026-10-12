@@ -63,6 +63,11 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="1.44.0-beta.6" date="2026-10-12" type="development">
+      <description>
+        <p>Sixth preview of 1.44.0: support for on-premise Exchange servers, added in the fifth preview, is removed.</p>
+      </description>
+    </release>
     <release version="1.44.0-beta.5" date="2026-10-11" type="development">
       <description>
         <p>Fifth preview of 1.44.0: on-premise Exchange servers, smart folders, Gmail labels as pills and tags, the Microsoft 365 organization directory, sensitivity labels, and font sizes and colors in the composer.</p>
