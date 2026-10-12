@@ -380,6 +380,10 @@ msgstr "Mostra o amaga la barra lateral"
 msgid "Mail Accounts"
 msgstr "Comptes de correu"
 
+#, fuzzy
+msgid "New Smart Folder…"
+msgstr "Carpeta nova…"
+
 msgid "About Hylki"
 msgstr "Quant a l'Hylki"
 
@@ -403,6 +407,10 @@ msgstr "Bústia de sortida"
 
 msgid "Tag"
 msgstr "Etiqueta"
+
+#, fuzzy
+msgid "Smart Folder"
+msgstr "Ordena les carpetes"
 
 msgid ""
 "Single-key shortcuts are switched off. Turn them on in Settings → System."
@@ -688,11 +696,32 @@ msgstr ""
 msgid "Empty"
 msgstr "Buida"
 
+msgid "Empty Trash in Every Account?"
+msgstr ""
+
+msgid "Empty Junk in Every Account?"
+msgstr ""
+
+#, fuzzy
+msgid ""
+"Every message in them will be erased from the server. This can’t be undone."
+msgstr ""
+"Tots els missatges que conté s'esborraran del servidor. Això no es pot "
+"desfer."
+
 msgid "No Junk folder available for this account"
 msgstr "No hi ha cap carpeta de brossa disponible per a aquest compte"
 
 msgid "No Inbox folder available for this account"
 msgstr "No hi ha cap bústia d'entrada disponible per a aquest compte"
+
+#, fuzzy
+msgid "Delete “{name}”?"
+msgstr "Vols buidar «{name}»?"
+
+msgid ""
+"The smart folder goes from the sidebar. The mail it shows stays where it is."
+msgstr ""
 
 msgid "No address book available to add contacts"
 msgstr "No hi ha cap llibreta d'adreces disponible per afegir contactes"
@@ -1557,6 +1586,32 @@ msgid "Enter the LibreTranslate server's address in Settings → Translation."
 msgstr ""
 "Introdueix l'adreça del servidor LibreTranslate a Paràmetres → Traducció."
 
+msgid "Labeled"
+msgstr ""
+
+msgid "Personal"
+msgstr ""
+
+#, fuzzy
+msgid "Private"
+msgstr "Privacitat"
+
+msgid "Confidential"
+msgstr ""
+
+msgid "The sender marked this message “{label}”."
+msgstr ""
+
+msgid ""
+"The sender's organization labeled this message, without saying the label's "
+"name. Hylki shows the label but does not apply its rules."
+msgstr ""
+
+msgid ""
+"The sender's organization labeled this message “{label}”. Hylki shows the "
+"label but does not apply its rules."
+msgstr ""
+
 msgid "Open Hylki"
 msgstr "Obre l'Hylki"
 
@@ -1591,6 +1646,12 @@ msgid ""
 msgstr ""
 "Introdueix l'adreça del teu servidor JMAP, o l'URL del seu recurs de sessió. "
 "El correu es llegeix i s'envia per JMAP; no cal cap paràmetre SMTP."
+
+msgid ""
+"For your organization's own Exchange server. Leave the server empty to find "
+"it from your address. Sign in as user@domain or DOMAIN\\user. Microsoft 365 "
+"accounts use the entry below."
+msgstr ""
 
 msgid "Sign in with your browser — no password needed."
 msgstr "Inicia sessió amb el navegador — no cal contrasenya."
@@ -1658,6 +1719,20 @@ msgstr ""
 
 msgid "Find Tags…"
 msgstr "Troba etiquetes…"
+
+#, fuzzy
+msgid "Smart Folders"
+msgstr "Ordena les carpetes"
+
+msgid ""
+"A smart folder lists the messages that match its conditions, from every "
+"folder or one kind of folder, in one account or all of them. It searches the "
+"mail on this computer and appears in the sidebar under the unified rows."
+msgstr ""
+
+#, fuzzy
+msgid "Add Smart Folder…"
+msgstr "Afegeix una carpeta"
 
 msgid "Search filters"
 msgstr "Cerca filtres"
@@ -2011,6 +2086,10 @@ msgstr ""
 "cosa amb un enllaç de baixa) més antic que això, tret que estigui destacat. "
 "Comprovat a cada sincronització."
 
+#, fuzzy
+msgid "Search the organization directory"
+msgstr "Vols desar el directori?"
+
 msgid "Folder Order"
 msgstr "Ordre de carpetes"
 
@@ -2139,6 +2218,14 @@ msgstr "Completa l'inici de sessió a la finestra que s'ha obert."
 msgid "Opening browser… complete sign-in there."
 msgstr "S'està obrint el navegador… completa-hi l'inici de sessió."
 
+#, fuzzy
+msgid "Opening browser… approve access to the directory there."
+msgstr "S'està obrint el navegador… completa-hi l'inici de sessió."
+
+#, fuzzy
+msgid "Approve access to the directory in the window that opened."
+msgstr "Completa l'inici de sessió a la finestra que s'ha obert."
+
 msgid "Signature HTML"
 msgstr "HTML de la signatura"
 
@@ -2179,6 +2266,16 @@ msgstr "✓ Sessió iniciada — desa el compte per acabar"
 
 msgid "Sign-in failed: {e}"
 msgstr "L'inici de sessió ha fallat: {e}"
+
+#, fuzzy
+msgid "Signed in as {address}, not {email}."
+msgstr "Sessió iniciada com a {who}. {terms}"
+
+msgid "Access to the directory approved. Save the account to finish."
+msgstr ""
+
+msgid "Access to the directory was not approved: {e}"
+msgstr ""
 
 msgid "✓ SMTP: connected"
 msgstr "✓ SMTP: connectat"
@@ -2281,6 +2378,18 @@ msgstr ""
 msgid "Use this account in Hylki"
 msgstr "Utilitza aquest compte a l'Hylki"
 
+msgid ""
+"Only for an account signed in within Hylki. To use it, add this account with "
+"Microsoft 365 / Outlook as the provider, instead of from GNOME Online "
+"Accounts."
+msgstr ""
+
+msgid ""
+"Suggest people from your organization as you type a recipient. Turning this "
+"on asks Microsoft for access to the directory; some organizations need an "
+"administrator to approve it."
+msgstr ""
+
 msgid "Never"
 msgstr "Mai"
 
@@ -2292,13 +2401,14 @@ msgstr[1] "Després de {n} dies"
 msgid "API Token"
 msgstr "Token d'API"
 
-#. A JMAP server is one address, and it sends the mail
-#. itself: no SMTP rows.
 msgid "Server (host name or URL)"
 msgstr "Servidor (nom d'amfitrió o URL)"
 
 msgid "Port (default 443)"
 msgstr "Port (per defecte 443)"
+
+msgid "EWS address (empty to find it)"
+msgstr ""
 
 msgid "Google (Gmail)"
 msgstr "Google (Gmail)"
@@ -2402,6 +2512,104 @@ msgstr "Importa-ho tot"
 msgid "{n} messages"
 msgstr "{n} missatges"
 
+msgid "All but Trash and Junk"
+msgstr ""
+
+#, fuzzy
+msgid "Remove smart folder"
+msgstr "Elimina el filtre"
+
+msgid "Inbox"
+msgstr "Bústia d'entrada"
+
+msgid "Starred"
+msgstr "Destacats"
+
+#, fuzzy
+msgid "Not starred"
+msgstr "No instal·lat"
+
+#, fuzzy
+msgid "Unread"
+msgstr "Llegit/No llegit"
+
+#, fuzzy
+msgid "Read"
+msgstr "Lectura"
+
+msgid "Has attachments"
+msgstr "Té adjunts"
+
+msgid "Tagged"
+msgstr ""
+
+#, fuzzy
+msgid "Message preview"
+msgstr "Codi font del missatge"
+
+#, fuzzy
+msgid "Edit Smart Folder"
+msgstr "Ordena les carpetes"
+
+#, fuzzy
+msgid "Add Smart Folder"
+msgstr "Afegeix una carpeta"
+
+#, fuzzy
+msgid "All accounts means those in the unified section"
+msgstr "La llista de comptes sota la fila unificada d'enviats."
+
+msgid "Folders"
+msgstr "Carpetes"
+
+msgid "Any tag"
+msgstr ""
+
+msgid "Remove condition"
+msgstr "Elimina la condició"
+
+msgid "Where"
+msgstr "On"
+
+msgid "Match"
+msgstr "Coincidència"
+
+msgid "Commas separate alternatives; any one of them counts"
+msgstr "Les comes separen alternatives; qualsevol d'elles compta"
+
+msgid "Text to match"
+msgstr "Text a fer coincidir"
+
+msgid "The preview each message has in the list"
+msgstr ""
+
+msgid "From address when no Reply-To is set"
+msgstr "Adreça del remitent quan no s'ha definit cap Reply-To"
+
+msgid "Looks in the system address books and the Hylki book"
+msgstr "Cerca a les llibretes d'adreces del sistema i a la llibreta de l'Hylki"
+
+msgid "Add Condition"
+msgstr "Afegeix una condició"
+
+msgid "Condition matching"
+msgstr "Coincidència de condicions"
+
+msgid "All must match"
+msgstr "Totes han de coincidir"
+
+msgid "Any one may match"
+msgstr "Qualsevol pot coincidir"
+
+msgid "Condition {n}"
+msgstr "Condició {n}"
+
+msgid "Or where"
+msgstr "O bé on"
+
+msgid "And where"
+msgstr "I on"
+
 msgid ""
 "Press this key on a message to add or remove the tag (with single-key "
 "shortcuts on)"
@@ -2447,50 +2655,8 @@ msgstr "Afegeix un filtre"
 msgid "Name (optional)"
 msgstr "Nom (opcional)"
 
-msgid "Remove condition"
-msgstr "Elimina la condició"
-
-msgid "Where"
-msgstr "On"
-
-msgid "Match"
-msgstr "Coincidència"
-
-msgid "Commas separate alternatives; any one of them counts"
-msgstr "Les comes separen alternatives; qualsevol d'elles compta"
-
-msgid "Text to match"
-msgstr "Text a fer coincidir"
-
 msgid "Searched on the server; nothing is downloaded"
 msgstr "Es cerca al servidor; no es baixa res"
-
-msgid "From address when no Reply-To is set"
-msgstr "Adreça del remitent quan no s'ha definit cap Reply-To"
-
-msgid "Looks in the system address books and the Hylki book"
-msgstr "Cerca a les llibretes d'adreces del sistema i a la llibreta de l'Hylki"
-
-msgid "Add Condition"
-msgstr "Afegeix una condició"
-
-msgid "Condition matching"
-msgstr "Coincidència de condicions"
-
-msgid "All must match"
-msgstr "Totes han de coincidir"
-
-msgid "Any one may match"
-msgstr "Qualsevol pot coincidir"
-
-msgid "Condition {n}"
-msgstr "Condició {n}"
-
-msgid "Or where"
-msgstr "O bé on"
-
-msgid "And where"
-msgstr "I on"
 
 msgid "Then"
 msgstr "Llavors"
@@ -2754,7 +2920,8 @@ msgstr "Copia"
 msgid "Command Palette"
 msgstr "Paleta d'ordres"
 
-msgid "Type an action, a folder or a tag"
+#, fuzzy
+msgid "Type an action, a folder or a tag, or > for actions only"
 msgstr "Escriu una acció, una carpeta o una etiqueta"
 
 msgid "Cloud Storage"
@@ -3885,14 +4052,8 @@ msgstr "Aquest missatge és en {language}."
 msgid "Translate"
 msgstr "Tradueix"
 
-msgid "Starred"
-msgstr "Destacats"
-
 msgid "Received"
 msgstr "Rebut"
-
-msgid "Has attachments"
-msgstr "Té adjunts"
 
 msgid "Click to open this message"
 msgstr "Fes clic per obrir aquest missatge"
@@ -4647,6 +4808,18 @@ msgstr "Vols desar el filtre?"
 msgid ""
 "The filter editor is open. Save what you changed, or discard it, before "
 "moving on."
+msgstr ""
+"L'editor de filtres és obert. Desa el que has canviat, o descarta-ho, abans "
+"de continuar."
+
+#, fuzzy
+msgid "Save the smart folder?"
+msgstr "Vols desar el filtre?"
+
+#, fuzzy
+msgid ""
+"The smart folder editor is open. Save what you changed, or discard it, "
+"before moving on."
 msgstr ""
 "L'editor de filtres és obert. Desa el que has canviat, o descarta-ho, abans "
 "de continuar."
@@ -6355,11 +6528,22 @@ msgstr "Serif"
 msgid "Monospace"
 msgstr "Monoespaiada"
 
+#, fuzzy
+msgid "Custom…"
+msgstr "Color personalitzat…"
+
 msgid "Paragraph style"
 msgstr "Estil de paràgraf"
 
 msgid "Font"
 msgstr "Font"
+
+msgid "Other Font…"
+msgstr ""
+
+#, fuzzy
+msgid "Font size"
+msgstr "Mida del text"
 
 msgid "Bold"
 msgstr "Negreta"
@@ -6468,14 +6652,22 @@ msgstr "Elimina el compte…"
 msgid "Show or hide sub-folders"
 msgstr "Mostra o amaga les subcarpetes"
 
+#, fuzzy
+msgid "Show or hide labels"
+msgstr "Mostra o amaga les etiquetes"
+
 msgid "Show or hide folders"
 msgstr "Mostra o amaga les carpetes"
+
+#, fuzzy
+msgid "Labels ({len})"
+msgstr "Carpetes ({len})"
 
 msgid "Folders ({len})"
 msgstr "Carpetes ({len})"
 
-msgid "Folders"
-msgstr "Carpetes"
+msgid "Labels"
+msgstr ""
 
 msgid "Sort Folders"
 msgstr "Ordena les carpetes"
@@ -6495,6 +6687,10 @@ msgstr "Mostra cada carpeta"
 msgid "Show each tag"
 msgstr "Mostra cada etiqueta"
 
+#, fuzzy
+msgid "Show each smart folder"
+msgstr "Mostra cada carpeta"
+
 msgid "Long-press to expand or collapse"
 msgstr "Mantén premut per expandir o replegar"
 
@@ -6503,6 +6699,14 @@ msgstr "Buida la paperera…"
 
 msgid "Empty Junk…"
 msgstr "Buida la brossa…"
+
+#, fuzzy
+msgid "Edit Smart Folder…"
+msgstr "Edita el filtre…"
+
+#, fuzzy
+msgid "Delete Smart Folder…"
+msgstr "Suprimeix la carpeta…"
 
 msgid "Show or hide filters"
 msgstr "Mostra o amaga els filtres"
@@ -6592,8 +6796,6 @@ msgstr "Dades del servidor"
 msgid "Filled in for known providers"
 msgstr "Omplert per a proveïdors coneguts"
 
-#. A JMAP server is one address, and it sends the mail
-#. itself: no SMTP rows.
 msgid "IMAP server"
 msgstr "Servidor IMAP"
 
@@ -6784,14 +6986,38 @@ msgid ""
 msgstr ""
 "{from} és correcte, però l'adreçament no coincideix amb el nom del missatge."
 
+msgid "This Exchange account has no server address. Add it in its settings."
+msgstr ""
+
+msgid ""
+"Could not find the Exchange server for {email}: {why}. Enter its EWS "
+"address, such as https://mail.example.org/EWS/Exchange.asmx."
+msgstr ""
+
+msgid ""
+"The Exchange server refused the sign-in for {email}. Check the user name and "
+"password in its settings."
+msgstr ""
+
+#, fuzzy
+msgid "unknown folder {path}"
+msgstr "carpeta desconeguda"
+
+#, fuzzy
+msgid "message not found"
+msgstr "Font dels missatges"
+
+msgid "Could not list folders: {e}"
+msgstr "No s'han pogut llistar les carpetes: {e}"
+
+msgid "Could not load message: {e}"
+msgstr "No s'ha pogut carregar el missatge: {e}"
+
 msgid "Syncing…"
 msgstr "S'està sincronitzant…"
 
 msgid "Could not fetch mail: {e}"
 msgstr "No s'ha pogut obtenir el correu: {e}"
-
-msgid "Could not load message: {e}"
-msgstr "No s'ha pogut carregar el missatge: {e}"
 
 msgid "Could not load source: {e}"
 msgstr "No s'ha pogut carregar el codi font: {e}"
@@ -6808,11 +7034,12 @@ msgstr "No s'ha pogut marcar com a brossa: {e}"
 msgid "Could not mark as not spam: {e}"
 msgstr "No s'ha pogut marcar com a no brossa: {e}"
 
-msgid "Could not mark {len} messages as not spam: {e}"
-msgstr "No s'han pogut marcar {len} missatges com a no brossa: {e}"
-
 msgid "Could not move messages: {e}"
 msgstr "No s'han pogut moure els missatges: {e}"
+
+#, fuzzy
+msgid "Could not delete messages: {e}"
+msgstr "No s'ha pogut suprimir el missatge: {e}"
 
 msgid "Could not empty the folder: {e}"
 msgstr "No s'ha pogut buidar la carpeta: {e}"
@@ -6835,32 +7062,32 @@ msgstr "No s'ha pogut suprimir la carpeta: carpeta desconeguda"
 msgid "Could not delete folder: {e}"
 msgstr "No s'ha pogut suprimir la carpeta: {e}"
 
+msgid "Sending…"
+msgstr "S'està enviant…"
+
+msgid "Removing the attachment…"
+msgstr "S'està eliminant l'adjunt…"
+
+msgid "The attachment is no longer in the message on the server"
+msgstr "L'adjunt ja no és al missatge del servidor"
+
+msgid "Could not remove the attachment: {e}"
+msgstr "No s'ha pogut eliminar l'adjunt: {e}"
+
+msgid "Still could not send “{subject}”: {e}"
+msgstr "Encara no s'ha pogut enviar «{subject}»: {e}"
+
+msgid "Could not mark {len} messages as not spam: {e}"
+msgstr "No s'han pogut marcar {len} missatges com a no brossa: {e}"
+
 msgid "unknown folder"
 msgstr "carpeta desconeguda"
 
 msgid "Could not reach the server"
 msgstr "No s'ha pogut contactar amb el servidor"
 
-msgid "Sending…"
-msgstr "S'està enviant…"
-
 msgid "A Microsoft account can't receive mail from another account"
 msgstr "Un compte de Microsoft no pot rebre correu d'un altre compte"
-
-msgid "Removing the attachment…"
-msgstr "S'està eliminant l'adjunt…"
-
-msgid "Could not remove the attachment: {e}"
-msgstr "No s'ha pogut eliminar l'adjunt: {e}"
-
-msgid "Could not list folders: {e}"
-msgstr "No s'han pogut llistar les carpetes: {e}"
-
-msgid "The attachment is no longer in the message on the server"
-msgstr "L'adjunt ja no és al missatge del servidor"
-
-msgid "Still could not send “{subject}”: {e}"
-msgstr "Encara no s'ha pogut enviar «{subject}»: {e}"
 
 msgid "IMAP connection stopped making progress"
 msgstr "La connexió IMAP ha deixat de progressar"
@@ -7011,9 +7238,6 @@ msgstr ""
 "El POP3 no pot modificar un missatge al servidor, així que l'adjunt no s'ha "
 "eliminat"
 
-msgid "Inbox"
-msgstr "Bústia d'entrada"
-
 msgid "Email Client"
 msgstr "Client de correu"
 
@@ -7147,6 +7371,10 @@ msgstr "La bústia d'entrada unificada en mode clar"
 
 msgid "Hyprlab"
 msgstr "Hyprlab"
+
+#, fuzzy
+#~ msgid "An Exchange account can't receive mail from another account yet"
+#~ msgstr "Un compte POP3 no pot rebre correu d'un altre compte"
 
 #~ msgid ""
 #~ "Shows this message dark or light, whatever the message theme. Other "

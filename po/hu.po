@@ -399,6 +399,10 @@ msgid "Mail Accounts"
 msgstr "Levelezési fiókok"
 
 #, fuzzy
+msgid "New Smart Folder…"
+msgstr "Új mappa…"
+
+#, fuzzy
 msgid "About Hylki"
 msgstr "Névjegy"
 
@@ -425,6 +429,10 @@ msgstr "Kimenő"
 #, fuzzy
 msgid "Tag"
 msgstr "Címkék"
+
+#, fuzzy
+msgid "Smart Folder"
+msgstr "Mappák rendezése"
 
 #, fuzzy
 msgid ""
@@ -715,11 +723,31 @@ msgstr ""
 msgid "Empty"
 msgstr "Kiürítés"
 
+msgid "Empty Trash in Every Account?"
+msgstr ""
+
+msgid "Empty Junk in Every Account?"
+msgstr ""
+
+#, fuzzy
+msgid ""
+"Every message in them will be erased from the server. This can’t be undone."
+msgstr ""
+"A benne lévő összes üzenet törlődik a kiszolgálóról. Ez nem vonható vissza."
+
 msgid "No Junk folder available for this account"
 msgstr "Ehhez a fiókhoz nem érhető el Levélszemét mappa"
 
 msgid "No Inbox folder available for this account"
 msgstr "Ehhez a fiókhoz nem érhető el Beérkezett üzenetek mappa"
+
+#, fuzzy
+msgid "Delete “{name}”?"
+msgstr "Kiüríti ezt: „{name}”?"
+
+msgid ""
+"The smart folder goes from the sidebar. The mail it shows stays where it is."
+msgstr ""
 
 msgid "No address book available to add contacts"
 msgstr "Névjegyek hozzáadásához nem érhető el címjegyzék"
@@ -1595,6 +1623,32 @@ msgstr ""
 msgid "Enter the LibreTranslate server's address in Settings → Translation."
 msgstr ""
 
+msgid "Labeled"
+msgstr ""
+
+msgid "Personal"
+msgstr ""
+
+#, fuzzy
+msgid "Private"
+msgstr "Adatvédelem"
+
+msgid "Confidential"
+msgstr ""
+
+msgid "The sender marked this message “{label}”."
+msgstr ""
+
+msgid ""
+"The sender's organization labeled this message, without saying the label's "
+"name. Hylki shows the label but does not apply its rules."
+msgstr ""
+
+msgid ""
+"The sender's organization labeled this message “{label}”. Hylki shows the "
+"label but does not apply its rules."
+msgstr ""
+
 msgid "Open Hylki"
 msgstr "Hylki megnyitása"
 
@@ -1629,6 +1683,12 @@ msgid ""
 msgstr ""
 "Adja meg a Stalwart kiszolgáló címét. A levelek olvasása és küldése JMAP-on "
 "keresztül történik; nincs szükség SMTP beállításokra."
+
+msgid ""
+"For your organization's own Exchange server. Leave the server empty to find "
+"it from your address. Sign in as user@domain or DOMAIN\\user. Microsoft 365 "
+"accounts use the entry below."
+msgstr ""
 
 msgid "Sign in with your browser — no password needed."
 msgstr "Jelentkezzen be a böngészőben — nincs szükség jelszóra."
@@ -1696,6 +1756,20 @@ msgstr ""
 
 msgid "Find Tags…"
 msgstr "Címkék keresése…"
+
+#, fuzzy
+msgid "Smart Folders"
+msgstr "Mappák rendezése"
+
+msgid ""
+"A smart folder lists the messages that match its conditions, from every "
+"folder or one kind of folder, in one account or all of them. It searches the "
+"mail on this computer and appears in the sidebar under the unified rows."
+msgstr ""
+
+#, fuzzy
+msgid "Add Smart Folder…"
+msgstr "Mappa hozzáadása"
 
 msgid "Search filters"
 msgstr "Keresési szűrők"
@@ -2047,6 +2121,10 @@ msgid ""
 "link) older than this, unless starred. Checked at each sync."
 msgstr ""
 
+#, fuzzy
+msgid "Search the organization directory"
+msgstr "El akarod menteni a könyvtárat?"
+
 msgid "Folder Order"
 msgstr "Mappák sorrendje"
 
@@ -2176,6 +2254,14 @@ msgstr "A bejelentkezés nem tárolható a kulcstartón: {e}"
 msgid "Opening browser… complete sign-in there."
 msgstr "Böngésző megnyitása… ott fejezze be a bejelentkezést."
 
+#, fuzzy
+msgid "Opening browser… approve access to the directory there."
+msgstr "Böngésző megnyitása… ott fejezze be a bejelentkezést."
+
+#, fuzzy
+msgid "Approve access to the directory in the window that opened."
+msgstr "A bejelentkezés nem tárolható a kulcstartón: {e}"
+
 msgid "Signature HTML"
 msgstr "Aláírás HTML kódja"
 
@@ -2218,6 +2304,16 @@ msgstr "✓ Bejelentkezve — a befejezéshez mentse a fiókot"
 
 msgid "Sign-in failed: {e}"
 msgstr "A bejelentkezés sikertelen: {e}"
+
+#, fuzzy
+msgid "Signed in as {address}, not {email}."
+msgstr "Bejelentkezve mint: {who}. {terms}"
+
+msgid "Access to the directory approved. Save the account to finish."
+msgstr ""
+
+msgid "Access to the directory was not approved: {e}"
+msgstr ""
 
 msgid "✓ SMTP: connected"
 msgstr "✓ SMTP: kapcsolódva"
@@ -2320,6 +2416,18 @@ msgstr ""
 msgid "Use this account in Hylki"
 msgstr "Fiók használata a Hylki-ben"
 
+msgid ""
+"Only for an account signed in within Hylki. To use it, add this account with "
+"Microsoft 365 / Outlook as the provider, instead of from GNOME Online "
+"Accounts."
+msgstr ""
+
+msgid ""
+"Suggest people from your organization as you type a recipient. Turning this "
+"on asks Microsoft for access to the directory; some organizations need an "
+"administrator to approve it."
+msgstr ""
+
 msgid "Never"
 msgstr "Soha"
 
@@ -2331,13 +2439,14 @@ msgstr[1] "{n} nap múlva"
 msgid "API Token"
 msgstr ""
 
-#. A JMAP server is one address, and it sends the mail
-#. itself: no SMTP rows.
 msgid "Server (host name or URL)"
 msgstr "Kiszolgáló (kiszolgáló név vagy URL)"
 
 msgid "Port (default 443)"
 msgstr "Végpont (alapértelmezett: 443)"
+
+msgid "EWS address (empty to find it)"
+msgstr ""
 
 msgid "Google (Gmail)"
 msgstr "Google (Gmail)"
@@ -2447,6 +2556,107 @@ msgstr "Összes importálása"
 msgid "{n} messages"
 msgstr "{n} db üzenet"
 
+msgid "All but Trash and Junk"
+msgstr ""
+
+#, fuzzy
+msgid "Remove smart folder"
+msgstr "Szűrő eltávolítása"
+
+msgid "Inbox"
+msgstr "Beérkezett üzenetek"
+
+msgid "Starred"
+msgstr "Csillakerülzott"
+
+#, fuzzy
+msgid "Not starred"
+msgstr "Nincs telepítve"
+
+#, fuzzy
+msgid "Unread"
+msgstr "Olvasott/olvasatlan"
+
+#, fuzzy
+msgid "Read"
+msgstr "Olvasás"
+
+#, fuzzy
+msgid "Has attachments"
+msgstr "Nincsenek mellékletek"
+
+msgid "Tagged"
+msgstr ""
+
+#, fuzzy
+msgid "Message preview"
+msgstr "Üzenetforrás"
+
+#, fuzzy
+msgid "Edit Smart Folder"
+msgstr "Mappák rendezése"
+
+#, fuzzy
+msgid "Add Smart Folder"
+msgstr "Mappa hozzáadása"
+
+#, fuzzy
+msgid "All accounts means those in the unified section"
+msgstr "A fióklista az egységesített „Elküldve” sor alatt."
+
+msgid "Folders"
+msgstr "Mappák"
+
+msgid "Any tag"
+msgstr ""
+
+msgid "Remove condition"
+msgstr "Feltétel eltávolítása"
+
+msgid "Where"
+msgstr "Hol"
+
+msgid "Match"
+msgstr "Egyezés"
+
+msgid "Commas separate alternatives; any one of them counts"
+msgstr ""
+"A választható lehetőségeket vessző választja el egymástól; bármelyikük "
+"elfogadható"
+
+msgid "Text to match"
+msgstr "Egyeztetendő szöveg"
+
+msgid "The preview each message has in the list"
+msgstr ""
+
+msgid "From address when no Reply-To is set"
+msgstr "Feladó cím, ha nincs megadva „Válaszcím” mező"
+
+msgid "Looks in the system address books and the Hylki book"
+msgstr ""
+
+msgid "Add Condition"
+msgstr "Feltétel hozzáadása"
+
+msgid "Condition matching"
+msgstr "Feltételek összehasonlítása"
+
+msgid "All must match"
+msgstr "Mindennek egyeznie kell"
+
+msgid "Any one may match"
+msgstr "Bármelyik egyezhet"
+
+msgid "Condition {n}"
+msgstr "{n} feltétel"
+
+msgid "Or where"
+msgstr "Vagy ahol"
+
+msgid "And where"
+msgstr "És ahol"
+
 msgid ""
 "Press this key on a message to add or remove the tag (with single-key "
 "shortcuts on)"
@@ -2491,52 +2701,8 @@ msgstr "Szűrő hozzáadása"
 msgid "Name (optional)"
 msgstr "Név (opcionális)"
 
-msgid "Remove condition"
-msgstr "Feltétel eltávolítása"
-
-msgid "Where"
-msgstr "Hol"
-
-msgid "Match"
-msgstr "Egyezés"
-
-msgid "Commas separate alternatives; any one of them counts"
-msgstr ""
-"A választható lehetőségeket vessző választja el egymástól; bármelyikük "
-"elfogadható"
-
-msgid "Text to match"
-msgstr "Egyeztetendő szöveg"
-
 msgid "Searched on the server; nothing is downloaded"
 msgstr "Keresés a kiszolgálón; semmi sem töltődött le"
-
-msgid "From address when no Reply-To is set"
-msgstr "Feladó cím, ha nincs megadva „Válaszcím” mező"
-
-msgid "Looks in the system address books and the Hylki book"
-msgstr ""
-
-msgid "Add Condition"
-msgstr "Feltétel hozzáadása"
-
-msgid "Condition matching"
-msgstr "Feltételek összehasonlítása"
-
-msgid "All must match"
-msgstr "Mindennek egyeznie kell"
-
-msgid "Any one may match"
-msgstr "Bármelyik egyezhet"
-
-msgid "Condition {n}"
-msgstr "{n} feltétel"
-
-msgid "Or where"
-msgstr "Vagy ahol"
-
-msgid "And where"
-msgstr "És ahol"
 
 msgid "Then"
 msgstr "Aztán"
@@ -2803,7 +2969,7 @@ msgstr "Másolás"
 msgid "Command Palette"
 msgstr ""
 
-msgid "Type an action, a folder or a tag"
+msgid "Type an action, a folder or a tag, or > for actions only"
 msgstr ""
 
 msgid "Cloud Storage"
@@ -3970,15 +4136,8 @@ msgstr "Ez az üzenet egy levelezőlistáról származik."
 msgid "Translate"
 msgstr "Fordította"
 
-msgid "Starred"
-msgstr "Csillakerülzott"
-
 msgid "Received"
 msgstr ""
-
-#, fuzzy
-msgid "Has attachments"
-msgstr "Nincsenek mellékletek"
 
 #, fuzzy
 msgid "Click to open this message"
@@ -4744,6 +4903,18 @@ msgstr "Elmented a szűrőt?"
 msgid ""
 "The filter editor is open. Save what you changed, or discard it, before "
 "moving on."
+msgstr ""
+"A szűrőszerkesztő megnyílt. Mielőtt továbbmenne, mentse el a módosításokat, "
+"vagy dobja el őket."
+
+#, fuzzy
+msgid "Save the smart folder?"
+msgstr "Elmented a szűrőt?"
+
+#, fuzzy
+msgid ""
+"The smart folder editor is open. Save what you changed, or discard it, "
+"before moving on."
 msgstr ""
 "A szűrőszerkesztő megnyílt. Mielőtt továbbmenne, mentse el a módosításokat, "
 "vagy dobja el őket."
@@ -6455,11 +6626,22 @@ msgstr ""
 msgid "Monospace"
 msgstr "Fix szélességű betűtípus"
 
+#, fuzzy
+msgid "Custom…"
+msgstr "Egyéni szín…"
+
 msgid "Paragraph style"
 msgstr ""
 
 msgid "Font"
 msgstr ""
+
+msgid "Other Font…"
+msgstr ""
+
+#, fuzzy
+msgid "Font size"
+msgstr "Text méret"
 
 msgid "Bold"
 msgstr "Félkövér"
@@ -6575,14 +6757,22 @@ msgstr "Fiók eltávolítása…"
 msgid "Show or hide sub-folders"
 msgstr "Almappák megjelenítése vagy elrejtése"
 
+#, fuzzy
+msgid "Show or hide labels"
+msgstr "Címkék megjelenítése vagy elrejtése"
+
 msgid "Show or hide folders"
 msgstr "Mappák megjelenítése vagy elrejtése"
+
+#, fuzzy
+msgid "Labels ({len})"
+msgstr "Mappák ({len})"
 
 msgid "Folders ({len})"
 msgstr "Mappák ({len})"
 
-msgid "Folders"
-msgstr "Mappák"
+msgid "Labels"
+msgstr ""
 
 msgid "Sort Folders"
 msgstr "Mappák rendezése"
@@ -6602,6 +6792,10 @@ msgstr "Minden mappa megjelenítése"
 msgid "Show each tag"
 msgstr "Minden címke megjelenítése"
 
+#, fuzzy
+msgid "Show each smart folder"
+msgstr "Minden mappa megjelenítése"
+
 msgid "Long-press to expand or collapse"
 msgstr "Hosszú gombnyomással kibontható vagy összecsukható"
 
@@ -6610,6 +6804,14 @@ msgstr "Kuka kiürítése…"
 
 msgid "Empty Junk…"
 msgstr "Levélszemét kiürítése…"
+
+#, fuzzy
+msgid "Edit Smart Folder…"
+msgstr "Szűrő szerkesztése…"
+
+#, fuzzy
+msgid "Delete Smart Folder…"
+msgstr "Mappa törlése…"
 
 msgid "Show or hide filters"
 msgstr "Szűrők megjelenítése vagy elrejtése"
@@ -6701,8 +6903,6 @@ msgstr "Kiszolgáló adatai"
 msgid "Filled in for known providers"
 msgstr "Ismert szolgáltatókhoz kitöltve"
 
-#. A JMAP server is one address, and it sends the mail
-#. itself: no SMTP rows.
 msgid "IMAP server"
 msgstr "IMAP kiszolgáló"
 
@@ -6898,14 +7098,38 @@ msgstr ""
 "{from} helyesnek tűnik, de a cím nem egyezik meg az üzenetben szereplő "
 "névvel."
 
+msgid "This Exchange account has no server address. Add it in its settings."
+msgstr ""
+
+msgid ""
+"Could not find the Exchange server for {email}: {why}. Enter its EWS "
+"address, such as https://mail.example.org/EWS/Exchange.asmx."
+msgstr ""
+
+msgid ""
+"The Exchange server refused the sign-in for {email}. Check the user name and "
+"password in its settings."
+msgstr ""
+
+#, fuzzy
+msgid "unknown folder {path}"
+msgstr "Minden mappa megjelenítése"
+
+#, fuzzy
+msgid "message not found"
+msgstr "Üzenet betűtípusa"
+
+msgid "Could not list folders: {e}"
+msgstr "A mappák nem listázhatók: {e}"
+
+msgid "Could not load message: {e}"
+msgstr "Az üzenet nem tölthető be: {e}"
+
 msgid "Syncing…"
 msgstr "Szinkronizálás…"
 
 msgid "Could not fetch mail: {e}"
 msgstr "A levelek nem kérhetők le: {e}"
-
-msgid "Could not load message: {e}"
-msgstr "Az üzenet nem tölthető be: {e}"
 
 msgid "Could not load source: {e}"
 msgstr "A forrás nem tölthető be: {e}"
@@ -6922,11 +7146,12 @@ msgstr "Nem jelölhető levélszemétként: {e}"
 msgid "Could not mark as not spam: {e}"
 msgstr "Nem sikerült levélszemétnek jelölni: {e}"
 
-msgid "Could not mark {len} messages as not spam: {e}"
-msgstr "Nem sikerült {len} üzenetet levélszemétnek jelölni: {e}"
-
 msgid "Could not move messages: {e}"
 msgstr "Az üzenetek nem helyezhetők át: {e}"
+
+#, fuzzy
+msgid "Could not delete messages: {e}"
+msgstr "Az üzenet nem törölhető: {e}"
 
 msgid "Could not empty the folder: {e}"
 msgstr "A mappa nem üríthető ki: {e}"
@@ -6949,6 +7174,24 @@ msgstr "A mappa nem törölhető: ismeretlen mappa"
 msgid "Could not delete folder: {e}"
 msgstr "A mappa nem törölhető: {e}"
 
+msgid "Sending…"
+msgstr "Küldés…"
+
+msgid "Removing the attachment…"
+msgstr "A melléklet eltávolítása…"
+
+msgid "The attachment is no longer in the message on the server"
+msgstr "A melléklet már nem található az üzenetben a kiszolgálón"
+
+msgid "Could not remove the attachment: {e}"
+msgstr "A melléklet eltávolítása nem sikerült: {e}"
+
+msgid "Still could not send “{subject}”: {e}"
+msgstr "A(z) „{subject}” továbbra sem küldhető el: {e}"
+
+msgid "Could not mark {len} messages as not spam: {e}"
+msgstr "Nem sikerült {len} üzenetet levélszemétnek jelölni: {e}"
+
 #, fuzzy
 msgid "unknown folder"
 msgstr "Minden mappa megjelenítése"
@@ -6956,26 +7199,8 @@ msgstr "Minden mappa megjelenítése"
 msgid "Could not reach the server"
 msgstr "Nem sikerült elérni a kiszolgálót"
 
-msgid "Sending…"
-msgstr "Küldés…"
-
 msgid "A Microsoft account can't receive mail from another account"
 msgstr "Egy Microsoft-fiók nem tud e-maileket fogadni egy másik fióktól"
-
-msgid "Removing the attachment…"
-msgstr "A melléklet eltávolítása…"
-
-msgid "Could not remove the attachment: {e}"
-msgstr "A melléklet eltávolítása nem sikerült: {e}"
-
-msgid "Could not list folders: {e}"
-msgstr "A mappák nem listázhatók: {e}"
-
-msgid "The attachment is no longer in the message on the server"
-msgstr "A melléklet már nem található az üzenetben a kiszolgálón"
-
-msgid "Still could not send “{subject}”: {e}"
-msgstr "A(z) „{subject}” továbbra sem küldhető el: {e}"
 
 msgid "IMAP connection stopped making progress"
 msgstr ""
@@ -7126,9 +7351,6 @@ msgstr ""
 "A POP3 nem tudja módosítani a kiszolgálón található üzenetet, ezért a "
 "melléklet nem került eltávolításra"
 
-msgid "Inbox"
-msgstr "Beérkezett üzenetek"
-
 msgid "Email Client"
 msgstr "E-mail kliens"
 
@@ -7267,6 +7489,10 @@ msgstr "Az egységes beérkező levelek mappa világos üzemmódban"
 
 msgid "Hyprlab"
 msgstr "Hyprlab"
+
+#, fuzzy
+#~ msgid "An Exchange account can't receive mail from another account yet"
+#~ msgstr "Egy POP3-fiók nem tud leveleket fogadni egy másik fióktól"
 
 #, fuzzy
 #~ msgid "Import contacts…"

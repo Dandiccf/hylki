@@ -108,6 +108,46 @@ the account has `protocol = "jmap"`, the server in `imap_host`, and
 where a password would be. An account made from the JMAP Server entry has
 `jmap_generic = true`.
 
+### Exchange (on-premise)
+
+**Microsoft Exchange (on-premise)** in the Provider list connects to an
+Exchange server an organization runs itself, such as a university's, over
+Exchange Web Services (EWS). Microsoft 365 mailboxes use the Microsoft 365
+entry instead: Microsoft is switching EWS off for them.
+
+- **EWS address:** leave it empty and **Test Connection** looks the server
+  up from the email address with Autodiscover, then fills the address in.
+  When that finds nothing, the usual `https://mail.<domain>/EWS/Exchange.asmx`
+  is tried. An address can also be typed in full.
+- **Username:** `user@domain` or `DOMAIN\user`, as the organization signs
+  in to Outlook; empty means the email address.
+- **Sign-in:** NTLM where the server offers it, otherwise Basic over HTTPS.
+  NTLM carries the TLS channel binding that Exchange 2019 CU14 and later
+  require by default (Extended Protection). Kerberos is not supported yet.
+- **Certificates:** the system's trusted certificates, as for IMAP, and the
+  **Accept a certificate for another name** switch.
+
+Folders come with their roles from the server; Exchange's own Outbox and
+the calendar, contacts and tasks folders are left out. Folders can be made,
+renamed, moved and deleted, a deleted one going to Deleted Items with its
+contents. Each folder lists its newest 300 messages. Read state, stars
+(Exchange 2013 and later) and categories, which Hylki shows as tags and
+**Find Tags** lists, are the server's own. Mark as Spam and Not Spam report
+the message to the server's filter, which moves it. Sending goes through
+the server, which files the copy in Sent Items. An attachment can be removed
+from a message, mail can be moved in from another account, and Junk and
+Trash are emptied of old mail as the account's settings say. New mail
+arrives by push when it is on for the account: a streaming subscription on
+a second connection tells Hylki which folders changed, and only those are
+listed again, fetching just the messages new to it. Without push, or while
+the subscription is being restored, the folders are polled at the interval
+set for checking mail or every two minutes.
+
+Tested against grommunio's gromox server with Basic sign-in, and NTLM
+against an independent implementation; a real Exchange server has not been
+tried yet. In `accounts.toml` the account has `protocol = "ews"` and the EWS
+address in `imap_host`.
+
 ### Folder order
 
 An account's main folders (Inbox, Drafts, Sent, Archive, Junk, Trash) come
@@ -176,7 +216,9 @@ Inboxes, Starred, Sent, Drafts and Archive are on until switched off; Junk
 and Trash are off until switched on. In the unified Junk and Trash, **Not
 Spam** and **Move to Inbox** send each message to its own account's Inbox,
 and the right-click menu of each account's row beneath has **Empty Junk…**
-or **Empty Trash…**.
+or **Empty Trash…**. The same item on the unified Junk or Trash row itself
+empties that folder in every account in the unified section at once, after
+a confirmation that lists them.
 
 ### Favorites
 
@@ -192,6 +234,47 @@ out of All Inboxes.
 They are kept on this computer, in `sidebar.toml` as `favorites`. A folder
 renamed or moved in Hylki stays a favorite under its new name; one deleted
 leaves the list.
+
+### Smart folders
+
+A smart folder is a saved search. It lists the messages that match its
+conditions and sits in a Smart Folders row at the end of the unified
+section, each with its unread count. **Settings → Smart Folders → Add Smart
+Folder…** makes one; so do **New Smart Folder…** in the row's right-click
+menu and in the command palette. Right-clicking a smart folder edits or
+deletes it. Deleting one takes only the search away, never the mail.
+
+- **Account:** one account, or all accounts, meaning those in the unified
+  section.
+- **Folders:** one kind of folder (Inbox, Sent, Drafts, Archive, Junk or
+  Trash), or every folder but Trash and Junk.
+- **Conditions:** starred or not, unread or read, has attachments, tagged
+  with a tag or any tag, and the text conditions filters use: From address
+  and name, To or Cc, Reply-To, the message preview, and whether the sender
+  is in Contacts. **Condition matching** says whether all must match or any
+  one may.
+
+"Sent mail that is starred or tagged" is Folders: Sent, with Starred and
+Tagged (any tag) as conditions and Any one may match. A smart folder
+searches the mail on this computer, so it finds what has been synced, and
+lists at most 5,000 messages per account. They are kept in
+`smart_folders.toml`.
+
+### Gmail labels
+
+On a Gmail account, the labels Gmail has on a message show as pills beside
+its tags, in the message list and the reader. Gmail's own labels, such as
+Inbox, Important and Starred, are left out, as is the label of the folder
+being read. A label with the same name or keyword as a tag is that tag: it
+shows as the tag, the tag's view in the sidebar lists the message, and
+smart folders and the tag menus count it.
+
+Tagging a message on a Gmail account puts a label named like the tag on it,
+so Gmail's own apps show the tag too, and keeps the IMAP keyword other mail
+programs read; taking the tag off removes both. A label Hylki has just made
+appears as a folder after the next folder check, as every Gmail label does.
+Labels are read with each sync of a folder's newest mail; mail synced
+before Hylki read labels gets them once, in the background.
 
 ### Hiding folders
 
@@ -512,6 +595,18 @@ that could not start). The check gives up after 30 seconds. The Flatpak
 reaches the desktop's Evolution Data Server, which has to be installed on
 the system, as it is with GNOME.
 
+### The Microsoft 365 directory
+
+A Microsoft 365 account signed in within Hylki can suggest people from the
+organization's directory as a recipient is typed, alongside LDAP
+directories. Turn on **Search the organization directory** in the account's
+settings. Microsoft then asks to approve access to the directory (the
+People.Read and User.ReadBasic.All permissions). Where an organization lets
+only administrators approve apps, an administrator approves Hylki once, at
+the link shown. Accounts added through GNOME Online Accounts cannot use it,
+since GNOME holds their sign-in; add the account in Hylki with the Microsoft
+365 / Outlook provider instead.
+
 ### Translating messages
 
 Settings → Translation sets up a translation service you have an account
@@ -679,17 +774,22 @@ rest of what a mail can carry:
 
 - **Paragraph style:** Normal, Heading 1 to 3 and Preformatted. The menu's
   label names the style the cursor is in.
-- **Font:** Sans Serif, Serif or Monospace. These are generic families, so
-  the recipient's client picks its own font of each kind.
-- **Text color and Highlight:** a palette each, plus Automatic and No
-  highlight to take the color off again. Each button shows the color it last
-  applied.
+- **Font:** Sans Serif, Serif or Monospace, which leave the recipient's
+  client to pick its own font of each kind; the fonts most mail programs
+  offer, such as Arial, Georgia, Verdana and Courier New, each with a
+  fallback; or **Other Font…** for any font installed here, followed by its
+  generic kind in case the recipient lacks it.
+- **Font size:** points from 8 to 36, or Default. With nothing selected, the
+  size applies to what is typed next.
+- **Text color and Highlight:** the GNOME palette and **Custom…** for any
+  other color, plus Automatic and No highlight to take the color off again.
+  Each button shows the color it last applied.
 - **Decrease and Increase indent.** In a list, Increase indent nests the item
   under the one above it.
 - **Insert emoji** (also <kbd>Ctrl+.</kbd>) and **Insert picture**, which puts
   pictures in the message at the cursor, as dropping or pasting them does.
 
-Colors and fonts go out as inline styles, which every mail client keeps.
+Colors, fonts and sizes go out as inline styles, which every mail client keeps.
 Markdown has no words for them, so switching such a message to Markdown or
 plain text leaves them out. **Settings → Composing → Formatting toolbar**
 says whether a new message starts with these tools shown (Always expanded)
@@ -1171,6 +1271,22 @@ works:
 ```sh
 flatpak override --user --env=GSK_RENDERER=gl co.hyprlab.Hylki
 ```
+
+### Sensitivity labels
+
+A message an organization has classified with Microsoft Purview, such as
+Internal Use or Confidential, shows its label as a pill beside the sender's
+name, with a tag icon. The label comes from the message's `msip_labels`
+header, so it shows on any account, not only Microsoft 365. A tenant that
+leaves the label's name out of the message shows the pill as **Labeled**.
+Outlook's older Sensitivity setting (Personal, Private, Confidential) shows
+the same way.
+
+Hylki only shows the label: it does not apply the rules the organization
+attached to it, and it cannot set a label on a message you write. A message
+protected with encryption is a separate matter the label only names. Mail
+downloaded before Hylki read labels shows its label once it is downloaded
+again.
 
 ### Newsletters and list mail
 

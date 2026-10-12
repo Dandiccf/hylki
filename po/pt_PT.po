@@ -398,6 +398,10 @@ msgid "Mail Accounts"
 msgstr "Contas de correio"
 
 #, fuzzy
+msgid "New Smart Folder…"
+msgstr "Nova pasta…"
+
+#, fuzzy
 msgid "About Hylki"
 msgstr "Acerca"
 
@@ -424,6 +428,10 @@ msgstr "Caixa de saída"
 #, fuzzy
 msgid "Tag"
 msgstr "Etiquetas"
+
+#, fuzzy
+msgid "Smart Folder"
+msgstr "Ordenar pastas"
 
 msgid ""
 "Single-key shortcuts are switched off. Turn them on in Settings → System."
@@ -717,11 +725,32 @@ msgstr ""
 msgid "Empty"
 msgstr "Esvaziar"
 
+msgid "Empty Trash in Every Account?"
+msgstr ""
+
+msgid "Empty Junk in Every Account?"
+msgstr ""
+
+#, fuzzy
+msgid ""
+"Every message in them will be erased from the server. This can’t be undone."
+msgstr ""
+"Todas as mensagens nela contidas serão apagadas do servidor. Esta ação não "
+"pode ser anulada."
+
 msgid "No Junk folder available for this account"
 msgstr "Não existe uma pasta Lixo eletrónico disponível para esta conta"
 
 msgid "No Inbox folder available for this account"
 msgstr "Não existe uma pasta Caixa de entrada disponível para esta conta"
+
+#, fuzzy
+msgid "Delete “{name}”?"
+msgstr "Esvaziar «{name}»?"
+
+msgid ""
+"The smart folder goes from the sidebar. The mail it shows stays where it is."
+msgstr ""
 
 msgid "No address book available to add contacts"
 msgstr "Não está disponível nenhum livro de endereços para adicionar contactos"
@@ -1599,6 +1628,32 @@ msgid "Enter the LibreTranslate server's address in Settings → Translation."
 msgstr ""
 "Introduza o endereço do servidor LibreTranslate em Definições → Tradução."
 
+msgid "Labeled"
+msgstr ""
+
+msgid "Personal"
+msgstr ""
+
+#, fuzzy
+msgid "Private"
+msgstr "Privacidade"
+
+msgid "Confidential"
+msgstr ""
+
+msgid "The sender marked this message “{label}”."
+msgstr ""
+
+msgid ""
+"The sender's organization labeled this message, without saying the label's "
+"name. Hylki shows the label but does not apply its rules."
+msgstr ""
+
+msgid ""
+"The sender's organization labeled this message “{label}”. Hylki shows the "
+"label but does not apply its rules."
+msgstr ""
+
 msgid "Open Hylki"
 msgstr "Abrir o Hylki"
 
@@ -1636,6 +1691,12 @@ msgstr ""
 "Introduza o endereço do seu servidor JMAP ou o URL do respetivo recurso de "
 "sessão. O correio é lido e enviado através de JMAP; não são necessárias "
 "definições de SMTP."
+
+msgid ""
+"For your organization's own Exchange server. Leave the server empty to find "
+"it from your address. Sign in as user@domain or DOMAIN\\user. Microsoft 365 "
+"accounts use the entry below."
+msgstr ""
 
 msgid "Sign in with your browser — no password needed."
 msgstr "Inicie sessão no navegador — não é necessária uma palavra-passe."
@@ -1705,6 +1766,20 @@ msgstr ""
 
 msgid "Find Tags…"
 msgstr "Localizar etiquetas…"
+
+#, fuzzy
+msgid "Smart Folders"
+msgstr "Ordenar pastas"
+
+msgid ""
+"A smart folder lists the messages that match its conditions, from every "
+"folder or one kind of folder, in one account or all of them. It searches the "
+"mail on this computer and appears in the sidebar under the unified rows."
+msgstr ""
+
+#, fuzzy
+msgid "Add Smart Folder…"
+msgstr "Adicionar pasta"
 
 msgid "Search filters"
 msgstr "Pesquisar filtros"
@@ -2055,6 +2130,10 @@ msgid ""
 "link) older than this, unless starred. Checked at each sync."
 msgstr ""
 
+#, fuzzy
+msgid "Search the organization directory"
+msgstr "Guardar o diretório?"
+
 msgid "Folder Order"
 msgstr "Ordem das pastas"
 
@@ -2185,6 +2264,14 @@ msgstr "Conclua o início de sessão na janela que foi aberta."
 msgid "Opening browser… complete sign-in there."
 msgstr "A abrir o navegador… conclua aí o início de sessão."
 
+#, fuzzy
+msgid "Opening browser… approve access to the directory there."
+msgstr "A abrir o navegador… conclua aí o início de sessão."
+
+#, fuzzy
+msgid "Approve access to the directory in the window that opened."
+msgstr "Conclua o início de sessão na janela que foi aberta."
+
 msgid "Signature HTML"
 msgstr "HTML da assinatura"
 
@@ -2225,6 +2312,16 @@ msgstr "✓ Sessão iniciada — guarde a conta para concluir"
 
 msgid "Sign-in failed: {e}"
 msgstr "Falha ao iniciar sessão: {e}"
+
+#, fuzzy
+msgid "Signed in as {address}, not {email}."
+msgstr "Sessão iniciada como {who}. {terms}"
+
+msgid "Access to the directory approved. Save the account to finish."
+msgstr ""
+
+msgid "Access to the directory was not approved: {e}"
+msgstr ""
 
 msgid "✓ SMTP: connected"
 msgstr "✓ SMTP: ligado"
@@ -2327,6 +2424,18 @@ msgstr ""
 msgid "Use this account in Hylki"
 msgstr "Utilizar esta conta no Hylki"
 
+msgid ""
+"Only for an account signed in within Hylki. To use it, add this account with "
+"Microsoft 365 / Outlook as the provider, instead of from GNOME Online "
+"Accounts."
+msgstr ""
+
+msgid ""
+"Suggest people from your organization as you type a recipient. Turning this "
+"on asks Microsoft for access to the directory; some organizations need an "
+"administrator to approve it."
+msgstr ""
+
 msgid "Never"
 msgstr "Nunca"
 
@@ -2338,13 +2447,14 @@ msgstr[1] "Ao fim de {n} dias"
 msgid "API Token"
 msgstr "Token de API"
 
-#. A JMAP server is one address, and it sends the mail
-#. itself: no SMTP rows.
 msgid "Server (host name or URL)"
 msgstr "Servidor (nome de servidor ou URL)"
 
 msgid "Port (default 443)"
 msgstr "Porta (predefinição: 443)"
+
+msgid "EWS address (empty to find it)"
+msgstr ""
 
 msgid "Google (Gmail)"
 msgstr "Google (Gmail)"
@@ -2457,6 +2567,104 @@ msgstr "Importar todas"
 msgid "{n} messages"
 msgstr "Mensagens: {n}"
 
+msgid "All but Trash and Junk"
+msgstr ""
+
+#, fuzzy
+msgid "Remove smart folder"
+msgstr "Remover filtro"
+
+msgid "Inbox"
+msgstr "Caixa de entrada"
+
+msgid "Starred"
+msgstr "Com estrela"
+
+#, fuzzy
+msgid "Not starred"
+msgstr "Não instalada"
+
+#, fuzzy
+msgid "Unread"
+msgstr "Lida/não lida"
+
+#, fuzzy
+msgid "Read"
+msgstr "Leitura"
+
+msgid "Has attachments"
+msgstr "Tem anexos"
+
+msgid "Tagged"
+msgstr ""
+
+#, fuzzy
+msgid "Message preview"
+msgstr "Código fonte da mensagem"
+
+#, fuzzy
+msgid "Edit Smart Folder"
+msgstr "Ordenar pastas"
+
+#, fuzzy
+msgid "Add Smart Folder"
+msgstr "Adicionar pasta"
+
+#, fuzzy
+msgid "All accounts means those in the unified section"
+msgstr "A lista de contas sob a linha unificada Enviadas."
+
+msgid "Folders"
+msgstr "Pastas"
+
+msgid "Any tag"
+msgstr ""
+
+msgid "Remove condition"
+msgstr "Remover condição"
+
+msgid "Where"
+msgstr "Campo"
+
+msgid "Match"
+msgstr "Correspondência"
+
+msgid "Commas separate alternatives; any one of them counts"
+msgstr "As vírgulas separam as alternativas; qualquer uma delas conta"
+
+msgid "Text to match"
+msgstr "Texto a procurar"
+
+msgid "The preview each message has in the list"
+msgstr ""
+
+msgid "From address when no Reply-To is set"
+msgstr "Endereço do remetente quando Responder a não está definido"
+
+msgid "Looks in the system address books and the Hylki book"
+msgstr ""
+
+msgid "Add Condition"
+msgstr "Adicionar condição"
+
+msgid "Condition matching"
+msgstr "Correspondência das condições"
+
+msgid "All must match"
+msgstr "Todas têm de corresponder"
+
+msgid "Any one may match"
+msgstr "Qualquer uma pode corresponder"
+
+msgid "Condition {n}"
+msgstr "Condição {n}"
+
+msgid "Or where"
+msgstr "Ou onde"
+
+msgid "And where"
+msgstr "E onde"
+
 msgid ""
 "Press this key on a message to add or remove the tag (with single-key "
 "shortcuts on)"
@@ -2502,50 +2710,8 @@ msgstr "Adicionar filtro"
 msgid "Name (optional)"
 msgstr "Nome (opcional)"
 
-msgid "Remove condition"
-msgstr "Remover condição"
-
-msgid "Where"
-msgstr "Campo"
-
-msgid "Match"
-msgstr "Correspondência"
-
-msgid "Commas separate alternatives; any one of them counts"
-msgstr "As vírgulas separam as alternativas; qualquer uma delas conta"
-
-msgid "Text to match"
-msgstr "Texto a procurar"
-
 msgid "Searched on the server; nothing is downloaded"
 msgstr "Pesquisa no servidor; nada é transferido"
-
-msgid "From address when no Reply-To is set"
-msgstr "Endereço do remetente quando Responder a não está definido"
-
-msgid "Looks in the system address books and the Hylki book"
-msgstr ""
-
-msgid "Add Condition"
-msgstr "Adicionar condição"
-
-msgid "Condition matching"
-msgstr "Correspondência das condições"
-
-msgid "All must match"
-msgstr "Todas têm de corresponder"
-
-msgid "Any one may match"
-msgstr "Qualquer uma pode corresponder"
-
-msgid "Condition {n}"
-msgstr "Condição {n}"
-
-msgid "Or where"
-msgstr "Ou onde"
-
-msgid "And where"
-msgstr "E onde"
 
 msgid "Then"
 msgstr "Então"
@@ -2810,7 +2976,7 @@ msgstr "Copiar"
 msgid "Command Palette"
 msgstr ""
 
-msgid "Type an action, a folder or a tag"
+msgid "Type an action, a folder or a tag, or > for actions only"
 msgstr ""
 
 msgid "Cloud Storage"
@@ -3955,14 +4121,8 @@ msgstr "Esta mensagem está em {language}."
 msgid "Translate"
 msgstr "Traduzir"
 
-msgid "Starred"
-msgstr "Com estrela"
-
 msgid "Received"
 msgstr "Recebida"
-
-msgid "Has attachments"
-msgstr "Tem anexos"
 
 msgid "Click to open this message"
 msgstr "Clique para abrir esta mensagem"
@@ -4719,6 +4879,18 @@ msgstr "Guardar o filtro?"
 msgid ""
 "The filter editor is open. Save what you changed, or discard it, before "
 "moving on."
+msgstr ""
+"O editor de filtros está aberto. Antes de continuar, guarde ou descarte as "
+"alterações."
+
+#, fuzzy
+msgid "Save the smart folder?"
+msgstr "Guardar o filtro?"
+
+#, fuzzy
+msgid ""
+"The smart folder editor is open. Save what you changed, or discard it, "
+"before moving on."
 msgstr ""
 "O editor de filtros está aberto. Antes de continuar, guarde ou descarte as "
 "alterações."
@@ -6425,11 +6597,22 @@ msgstr "Com serifa"
 msgid "Monospace"
 msgstr "Largura fixa"
 
+#, fuzzy
+msgid "Custom…"
+msgstr "Cor personalizada…"
+
 msgid "Paragraph style"
 msgstr "Estilo de parágrafo"
 
 msgid "Font"
 msgstr "Tipo de letra"
+
+msgid "Other Font…"
+msgstr ""
+
+#, fuzzy
+msgid "Font size"
+msgstr "Tamanho do texto"
 
 msgid "Bold"
 msgstr "Negrito"
@@ -6538,14 +6721,22 @@ msgstr "Remover conta…"
 msgid "Show or hide sub-folders"
 msgstr "Mostrar ou ocultar subpastas"
 
+#, fuzzy
+msgid "Show or hide labels"
+msgstr "Mostrar ou ocultar etiquetas"
+
 msgid "Show or hide folders"
 msgstr "Mostrar ou ocultar pastas"
+
+#, fuzzy
+msgid "Labels ({len})"
+msgstr "Pastas ({len})"
 
 msgid "Folders ({len})"
 msgstr "Pastas ({len})"
 
-msgid "Folders"
-msgstr "Pastas"
+msgid "Labels"
+msgstr ""
 
 msgid "Sort Folders"
 msgstr "Ordenar pastas"
@@ -6565,6 +6756,10 @@ msgstr "Mostrar cada pasta"
 msgid "Show each tag"
 msgstr "Mostrar cada etiqueta"
 
+#, fuzzy
+msgid "Show each smart folder"
+msgstr "Mostrar cada pasta"
+
 msgid "Long-press to expand or collapse"
 msgstr "Premir sem soltar para expandir ou recolher"
 
@@ -6573,6 +6768,14 @@ msgstr "Esvaziar lixo…"
 
 msgid "Empty Junk…"
 msgstr "Esvaziar lixo eletrónico…"
+
+#, fuzzy
+msgid "Edit Smart Folder…"
+msgstr "Editar filtro…"
+
+#, fuzzy
+msgid "Delete Smart Folder…"
+msgstr "Eliminar pasta…"
 
 msgid "Show or hide filters"
 msgstr "Mostrar ou ocultar filtros"
@@ -6662,8 +6865,6 @@ msgstr "Dados do servidor"
 msgid "Filled in for known providers"
 msgstr "Preenchidos para os fornecedores conhecidos"
 
-#. A JMAP server is one address, and it sends the mail
-#. itself: no SMTP rows.
 msgid "IMAP server"
 msgstr "Servidor IMAP"
 
@@ -6855,14 +7056,38 @@ msgstr ""
 "A identidade de {from} foi confirmada, mas os endereços não correspondem ao "
 "nome apresentado na mensagem."
 
+msgid "This Exchange account has no server address. Add it in its settings."
+msgstr ""
+
+msgid ""
+"Could not find the Exchange server for {email}: {why}. Enter its EWS "
+"address, such as https://mail.example.org/EWS/Exchange.asmx."
+msgstr ""
+
+msgid ""
+"The Exchange server refused the sign-in for {email}. Check the user name and "
+"password in its settings."
+msgstr ""
+
+#, fuzzy
+msgid "unknown folder {path}"
+msgstr "pasta desconhecida"
+
+#, fuzzy
+msgid "message not found"
+msgstr "Tipo de letra das mensagens"
+
+msgid "Could not list folders: {e}"
+msgstr "Não foi possível listar as pastas: {e}"
+
+msgid "Could not load message: {e}"
+msgstr "Não foi possível carregar a mensagem: {e}"
+
 msgid "Syncing…"
 msgstr "A sincronizar…"
 
 msgid "Could not fetch mail: {e}"
 msgstr "Não foi possível obter o correio: {e}"
-
-msgid "Could not load message: {e}"
-msgstr "Não foi possível carregar a mensagem: {e}"
 
 msgid "Could not load source: {e}"
 msgstr "Não foi possível carregar o código fonte: {e}"
@@ -6879,12 +7104,12 @@ msgstr "Não foi possível marcar como lixo eletrónico: {e}"
 msgid "Could not mark as not spam: {e}"
 msgstr "Não foi possível marcar como não sendo lixo eletrónico: {e}"
 
-msgid "Could not mark {len} messages as not spam: {e}"
-msgstr ""
-"Não foi possível marcar {len} mensagens como não sendo lixo eletrónico: {e}"
-
 msgid "Could not move messages: {e}"
 msgstr "Não foi possível mover as mensagens: {e}"
+
+#, fuzzy
+msgid "Could not delete messages: {e}"
+msgstr "Não foi possível eliminar a mensagem: {e}"
 
 msgid "Could not empty the folder: {e}"
 msgstr "Não foi possível esvaziar a pasta: {e}"
@@ -6907,32 +7132,33 @@ msgstr "Não foi possível eliminar a pasta: pasta desconhecida"
 msgid "Could not delete folder: {e}"
 msgstr "Não foi possível eliminar a pasta: {e}"
 
+msgid "Sending…"
+msgstr "A enviar…"
+
+msgid "Removing the attachment…"
+msgstr "A remover o anexo…"
+
+msgid "The attachment is no longer in the message on the server"
+msgstr "O anexo já não está na mensagem no servidor"
+
+msgid "Could not remove the attachment: {e}"
+msgstr "Não foi possível remover o anexo: {e}"
+
+msgid "Still could not send “{subject}”: {e}"
+msgstr "Continuou a não ser possível enviar «{subject}»: {e}"
+
+msgid "Could not mark {len} messages as not spam: {e}"
+msgstr ""
+"Não foi possível marcar {len} mensagens como não sendo lixo eletrónico: {e}"
+
 msgid "unknown folder"
 msgstr "pasta desconhecida"
 
 msgid "Could not reach the server"
 msgstr "Não foi possível aceder ao servidor"
 
-msgid "Sending…"
-msgstr "A enviar…"
-
 msgid "A Microsoft account can't receive mail from another account"
 msgstr "Uma conta Microsoft não pode receber correio de outra conta"
-
-msgid "Removing the attachment…"
-msgstr "A remover o anexo…"
-
-msgid "Could not remove the attachment: {e}"
-msgstr "Não foi possível remover o anexo: {e}"
-
-msgid "Could not list folders: {e}"
-msgstr "Não foi possível listar as pastas: {e}"
-
-msgid "The attachment is no longer in the message on the server"
-msgstr "O anexo já não está na mensagem no servidor"
-
-msgid "Still could not send “{subject}”: {e}"
-msgstr "Continuou a não ser possível enviar «{subject}»: {e}"
 
 msgid "IMAP connection stopped making progress"
 msgstr "A ligação IMAP deixou de progredir"
@@ -7084,9 +7310,6 @@ msgstr ""
 "O POP3 não pode alterar uma mensagem no servidor, pelo que o anexo não foi "
 "removido"
 
-msgid "Inbox"
-msgstr "Caixa de entrada"
-
 msgid "Email Client"
 msgstr "Cliente de correio eletrónico"
 
@@ -7220,6 +7443,10 @@ msgstr "A caixa de entrada unificada no modo claro"
 
 msgid "Hyprlab"
 msgstr "Hyprlab"
+
+#, fuzzy
+#~ msgid "An Exchange account can't receive mail from another account yet"
+#~ msgstr "Uma conta POP3 não pode receber correio de outra conta"
 
 #, fuzzy
 #~ msgid "Import contacts…"

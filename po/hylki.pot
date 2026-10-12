@@ -364,6 +364,9 @@ msgstr ""
 msgid "Mail Accounts"
 msgstr ""
 
+msgid "New Smart Folder…"
+msgstr ""
+
 msgid "About Hylki"
 msgstr ""
 
@@ -386,6 +389,9 @@ msgid "Outbox"
 msgstr ""
 
 msgid "Tag"
+msgstr ""
+
+msgid "Smart Folder"
 msgstr ""
 
 msgid ""
@@ -646,10 +652,27 @@ msgstr ""
 msgid "Empty"
 msgstr ""
 
+msgid "Empty Trash in Every Account?"
+msgstr ""
+
+msgid "Empty Junk in Every Account?"
+msgstr ""
+
+msgid ""
+"Every message in them will be erased from the server. This can’t be undone."
+msgstr ""
+
 msgid "No Junk folder available for this account"
 msgstr ""
 
 msgid "No Inbox folder available for this account"
+msgstr ""
+
+msgid "Delete “{name}”?"
+msgstr ""
+
+msgid ""
+"The smart folder goes from the sidebar. The mail it shows stays where it is."
 msgstr ""
 
 msgid "No address book available to add contacts"
@@ -1461,6 +1484,31 @@ msgstr ""
 msgid "Enter the LibreTranslate server's address in Settings → Translation."
 msgstr ""
 
+msgid "Labeled"
+msgstr ""
+
+msgid "Personal"
+msgstr ""
+
+msgid "Private"
+msgstr ""
+
+msgid "Confidential"
+msgstr ""
+
+msgid "The sender marked this message “{label}”."
+msgstr ""
+
+msgid ""
+"The sender's organization labeled this message, without saying the label's "
+"name. Hylki shows the label but does not apply its rules."
+msgstr ""
+
+msgid ""
+"The sender's organization labeled this message “{label}”. Hylki shows the "
+"label but does not apply its rules."
+msgstr ""
+
 msgid "Open Hylki"
 msgstr ""
 
@@ -1490,6 +1538,12 @@ msgstr ""
 msgid ""
 "Enter your JMAP server's address, or the URL of its session resource. Mail "
 "is read and sent over JMAP; no SMTP settings are needed."
+msgstr ""
+
+msgid ""
+"For your organization's own Exchange server. Leave the server empty to find "
+"it from your address. Sign in as user@domain or DOMAIN\\user. Microsoft 365 "
+"accounts use the entry below."
 msgstr ""
 
 msgid "Sign in with your browser — no password needed."
@@ -1543,6 +1597,18 @@ msgid "Look through every mailbox for tags other clients have set"
 msgstr ""
 
 msgid "Find Tags…"
+msgstr ""
+
+msgid "Smart Folders"
+msgstr ""
+
+msgid ""
+"A smart folder lists the messages that match its conditions, from every "
+"folder or one kind of folder, in one account or all of them. It searches the "
+"mail on this computer and appears in the sidebar under the unified rows."
+msgstr ""
+
+msgid "Add Smart Folder…"
 msgstr ""
 
 msgid "Search filters"
@@ -1847,6 +1913,9 @@ msgid ""
 "link) older than this, unless starred. Checked at each sync."
 msgstr ""
 
+msgid "Search the organization directory"
+msgstr ""
+
 msgid "Folder Order"
 msgstr ""
 
@@ -1955,6 +2024,12 @@ msgstr ""
 msgid "Opening browser… complete sign-in there."
 msgstr ""
 
+msgid "Opening browser… approve access to the directory there."
+msgstr ""
+
+msgid "Approve access to the directory in the window that opened."
+msgstr ""
+
 msgid "Signature HTML"
 msgstr ""
 
@@ -1990,6 +2065,15 @@ msgid "✓ Signed in — save the account to finish"
 msgstr ""
 
 msgid "Sign-in failed: {e}"
+msgstr ""
+
+msgid "Signed in as {address}, not {email}."
+msgstr ""
+
+msgid "Access to the directory approved. Save the account to finish."
+msgstr ""
+
+msgid "Access to the directory was not approved: {e}"
 msgstr ""
 
 msgid "✓ SMTP: connected"
@@ -2087,6 +2171,18 @@ msgstr ""
 msgid "Use this account in Hylki"
 msgstr ""
 
+msgid ""
+"Only for an account signed in within Hylki. To use it, add this account with "
+"Microsoft 365 / Outlook as the provider, instead of from GNOME Online "
+"Accounts."
+msgstr ""
+
+msgid ""
+"Suggest people from your organization as you type a recipient. Turning this "
+"on asks Microsoft for access to the directory; some organizations need an "
+"administrator to approve it."
+msgstr ""
+
 msgid "Never"
 msgstr ""
 
@@ -2098,12 +2194,13 @@ msgstr[1] ""
 msgid "API Token"
 msgstr ""
 
-#. A JMAP server is one address, and it sends the mail
-#. itself: no SMTP rows.
 msgid "Server (host name or URL)"
 msgstr ""
 
 msgid "Port (default 443)"
+msgstr ""
+
+msgid "EWS address (empty to find it)"
 msgstr ""
 
 msgid "Google (Gmail)"
@@ -2203,6 +2300,96 @@ msgstr ""
 msgid "{n} messages"
 msgstr ""
 
+msgid "All but Trash and Junk"
+msgstr ""
+
+msgid "Remove smart folder"
+msgstr ""
+
+msgid "Inbox"
+msgstr ""
+
+msgid "Starred"
+msgstr ""
+
+msgid "Not starred"
+msgstr ""
+
+msgid "Unread"
+msgstr ""
+
+msgid "Read"
+msgstr ""
+
+msgid "Has attachments"
+msgstr ""
+
+msgid "Tagged"
+msgstr ""
+
+msgid "Message preview"
+msgstr ""
+
+msgid "Edit Smart Folder"
+msgstr ""
+
+msgid "Add Smart Folder"
+msgstr ""
+
+msgid "All accounts means those in the unified section"
+msgstr ""
+
+msgid "Folders"
+msgstr ""
+
+msgid "Any tag"
+msgstr ""
+
+msgid "Remove condition"
+msgstr ""
+
+msgid "Where"
+msgstr ""
+
+msgid "Match"
+msgstr ""
+
+msgid "Commas separate alternatives; any one of them counts"
+msgstr ""
+
+msgid "Text to match"
+msgstr ""
+
+msgid "The preview each message has in the list"
+msgstr ""
+
+msgid "From address when no Reply-To is set"
+msgstr ""
+
+msgid "Looks in the system address books and the Hylki book"
+msgstr ""
+
+msgid "Add Condition"
+msgstr ""
+
+msgid "Condition matching"
+msgstr ""
+
+msgid "All must match"
+msgstr ""
+
+msgid "Any one may match"
+msgstr ""
+
+msgid "Condition {n}"
+msgstr ""
+
+msgid "Or where"
+msgstr ""
+
+msgid "And where"
+msgstr ""
+
 msgid ""
 "Press this key on a message to add or remove the tag (with single-key "
 "shortcuts on)"
@@ -2243,49 +2430,7 @@ msgstr ""
 msgid "Name (optional)"
 msgstr ""
 
-msgid "Remove condition"
-msgstr ""
-
-msgid "Where"
-msgstr ""
-
-msgid "Match"
-msgstr ""
-
-msgid "Commas separate alternatives; any one of them counts"
-msgstr ""
-
-msgid "Text to match"
-msgstr ""
-
 msgid "Searched on the server; nothing is downloaded"
-msgstr ""
-
-msgid "From address when no Reply-To is set"
-msgstr ""
-
-msgid "Looks in the system address books and the Hylki book"
-msgstr ""
-
-msgid "Add Condition"
-msgstr ""
-
-msgid "Condition matching"
-msgstr ""
-
-msgid "All must match"
-msgstr ""
-
-msgid "Any one may match"
-msgstr ""
-
-msgid "Condition {n}"
-msgstr ""
-
-msgid "Or where"
-msgstr ""
-
-msgid "And where"
 msgstr ""
 
 msgid "Then"
@@ -2536,7 +2681,7 @@ msgstr ""
 msgid "Command Palette"
 msgstr ""
 
-msgid "Type an action, a folder or a tag"
+msgid "Type an action, a folder or a tag, or > for actions only"
 msgstr ""
 
 msgid "Cloud Storage"
@@ -3551,13 +3696,7 @@ msgstr ""
 msgid "Translate"
 msgstr ""
 
-msgid "Starred"
-msgstr ""
-
 msgid "Received"
-msgstr ""
-
-msgid "Has attachments"
 msgstr ""
 
 msgid "Click to open this message"
@@ -4259,6 +4398,14 @@ msgstr ""
 msgid ""
 "The filter editor is open. Save what you changed, or discard it, before "
 "moving on."
+msgstr ""
+
+msgid "Save the smart folder?"
+msgstr ""
+
+msgid ""
+"The smart folder editor is open. Save what you changed, or discard it, "
+"before moving on."
 msgstr ""
 
 msgid "Save the tag?"
@@ -5659,10 +5806,19 @@ msgstr ""
 msgid "Monospace"
 msgstr ""
 
+msgid "Custom…"
+msgstr ""
+
 msgid "Paragraph style"
 msgstr ""
 
 msgid "Font"
+msgstr ""
+
+msgid "Other Font…"
+msgstr ""
+
+msgid "Font size"
 msgstr ""
 
 msgid "Bold"
@@ -5772,13 +5928,19 @@ msgstr ""
 msgid "Show or hide sub-folders"
 msgstr ""
 
+msgid "Show or hide labels"
+msgstr ""
+
 msgid "Show or hide folders"
+msgstr ""
+
+msgid "Labels ({len})"
 msgstr ""
 
 msgid "Folders ({len})"
 msgstr ""
 
-msgid "Folders"
+msgid "Labels"
 msgstr ""
 
 msgid "Sort Folders"
@@ -5799,6 +5961,9 @@ msgstr ""
 msgid "Show each tag"
 msgstr ""
 
+msgid "Show each smart folder"
+msgstr ""
+
 msgid "Long-press to expand or collapse"
 msgstr ""
 
@@ -5806,6 +5971,12 @@ msgid "Empty Trash…"
 msgstr ""
 
 msgid "Empty Junk…"
+msgstr ""
+
+msgid "Edit Smart Folder…"
+msgstr ""
+
+msgid "Delete Smart Folder…"
 msgstr ""
 
 msgid "Show or hide filters"
@@ -5889,8 +6060,6 @@ msgstr ""
 msgid "Filled in for known providers"
 msgstr ""
 
-#. A JMAP server is one address, and it sends the mail
-#. itself: no SMTP rows.
 msgid "IMAP server"
 msgstr ""
 
@@ -6064,13 +6233,35 @@ msgid ""
 "{from} checks out, but the addressing doesn't match the name on the message."
 msgstr ""
 
+msgid "This Exchange account has no server address. Add it in its settings."
+msgstr ""
+
+msgid ""
+"Could not find the Exchange server for {email}: {why}. Enter its EWS "
+"address, such as https://mail.example.org/EWS/Exchange.asmx."
+msgstr ""
+
+msgid ""
+"The Exchange server refused the sign-in for {email}. Check the user name and "
+"password in its settings."
+msgstr ""
+
+msgid "unknown folder {path}"
+msgstr ""
+
+msgid "message not found"
+msgstr ""
+
+msgid "Could not list folders: {e}"
+msgstr ""
+
+msgid "Could not load message: {e}"
+msgstr ""
+
 msgid "Syncing…"
 msgstr ""
 
 msgid "Could not fetch mail: {e}"
-msgstr ""
-
-msgid "Could not load message: {e}"
 msgstr ""
 
 msgid "Could not load source: {e}"
@@ -6088,10 +6279,10 @@ msgstr ""
 msgid "Could not mark as not spam: {e}"
 msgstr ""
 
-msgid "Could not mark {len} messages as not spam: {e}"
+msgid "Could not move messages: {e}"
 msgstr ""
 
-msgid "Could not move messages: {e}"
+msgid "Could not delete messages: {e}"
 msgstr ""
 
 msgid "Could not empty the folder: {e}"
@@ -6115,31 +6306,31 @@ msgstr ""
 msgid "Could not delete folder: {e}"
 msgstr ""
 
+msgid "Sending…"
+msgstr ""
+
+msgid "Removing the attachment…"
+msgstr ""
+
+msgid "The attachment is no longer in the message on the server"
+msgstr ""
+
+msgid "Could not remove the attachment: {e}"
+msgstr ""
+
+msgid "Still could not send “{subject}”: {e}"
+msgstr ""
+
+msgid "Could not mark {len} messages as not spam: {e}"
+msgstr ""
+
 msgid "unknown folder"
 msgstr ""
 
 msgid "Could not reach the server"
 msgstr ""
 
-msgid "Sending…"
-msgstr ""
-
 msgid "A Microsoft account can't receive mail from another account"
-msgstr ""
-
-msgid "Removing the attachment…"
-msgstr ""
-
-msgid "Could not remove the attachment: {e}"
-msgstr ""
-
-msgid "Could not list folders: {e}"
-msgstr ""
-
-msgid "The attachment is no longer in the message on the server"
-msgstr ""
-
-msgid "Still could not send “{subject}”: {e}"
 msgstr ""
 
 msgid "IMAP connection stopped making progress"
@@ -6272,9 +6463,6 @@ msgstr ""
 
 msgid ""
 "POP3 cannot change a message on the server, so the attachment was not removed"
-msgstr ""
-
-msgid "Inbox"
 msgstr ""
 
 msgid "Email Client"

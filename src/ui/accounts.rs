@@ -32,6 +32,9 @@ enum ProviderKind {
     /// A JMAP server (#245), signed in with a password: the servers are the
     /// user's own, so nothing is pre-filled but the protocol.
     Jmap,
+    /// An on-premise Exchange server over EWS (#391), signed in with a
+    /// password; its address can be left for Autodiscover to find.
+    Ews,
 }
 
 /// One entry in the Provider dropdown. It selects both the sign-in method and,
@@ -111,13 +114,14 @@ impl Provider {
     }
 
     fn is_password(&self) -> bool {
-        matches!(self.kind, ProviderKind::Manual | ProviderKind::Preset | ProviderKind::Jmap)
+        matches!(self.kind, ProviderKind::Manual | ProviderKind::Preset | ProviderKind::Jmap | ProviderKind::Ews)
     }
     /// The incoming protocol the entry stands for; the manual entry and the
     /// presets leave it to the Incoming Protocol row.
     pub(crate) fn wizard_protocol(&self) -> Protocol {
         match self.kind {
             ProviderKind::Jmap => Protocol::Jmap,
+            ProviderKind::Ews => Protocol::Ews,
             ProviderKind::Microsoft => Protocol::Graph,
             _ => Protocol::Imap,
         }
@@ -146,6 +150,7 @@ pub(crate) const PROVIDERS: &[Provider] = &[
     Provider { label: "IMAP/POP3 Account", brand: "mail", kind: ProviderKind::Manual, imap_host: "", imap_port: 0, smtp_host: "", smtp_port: 0, hint: i18n_noop("Enter your server details manually.") },
     Provider { label: "Custom (OAuth)…", brand: "mail-oauth", kind: ProviderKind::CustomOAuth, imap_host: "", imap_port: 0, smtp_host: "", smtp_port: 0, hint: i18n_noop("Enter your provider's OAuth endpoints, then sign in.") },
     Provider { label: "JMAP Server", brand: "mail-jmap", kind: ProviderKind::Jmap, imap_host: "", imap_port: 443, smtp_host: "", smtp_port: 0, hint: i18n_noop("Enter your JMAP server's address, or the URL of its session resource. Mail is read and sent over JMAP; no SMTP settings are needed.") },
+    Provider { label: "Microsoft Exchange (on-premise)", brand: "mail-ews", kind: ProviderKind::Ews, imap_host: "", imap_port: 443, smtp_host: "", smtp_port: 0, hint: i18n_noop("For your organization's own Exchange server. Leave the server empty to find it from your address. Sign in as user@domain or DOMAIN\\user. Microsoft 365 accounts use the entry below.") },
     Provider { label: "Google (Gmail) — sign in", brand: "gmail", kind: ProviderKind::Google, imap_host: "", imap_port: 0, smtp_host: "", smtp_port: 0, hint: i18n_noop("Sign in with your browser — no password needed.") },
     Provider { label: "Microsoft 365 / Outlook", brand: "outlook", kind: ProviderKind::Microsoft, imap_host: "", imap_port: 0, smtp_host: "", smtp_port: 0, hint: i18n_noop("Sign in with your browser — no password needed.") },
     Provider { label: "iCloud", brand: "icloud", kind: ProviderKind::Preset, imap_host: "imap.mail.me.com", imap_port: 993, smtp_host: "smtp.mail.me.com", smtp_port: 587, hint: APP_PW },
@@ -201,6 +206,9 @@ pub struct AccountsWindow {
     /// Tags (#71), managed on this tab too — the rules' "Tag with" names them.
     tags: Vec<crate::config::Tag>,
     tags_list: Option<gtk::ListBox>,
+    /// Smart folders (#417): saved searches the sidebar lists.
+    smart_folders: Vec<crate::config::SmartFolder>,
+    smart_list: Option<gtk::ListBox>,
     /// The tag finder's button: its spinner turns while the mailboxes are
     /// being read, and its label says so.
     find_tags_spinner: Option<gtk::Spinner>,
@@ -252,6 +260,13 @@ pub struct AccountsWindow {
     goa: Vec<crate::goa::GoaMailAccount>,
     /// Refresh token captured from a successful OAuth sign-in, applied on save.
     pending_oauth_refresh: Option<String>,
+    /// The editor's Microsoft sign-in may search the organization's
+    /// directory (#410): saved with those scopes, or just approved for them.
+    /// Save keeps asking for them, or the next sign-in would drop them.
+    directory_granted: bool,
+    /// What the directory switch is known to show, so the notify that
+    /// filling the editor sets off is not taken for the user turning it on.
+    directory_on: bool,
     /// The send-as aliases being edited for the account in the editor (#34).
     /// Committed to the account on Save.
     alias_edits: Vec<AliasConfig>,
@@ -343,6 +358,8 @@ pub enum AccountsInput {
     ProtocolChanged,
     /// Start the OAuth browser sign-in flow.
     OAuthSignIn,
+    /// The "Search the organization directory" switch moved (#410).
+    SetGraphDirectory(bool),
     /// Open GNOME Settings → Online Accounts (the Google path).
     OpenOnlineAccounts,
     SetEmoji(String),
@@ -418,6 +435,13 @@ pub enum AccountsInput {
     MoveTag { from: usize, to: usize },
     TagAdded(crate::config::Tag),
     TagEdited(usize, crate::config::Tag),
+    /// Smart folders (#417): the editor, what it hands back, and the list
+    /// as the app has it (one deleted from the sidebar).
+    AddSmartFolder,
+    EditSmartFolder(usize),
+    RemoveSmartFolder(usize),
+    SmartFolderSaved(Option<usize>, crate::config::SmartFolder),
+    SetSmartFolders(Vec<crate::config::SmartFolder>),
     /// The tag finder: "Find Tags…" was pressed (the app scans every
     /// account and answers with `TagFindings`).
     FindTags,
@@ -473,6 +497,7 @@ pub enum AccountsOutput {
     /// Apply the rules to mail that is already there (#198).
     ApplyFilters,
     SetTags(Vec<crate::config::Tag>),
+    SetSmartFolders(Vec<crate::config::SmartFolder>),
     /// The tag finder wants every account scanned for keywords in use.
     FindTags,
     /// An account's page opened: ask its server for the storage in use.
@@ -563,6 +588,9 @@ pub enum AccountsCmd {
     /// A browser sign-in finished: the refresh token, and who signed in
     /// when the provider says (Microsoft).
     OAuth(Result<(String, Option<(String, String)>), String>),
+    /// The sign-in that asked for the directory's scopes (#410) finished,
+    /// as [`AccountsCmd::OAuth`].
+    DirectoryConsent(Result<(String, Option<(String, String)>), String>),
     /// Alias SMTP test result (#34).
     AliasTested(Result<(), String>),
     /// GNOME Online Accounts read again: its mail accounts, for the import
@@ -669,6 +697,7 @@ pub struct AccountsInit {
     pub blacklist: Vec<String>,
     pub filters: Vec<crate::config::FilterRule>,
     pub tags: Vec<crate::config::Tag>,
+    pub smart_folders: Vec<crate::config::SmartFolder>,
 }
 
 #[relm4::component(pub)]
@@ -815,6 +844,32 @@ impl Component for AccountsWindow {
                                     },
 
                                     #[name = "tags_list"]
+                                    gtk::ListBox {
+                                        add_css_class: "boxed-list",
+                                        set_selection_mode: gtk::SelectionMode::None,
+                                    },
+                                },
+                            },
+
+                            add_named[Some("smart")] = &adw::PreferencesPage {
+                                // Smart folders (#417): saved searches.
+                                add = &adw::PreferencesGroup {
+                                    set_title: &i18n("Smart Folders"),
+                                    set_description: Some(
+                                        i18n("A smart folder lists the messages that match its conditions, \
+                                         from every folder or one kind of folder, in one account or all \
+                                         of them. It searches the mail on this computer and appears in \
+                                         the sidebar under the unified rows.").as_str()
+                                    ),
+                                    #[wrap(Some)]
+                                    set_header_suffix = &gtk::Button {
+                                        set_label: &i18n("Add Smart Folder…"),
+                                        set_valign: gtk::Align::Start,
+                                        set_margin_start: 24,
+                                        connect_clicked => AccountsInput::AddSmartFolder,
+                                    },
+
+                                    #[name = "smart_list"]
                                     gtk::ListBox {
                                         add_css_class: "boxed-list",
                                         set_selection_mode: gtk::SelectionMode::None,
@@ -1568,6 +1623,30 @@ impl Component for AccountsWindow {
                                 },
                             },
 
+                            // The composer's suggestions from the tenant's
+                            // directory (#410), for Microsoft 365 only.
+                            #[name = "directory_group"]
+                            add = &adw::PreferencesGroup {
+                                set_visible: false,
+
+                                #[name = "graph_directory_row"]
+                                adw::SwitchRow {
+                                    set_title: &i18n("Search the organization directory"),
+                                    connect_active_notify[sender] => move |row| {
+                                        sender.input(AccountsInput::SetGraphDirectory(row.is_active()));
+                                    },
+                                },
+                                #[name = "directory_status"]
+                                gtk::Label {
+                                    set_visible: false,
+                                    set_halign: gtk::Align::Start,
+                                    set_xalign: 0.0,
+                                    set_wrap: true,
+                                    set_selectable: true,
+                                    set_margin_top: 8,
+                                },
+                            },
+
                             // Its own folder order, or Settings → Sidebar's.
                             add = &adw::PreferencesGroup {
                                 set_title: &i18n("Folder Order"),
@@ -1739,6 +1818,8 @@ impl Component for AccountsWindow {
             label_synced: String::new(),
             goa,
             pending_oauth_refresh: None,
+            directory_granted: false,
+            directory_on: false,
             alias_edits: Vec::new(),
             server_identities: Vec::new(),
             hidden_edits: Vec::new(),
@@ -1758,6 +1839,8 @@ impl Component for AccountsWindow {
             senders_query: Default::default(),
             tags: init.tags,
             tags_list: None,
+            smart_folders: init.smart_folders,
+            smart_list: None,
             find_tags_spinner: None,
             apply_filters_spinner: None,
             apply_filters_label: None,
@@ -1826,6 +1909,8 @@ impl Component for AccountsWindow {
         model.apply_filters_label = Some(widgets.apply_filters_label.clone());
         model.find_tags_label = Some(widgets.find_tags_label.clone());
         model.rebuild_tag_rows(&sender);
+        model.smart_list = Some(widgets.smart_list.clone());
+        model.rebuild_smart_rows(&sender);
         let t_list = std::time::Instant::now();
         model.rebuild_account_list(&widgets.accounts_list, &sender);
         tracing::debug!("settings window: accounts list built in {:?}", t_list.elapsed());
@@ -1915,9 +2000,10 @@ impl Component for AccountsWindow {
                     Some("editor") => Some("accounts"),
                     Some("filter") => Some("filters"),
                     Some("tag") => Some("tags"),
+                    Some("smart") => Some("smart"),
                     _ => None,
                 };
-                if !matches!(editor, Some("filters") | Some("tags")) {
+                if !matches!(editor, Some("filters") | Some("tags") | Some("smart")) {
                     form_save.borrow_mut().take();
                 }
                 let _ = s.send(AccountsOutput::EditorOpen(editor));
@@ -2038,6 +2124,8 @@ impl Component for AccountsWindow {
                 widgets.mode_glyph_btn.set_active(true);
                 self.label_synced = String::new();
                 self.pending_oauth_refresh = None;
+                self.directory_granted = false;
+                self.directory_on = false;
                 self.close_alias_dialog();
                 self.alias_edits.clear();
                 self.server_identities.clear();
@@ -2086,6 +2174,15 @@ impl Component for AccountsWindow {
                 };
                 self.editing = Some(i);
                 self.pending_oauth_refresh = None;
+                self.directory_granted = acc.goa_id.is_none()
+                    && acc.oauth
+                    && acc
+                        .oauth_settings
+                        .as_ref()
+                        .is_some_and(|s| crate::oauth::has_directory_scopes(&s.scopes));
+                // On without the scopes would only be refused.
+                self.directory_on = acc.graph_directory && self.directory_granted;
+                widgets.graph_directory_row.set_active(self.directory_on);
                 self.close_alias_dialog();
                 self.alias_edits = acc.aliases.clone();
                 self.server_identities.clear();
@@ -2369,6 +2466,7 @@ impl Component for AccountsWindow {
                     .unwrap_or_else(|_| ConnTest {
                         incoming: Err("test could not run".into()),
                         smtp: Err("test could not run".into()),
+                        ews_url: None,
                     });
                     AccountsCmd::Test(r)
                 });
@@ -2411,49 +2509,47 @@ impl Component for AccountsWindow {
                 widgets.oauth_signin_btn.set_sensitive(false);
                 widgets.oauth_status.set_visible(true);
                 widgets.oauth_status.set_css_classes(&["dim-label"]);
-                // A redirect Hylki cannot listen on (#329): the sign-in runs
-                // in a window of its own, which catches it.
-                if !settings.redirect_uri.trim().is_empty() {
-                    widgets.oauth_status.set_label(&i18n("Complete the sign-in in the window that opened."));
-                    let parent = root.root().and_downcast::<gtk::Window>();
-                    let s = sender.clone();
-                    // The address typed so far names the identity broker's
-                    // account, where one is in charge of sign-ins.
-                    let user = Some(widgets.email_row.text().trim().to_string()).filter(|u| !u.is_empty());
-                    crate::ui::web_signin::run(parent.as_ref(), &settings.clone(), user.clone(), move |answer| {
-                        s.oneshot_command(async move {
-                            let r = tokio::task::spawn_blocking(move || {
-                                let (request, code) = answer?;
-                                let refresh = crate::oauth::exchange_code(&settings, &request, &code)?.refresh_token;
-                                let (name, address, refresh) =
-                                    crate::oauth::microsoft_whoami(&settings, &refresh, user.as_deref())?;
-                                Ok((refresh, Some((name, address))))
-                            })
-                            .await
-                            .unwrap_or_else(|_| Err("sign-in task failed".into()));
-                            AccountsCmd::OAuth(r)
-                        });
-                    });
+                let in_window = !settings.redirect_uri.trim().is_empty();
+                widgets.oauth_status.set_label(&if in_window {
+                    i18n("Complete the sign-in in the window that opened.")
+                } else {
+                    i18n("Opening browser… complete sign-in there.")
+                });
+                // The address typed so far names the identity broker's
+                // account, where one is in charge of sign-ins.
+                let user = Some(widgets.email_row.text().trim().to_string()).filter(|u| !u.is_empty());
+                sign_in(root, &sender, settings, user, false, AccountsCmd::OAuth);
+            }
+
+            AccountsInput::SetGraphDirectory(on) => {
+                if on == self.directory_on {
                     return;
                 }
-                widgets
-                    .oauth_status
-                    .set_label(&i18n("Opening browser… complete sign-in there."));
-                sender.oneshot_command(async move {
-                    let r = tokio::task::spawn_blocking(move || {
-                        let refresh = crate::oauth::run_flow(&settings)?.refresh_token;
-                        // Microsoft says who signed in, so the account is named
-                        // for the mailbox reached (#329).
-                        if settings.token_url.contains("microsoftonline") {
-                            let (name, address, refresh) = crate::oauth::microsoft_whoami(&settings, &refresh, None)?;
-                            return Ok((refresh, Some((name, address))));
-                        }
-                        Ok((refresh, None))
-                    })
-                    .await
-                    .unwrap_or_else(|_| Err("sign-in task failed".into()));
-                    AccountsCmd::OAuth(r)
+                self.directory_on = on;
+                widgets.directory_status.set_visible(false);
+                // Turning it off keeps the scopes: they cost nothing, and
+                // turning it on again then asks nothing.
+                if !on || self.directory_granted {
+                    return;
+                }
+                let mut settings = self.oauth_settings_from_form(widgets);
+                if settings.client_id.trim().is_empty() || !settings.token_url.contains("microsoftonline") {
+                    return;
+                }
+                settings.scopes = crate::oauth::with_directory_scopes(&settings.scopes);
+                widgets.graph_directory_row.set_sensitive(false);
+                widgets.oauth_signin_btn.set_sensitive(false);
+                widgets.directory_status.set_visible(true);
+                widgets.directory_status.set_css_classes(&["dim-label"]);
+                widgets.directory_status.set_label(&if settings.redirect_uri.trim().is_empty() {
+                    i18n("Opening browser… approve access to the directory there.")
+                } else {
+                    i18n("Approve access to the directory in the window that opened.")
                 });
+                // Straight to the account being edited: Microsoft then asks
+                // only for what it has not approved yet.
+                let user = Some(widgets.email_row.text().trim().to_string()).filter(|u| !u.is_empty());
+                sign_in(root, &sender, settings, user, true, AccountsCmd::DirectoryConsent);
             }
 
             AccountsInput::OpenOnlineAccounts => open_online_accounts(),
@@ -2605,6 +2701,10 @@ impl Component for AccountsWindow {
                         account.security = orig.security.clone();
                     }
                 }
+
+                // Only once Microsoft has approved the scopes; an account from
+                // GNOME Online Accounts cannot have them.
+                account.graph_directory &= account.goa_id.is_none() && self.directory_granted;
 
                 // Native account: authentication comes from the provider dropdown.
                 let is_oauth = provider_at(widgets.provider_row.selected()).is_oauth();
@@ -2946,6 +3046,33 @@ impl Component for AccountsWindow {
                 self.rebuild_filter_rows(&sender);
                 let _ = sender.output(AccountsOutput::SetFilters(self.filter_rules.clone()));
             }
+            AccountsInput::AddSmartFolder => self.open_smart_page(&widgets.nav, &sender, None),
+            AccountsInput::EditSmartFolder(i) => {
+                if let Some(f) = self.smart_folders.get(i).cloned() {
+                    self.open_smart_page(&widgets.nav, &sender, Some((i, f)));
+                }
+            }
+            AccountsInput::RemoveSmartFolder(i) => {
+                if i < self.smart_folders.len() {
+                    self.smart_folders.remove(i);
+                    self.rebuild_smart_rows(&sender);
+                    let _ = sender.output(AccountsOutput::SetSmartFolders(self.smart_folders.clone()));
+                }
+            }
+            AccountsInput::SmartFolderSaved(at, folder) => {
+                match at.filter(|i| *i < self.smart_folders.len()) {
+                    Some(i) => self.smart_folders[i] = folder,
+                    None => self.smart_folders.push(folder),
+                }
+                self.rebuild_smart_rows(&sender);
+                let _ = sender.output(AccountsOutput::SetSmartFolders(self.smart_folders.clone()));
+            }
+            AccountsInput::SetSmartFolders(folders) => {
+                if folders != self.smart_folders {
+                    self.smart_folders = folders;
+                    self.rebuild_smart_rows(&sender);
+                }
+            }
             AccountsInput::AddTag => self.open_tag_page(&widgets.nav, &sender, None),
             AccountsInput::EditTag(i) => {
                 if let Some(tag) = self.tags.get(i).cloned() {
@@ -3101,10 +3228,17 @@ impl Component for AccountsWindow {
                 let incoming_label = match protocol {
                     Protocol::Pop3 => "POP3",
                     Protocol::Jmap => "JMAP",
+                    Protocol::Ews => "Exchange",
                     _ => "IMAP",
                 };
-                // A JMAP account sends through the server: no SMTP line.
-                let text = if protocol == Protocol::Jmap {
+                // The address Autodiscover found goes into the form, to be
+                // saved with the account.
+                if let Some(url) = &result.ews_url {
+                    widgets.host_row.set_text(url);
+                }
+                // A JMAP or Exchange account sends through the server: no
+                // SMTP line.
+                let text = if matches!(protocol, Protocol::Jmap | Protocol::Ews) {
                     line(incoming_label, &result.incoming)
                 } else {
                     format!(
@@ -3142,6 +3276,52 @@ impl Component for AccountsWindow {
                     Err(e) => {
                         widgets.oauth_status.set_css_classes(&["error"]);
                         widgets.oauth_status.set_label(&i18n_f("Sign-in failed: {e}", &[("e", &(e).to_string())]));
+                    }
+                }
+            }
+            AccountsCmd::DirectoryConsent(result) => {
+                widgets.graph_directory_row.set_sensitive(true);
+                widgets.oauth_signin_btn.set_sensitive(true);
+                widgets.directory_status.set_visible(true);
+                // A saved account signs in as itself: another mailbox
+                // picked in the browser would swap the account's token.
+                let saved = self
+                    .editing
+                    .and_then(|i| self.accounts.get(i))
+                    .filter(|a| a.oauth && a.goa_id.is_none())
+                    .map(|a| a.email.clone());
+                let result = result.and_then(|(refresh, who)| match (&saved, &who) {
+                    (Some(email), Some((_, address))) if !address.is_empty() && !address.eq_ignore_ascii_case(email) => {
+                        Err(i18n_f("Signed in as {address}, not {email}.", &[("address", address), ("email", email)]))
+                    }
+                    _ => Ok((refresh, who)),
+                });
+                match result {
+                    Ok((refresh, who)) => {
+                        self.pending_oauth_refresh = Some(refresh);
+                        self.directory_granted = true;
+                        // A new account was signed in by this as well.
+                        if let Some((name, address)) = who {
+                            if !address.is_empty() {
+                                widgets.email_row.set_text(&address);
+                            }
+                            if !name.is_empty() && widgets.name_row.text().trim().is_empty() {
+                                widgets.name_row.set_text(&name);
+                            }
+                        }
+                        widgets.directory_status.set_css_classes(&["success"]);
+                        widgets
+                            .directory_status
+                            .set_label(&i18n("Access to the directory approved. Save the account to finish."));
+                    }
+                    Err(e) => {
+                        self.directory_on = false;
+                        widgets.graph_directory_row.set_active(false);
+                        widgets.directory_status.set_css_classes(&["error"]);
+                        widgets.directory_status.set_label(&i18n_f(
+                            "Access to the directory was not approved: {e}",
+                            &[("e", &e)],
+                        ));
                     }
                 }
             }
@@ -3847,10 +4027,20 @@ impl AccountsWindow {
             Some(a) if a.goa_id.is_some() => a.protocol,
             _ => form_protocol(widgets),
         };
-        widgets.push_row.set_visible(matches!(protocol, Protocol::Imap | Protocol::Jmap));
+        widgets.push_row.set_visible(matches!(protocol, Protocol::Imap | Protocol::Jmap | Protocol::Ews));
         // The list-mail search is a server search for a header, which
         // Microsoft 365 does not offer and POP3 has no folders for.
         widgets.clean_lists_row.set_visible(matches!(protocol, Protocol::Imap | Protocol::Jmap));
+        // GNOME Online Accounts asked Microsoft for its own scopes, and
+        // Hylki cannot add the directory's to a token GNOME holds.
+        let from_goa = self.editing.and_then(|i| self.accounts.get(i)).is_some_and(|a| a.goa_id.is_some());
+        widgets.directory_group.set_visible(protocol == Protocol::Graph);
+        widgets.graph_directory_row.set_sensitive(!from_goa);
+        widgets.graph_directory_row.set_subtitle(&if from_goa {
+            i18n("Only for an account signed in within Hylki. To use it, add this account with Microsoft 365 / Outlook as the provider, instead of from GNOME Online Accounts.")
+        } else {
+            i18n("Suggest people from your organization as you type a recipient. Turning this on asks Microsoft for access to the directory; some organizations need an administrator to approve it.")
+        });
     }
 
     fn apply_provider(&self, widgets: &AccountsWindowWidgets) {
@@ -3876,7 +4066,7 @@ impl AccountsWindow {
 
         // Server/credential fields (password or Custom-OAuth manual servers).
         // JMAP is the JMAP entries' own protocol, not a choice.
-        widgets.protocol_row.set_visible(is_password && p.kind != ProviderKind::Jmap);
+        widgets.protocol_row.set_visible(is_password && !matches!(p.kind, ProviderKind::Jmap | ProviderKind::Ews));
         widgets.host_row.set_visible(show_servers);
         widgets.port_row.set_visible(show_servers);
         widgets.smtp_row.set_visible(show_servers);
@@ -3913,7 +4103,7 @@ impl AccountsWindow {
             ProviderKind::Preset => Some((p.imap_host, p.imap_port, p.smtp_host, p.smtp_port)),
             ProviderKind::Google | ProviderKind::Microsoft => crate::oauth::preset(p.oauth_name().unwrap())
                 .map(|o| (o.imap_host, o.imap_port, o.smtp_host, o.smtp_port)),
-            ProviderKind::Manual | ProviderKind::CustomOAuth | ProviderKind::Jmap => None,
+            ProviderKind::Manual | ProviderKind::CustomOAuth | ProviderKind::Jmap | ProviderKind::Ews => None,
         };
         if let Some((ih, ip, sh, sp)) = servers {
             widgets.protocol_row.set_selected(0); // IMAP
@@ -3934,6 +4124,16 @@ impl AccountsWindow {
             widgets.port_row.set_text("443");
             widgets.smtp_row.set_text("");
             widgets.jmap_token_row.set_active(p.wizard_token());
+        }
+        if p.kind == ProviderKind::Ews {
+            // A preset's IMAP host is no EWS address: the field is left for
+            // the address, or empty for Autodiscover.
+            let host = widgets.host_row.text();
+            if PROVIDERS.iter().any(|q| !q.imap_host.is_empty() && q.imap_host == host) {
+                widgets.host_row.set_text("");
+            }
+            widgets.port_row.set_text("443");
+            widgets.smtp_row.set_text("");
         }
         apply_protocol(widgets);
     }
@@ -3961,6 +4161,11 @@ impl AccountsWindow {
                     &trimmed(&widgets.ms_scopes_row),
                     &trimmed(&widgets.ms_redirect_row),
                 );
+                // Built from the preset, the scopes would lose the
+                // directory's at the next sign-in or refresh (#410).
+                if self.directory_granted {
+                    settings.scopes = crate::oauth::with_directory_scopes(&settings.scopes);
+                }
             }
             settings
         } else {
@@ -3974,6 +4179,55 @@ impl AccountsWindow {
             }
         }
     }
+}
+
+/// The editor's sign-in: in a window of Hylki's own for a redirect Hylki
+/// cannot listen on (#329), otherwise in the browser. `user` is the address
+/// typed, which picks the identity broker's account and, with `hint`, the
+/// account Microsoft signs in (#410). The answer comes back through `wrap`.
+fn sign_in(
+    root: &adw::Bin,
+    sender: &ComponentSender<AccountsWindow>,
+    settings: OAuthSettings,
+    user: Option<String>,
+    hint: bool,
+    wrap: fn(Result<(String, Option<(String, String)>), String>) -> AccountsCmd,
+) {
+    if !settings.redirect_uri.trim().is_empty() {
+        let parent = root.root().and_downcast::<gtk::Window>();
+        let s = sender.clone();
+        crate::ui::web_signin::run(parent.as_ref(), &settings.clone(), user.clone(), hint, move |answer| {
+            s.oneshot_command(async move {
+                let r = tokio::task::spawn_blocking(move || {
+                    let (request, code) = answer?;
+                    let refresh = crate::oauth::exchange_code(&settings, &request, &code)?.refresh_token;
+                    let (name, address, refresh) =
+                        crate::oauth::microsoft_whoami(&settings, &refresh, user.as_deref())?;
+                    Ok((refresh, Some((name, address))))
+                })
+                .await
+                .unwrap_or_else(|_| Err("sign-in task failed".into()));
+                wrap(r)
+            });
+        });
+        return;
+    }
+    sender.oneshot_command(async move {
+        let r = tokio::task::spawn_blocking(move || {
+            let hint = user.as_deref().filter(|_| hint);
+            let refresh = crate::oauth::run_flow_as(&settings, hint)?.refresh_token;
+            // Microsoft says who signed in, so the account is named
+            // for the mailbox reached (#329).
+            if settings.token_url.contains("microsoftonline") {
+                let (name, address, refresh) = crate::oauth::microsoft_whoami(&settings, &refresh, None)?;
+                return Ok((refresh, Some((name, address))));
+            }
+            Ok((refresh, None))
+        })
+        .await
+        .unwrap_or_else(|_| Err("sign-in task failed".into()));
+        wrap(r)
+    });
 }
 
 /// A list-item factory whose labels never ellipsize, so a `ComboRow` popup grows
@@ -4244,7 +4498,7 @@ fn read_account(
     let protocol = form_protocol(widgets);
     let default_port = match protocol {
         Protocol::Pop3 => 995,
-        Protocol::Jmap => 443,
+        Protocol::Jmap | Protocol::Ews => 443,
         _ => 993,
     };
     let jmap_token = protocol == Protocol::Jmap && widgets.jmap_token_row.is_active();
@@ -4342,6 +4596,7 @@ fn read_account(
             .checked_sub(1)
             .and_then(|i| crate::config::FolderSort::ALL.get(i as usize).copied()),
         sign_by_default: widgets.sign_default_row.is_active(),
+        graph_directory: protocol == Protocol::Graph && widgets.graph_directory_row.is_active(),
     }
 }
 
@@ -4650,6 +4905,8 @@ fn clear_editor(widgets: &AccountsWindowWidgets) {
     widgets.in_unified_row.set_active(true);
     widgets.folder_sort_row.set_selected(0);
     widgets.sign_default_row.set_active(false);
+    widgets.graph_directory_row.set_active(false);
+    widgets.directory_status.set_visible(false);
     widgets.smtp_user_row.set_text("");
     widgets.smtp_pass_row.set_text("");
     widgets.label_row.set_text("");
@@ -4732,6 +4989,9 @@ fn provider_index_for_account(acc: &AccountConfig) -> u32 {
     if acc.protocol == Protocol::Jmap {
         return jmap_index(acc);
     }
+    if acc.protocol == Protocol::Ews {
+        return kind_index(ProviderKind::Ews);
+    }
     preset_index_for_host(&acc.imap_host)
 }
 
@@ -4748,6 +5008,7 @@ fn protocol_at(idx: u32) -> Protocol {
 fn form_protocol(widgets: &AccountsWindowWidgets) -> Protocol {
     match provider_at(widgets.provider_row.selected()).kind {
         ProviderKind::Jmap => Protocol::Jmap,
+        ProviderKind::Ews => Protocol::Ews,
         // Hylki's own Microsoft sign-in asks for Graph, not IMAP (#329).
         ProviderKind::Microsoft => Protocol::Graph,
         _ => protocol_at(widgets.protocol_row.selected()),
@@ -4763,13 +5024,17 @@ fn protocol_index(protocol: Protocol) -> u32 {
 /// or a URL rather than an IMAP host and port.
 fn apply_protocol(widgets: &AccountsWindowWidgets) {
     let jmap = form_protocol(widgets) == Protocol::Jmap;
+    let ews = form_protocol(widgets) == Protocol::Ews;
     // Only where the servers are shown at all (OAuth providers hide them).
     let servers_shown = widgets.host_row.is_visible();
-    widgets.smtp_row.set_visible(servers_shown && !jmap);
-    widgets.smtp_port_row.set_visible(servers_shown && !jmap);
-    widgets.smtp_separate_row.set_visible(widgets.protocol_row.is_visible() && !jmap);
+    widgets.smtp_row.set_visible(servers_shown && !jmap && !ews);
+    widgets.smtp_port_row.set_visible(servers_shown && !jmap && !ews);
+    widgets.smtp_separate_row.set_visible(widgets.protocol_row.is_visible() && !jmap && !ews);
+    // An EWS address is a whole URL, port and all.
+    widgets.port_row.set_visible(servers_shown && !ews);
     // JMAP runs over a different TLS stack (rustls), which offers no such waiver.
-    widgets.tls_mismatch_row.set_visible(widgets.protocol_row.is_visible() && !jmap);
+    // EWS runs over the IMAP stack's TLS, so the waiver applies there too.
+    widgets.tls_mismatch_row.set_visible((widgets.protocol_row.is_visible() || ews && servers_shown) && !jmap);
     // A token stands in for the username and password (#356); the rows
     // only change where the password is asked for at all.
     let password_shown = widgets.pass_row.is_visible();
@@ -4783,6 +5048,9 @@ fn apply_protocol(widgets: &AccountsWindowWidgets) {
         widgets.smtp_separate_row.set_active(false);
         widgets.host_row.set_title(&i18n("Server (host name or URL)"));
         widgets.port_row.set_title(&i18n("Port (default 443)"));
+    } else if ews {
+        widgets.smtp_separate_row.set_active(false);
+        widgets.host_row.set_title(&i18n("EWS address (empty to find it)"));
     } else {
         widgets.host_row.set_title(&i18n("Incoming Server"));
         widgets.port_row.set_title(&i18n("Port (IMAP 993 / POP3 995)"));
@@ -4799,6 +5067,9 @@ fn brand_for_account(acc: &AccountConfig) -> &'static str {
     }
     if acc.protocol == Protocol::Jmap {
         return jmap_brand(acc);
+    }
+    if acc.protocol == Protocol::Ews {
+        return "mail-ews";
     }
     if let Some(s) = acc.oauth_settings.as_ref().filter(|_| acc.oauth) {
         if s.token_url.contains("googleapis") {
@@ -4833,6 +5104,7 @@ fn brand_for_account(acc: &AccountConfig) -> &'static str {
 fn manual_brand(protocol: Protocol) -> &'static str {
     match protocol {
         Protocol::Jmap => "mail-jmap",
+        Protocol::Ews => "mail-ews",
         Protocol::Pop3 => "mail-pop3",
         _ => "mail",
     }
@@ -5192,6 +5464,362 @@ impl AccountsWindow {
             }
         });
         dialog.present();
+    }
+
+    /// The Smart Folders list (#417): a row per folder, saying where it
+    /// looks, activating to edit, with a remove button.
+    fn rebuild_smart_rows(&self, sender: &ComponentSender<Self>) {
+        let Some(list) = &self.smart_list else { return };
+        while let Some(row) = list.first_child() {
+            list.remove(&row);
+        }
+        list.set_visible(!self.smart_folders.is_empty());
+        for (i, f) in self.smart_folders.iter().enumerate() {
+            let row = adw::ActionRow::new();
+            row.set_activatable(true);
+            let s = sender.clone();
+            row.connect_activated(move |_| s.input(AccountsInput::EditSmartFolder(i)));
+            row.set_title(&gtk::glib::markup_escape_text(&f.name));
+            let account = if f.account_email.is_empty() { i18n("All accounts") } else { f.account_email.clone() };
+            let folder = f.folder.map_or_else(|| i18n("All but Trash and Junk"), Self::smart_kind_label);
+            row.set_subtitle(&gtk::glib::markup_escape_text(&format!("{account} · {folder}")));
+            row.add_prefix(&gtk::Image::from_icon_name("folder-saved-search-symbolic"));
+            let rm = gtk::Button::from_icon_name("user-trash-symbolic");
+            rm.add_css_class("flat");
+            rm.set_valign(gtk::Align::Center);
+            rm.set_tooltip_text(Some(i18n("Remove smart folder").as_str()));
+            let s = sender.clone();
+            rm.connect_clicked(move |_| s.input(AccountsInput::RemoveSmartFolder(i)));
+            row.add_suffix(&rm);
+            list.append(&row);
+        }
+    }
+
+    fn smart_kind_label(k: crate::config::SmartFolderKind) -> String {
+        use crate::config::SmartFolderKind::*;
+        match k {
+            Inbox => i18n("Inbox"),
+            Sent => i18n("Sent"),
+            Drafts => i18n("Drafts"),
+            Archive => i18n("Archive"),
+            Junk => i18n("Junk"),
+            Trash => i18n("Trash"),
+        }
+    }
+
+    fn smart_field_label(f: crate::config::SmartField) -> String {
+        use crate::config::SmartField::*;
+        match f {
+            Starred => i18n("Starred"),
+            NotStarred => i18n("Not starred"),
+            Unread => i18n("Unread"),
+            Read => i18n("Read"),
+            Attachment => i18n("Has attachments"),
+            Tagged => i18n("Tagged"),
+            Body => i18n("Message preview"),
+            other => other.filter_field().map(Self::field_label).unwrap_or_default(),
+        }
+    }
+
+    /// The smart folder editor (#417): a name, where it looks, and its
+    /// conditions, each a group of its own as in the filter editor. With
+    /// `edit` it opens on that folder and saves over it.
+    fn open_smart_page(
+        &self,
+        nav: &adw::NavigationView,
+        sender: &ComponentSender<Self>,
+        edit: Option<(usize, crate::config::SmartFolder)>,
+    ) {
+        use crate::config::{FilterMatch, SmartCondition, SmartField, SmartFolder, SmartFolderKind};
+        let (title, verb) = if edit.is_some() {
+            (i18n("Edit Smart Folder"), i18n("Save"))
+        } else {
+            (i18n("Add Smart Folder"), i18n("Add Smart Folder"))
+        };
+        let emails: Vec<String> = self.accounts.iter().map(|a| a.email.clone()).collect();
+
+        let page_box = gtk::Box::new(gtk::Orientation::Vertical, 24);
+        page_box.set_margin_top(24);
+        page_box.set_margin_bottom(24);
+        page_box.set_margin_start(12);
+        page_box.set_margin_end(12);
+        let clamp = adw::Clamp::new();
+        clamp.set_maximum_size(600);
+        clamp.set_tightening_threshold(400);
+        clamp.set_child(Some(&page_box));
+        let scrolled = gtk::ScrolledWindow::new();
+        scrolled.set_policy(gtk::PolicyType::Never, gtk::PolicyType::Automatic);
+        scrolled.set_vexpand(true);
+        scrolled.set_child(Some(&clamp));
+
+        let where_group = adw::PreferencesGroup::new();
+        let name_row = adw::EntryRow::new();
+        name_row.set_title(&i18n("Name"));
+        where_group.add(&name_row);
+        let account_row = adw::ComboRow::new();
+        account_row.set_title(&i18n("Account"));
+        {
+            let all = i18n("All accounts");
+            let mut names: Vec<&str> = vec![all.as_str()];
+            names.extend(emails.iter().map(|e| e.as_str()));
+            account_row.set_model(Some(&gtk::StringList::new(&names)));
+        }
+        account_row.set_subtitle(&i18n("All accounts means those in the unified section"));
+        where_group.add(&account_row);
+        let folder_row = adw::ComboRow::new();
+        folder_row.set_title(&i18n("Folders"));
+        {
+            let mut names = vec![i18n("All but Trash and Junk")];
+            names.extend(SmartFolderKind::ALL.iter().map(|k| Self::smart_kind_label(*k)));
+            let refs: Vec<&str> = names.iter().map(|s| s.as_str()).collect();
+            folder_row.set_model(Some(&gtk::StringList::new(&refs)));
+        }
+        where_group.add(&folder_row);
+
+        // The conditions: Where, then Match and Text for the fields that
+        // look at text, or the tag for Tagged.
+        let conds: std::rc::Rc<std::cell::RefCell<Vec<SmartCondRows>>> = Default::default();
+        let field_names: Vec<String> = SmartField::ALL.iter().map(|f| Self::smart_field_label(*f)).collect();
+        let match_names: Vec<String> = FilterMatch::ALL.iter().map(|m| Self::match_label(*m)).collect();
+        let tags = self.tags.clone();
+        let tag_names: Vec<String> =
+            std::iter::once(i18n("Any tag")).chain(tags.iter().map(|t| t.name.clone())).collect();
+        let make_cond = {
+            let tags = tags.clone();
+            move |init: Option<&SmartCondition>| -> SmartCondRows {
+                let group = adw::PreferencesGroup::new();
+                let remove = gtk::Button::from_icon_name("user-trash-symbolic");
+                remove.add_css_class("flat");
+                remove.set_valign(gtk::Align::Center);
+                remove.set_tooltip_text(Some(i18n("Remove condition").as_str()));
+                group.set_header_suffix(Some(&remove));
+                let field = adw::ComboRow::new();
+                field.set_title(&i18n("Where"));
+                let refs: Vec<&str> = field_names.iter().map(|s| s.as_str()).collect();
+                field.set_model(Some(&gtk::StringList::new(&refs)));
+                let matcher = adw::ComboRow::new();
+                matcher.set_title(&i18n("Match"));
+                matcher.set_subtitle(&i18n("Commas separate alternatives; any one of them counts"));
+                let refs: Vec<&str> = match_names.iter().map(|s| s.as_str()).collect();
+                matcher.set_model(Some(&gtk::StringList::new(&refs)));
+                let value = adw::EntryRow::new();
+                value.set_title(&i18n("Text to match"));
+                let tag = adw::ComboRow::new();
+                tag.set_title(&i18n("Tag"));
+                let refs: Vec<&str> = tag_names.iter().map(|s| s.as_str()).collect();
+                tag.set_model(Some(&gtk::StringList::new(&refs)));
+                if let Some(c) = init {
+                    if let Some(i) = SmartField::ALL.iter().position(|f| *f == c.field) {
+                        field.set_selected(i as u32);
+                    }
+                    if let Some(i) = FilterMatch::ALL.iter().position(|m| *m == c.matcher) {
+                        matcher.set_selected(i as u32);
+                    }
+                    if c.field == SmartField::Tagged {
+                        if let Some(i) = tags.iter().position(|t| t.keyword.eq_ignore_ascii_case(&c.value)) {
+                            tag.set_selected(i as u32 + 1);
+                        }
+                    } else {
+                        value.set_text(&c.value);
+                    }
+                }
+                let explain = {
+                    let (matcher, value, tag) = (matcher.clone(), value.clone(), tag.clone());
+                    move |field: &adw::ComboRow| {
+                        let chosen = SmartField::ALL.get(field.selected() as usize).copied();
+                        let text = chosen.is_some_and(|f| f.takes_text());
+                        let body = chosen == Some(SmartField::Body);
+                        if body {
+                            matcher.set_selected(0);
+                        }
+                        matcher.set_visible(text);
+                        matcher.set_sensitive(!body);
+                        value.set_visible(text);
+                        tag.set_visible(chosen == Some(SmartField::Tagged));
+                        field.set_subtitle(&match chosen {
+                            Some(SmartField::Body) => i18n("The preview each message has in the list"),
+                            Some(SmartField::ReplyTo) => i18n("From address when no Reply-To is set"),
+                            Some(SmartField::FromInContacts | SmartField::FromNotInContacts) => {
+                                i18n("Looks in the system address books and the Hylki book")
+                            }
+                            _ => String::new(),
+                        });
+                    }
+                };
+                explain(&field);
+                field.connect_selected_notify(explain);
+                group.add(&field);
+                group.add(&matcher);
+                group.add(&value);
+                group.add(&tag);
+                SmartCondRows { group, remove, field, matcher, value, tag }
+            }
+        };
+
+        let add_group = adw::PreferencesGroup::new();
+        let add_row = adw::ActionRow::new();
+        add_row.set_title(&i18n("Add Condition"));
+        add_row.set_activatable(true);
+        add_row.add_prefix(&gtk::Image::from_icon_name("list-add-symbolic"));
+        add_group.add(&add_row);
+        let combine_row = adw::ComboRow::new();
+        combine_row.set_title(&i18n("Condition matching"));
+        combine_row.set_model(Some(&gtk::StringList::new(&[
+            i18n("All must match").as_str(),
+            i18n("Any one may match").as_str(),
+        ])));
+        let combine_group = adw::PreferencesGroup::new();
+        combine_group.add(&combine_row);
+        combine_group.set_visible(false);
+
+        let relabel = {
+            let (conds, combine_row, combine_group) = (conds.clone(), combine_row.clone(), combine_group.clone());
+            move || {
+                let conds = conds.borrow();
+                let any = combine_row.selected() == 1;
+                let several = conds.len() > 1;
+                for (i, c) in conds.iter().enumerate() {
+                    c.group.set_title(&i18n_f("Condition {n}", &[("n", &(i + 1).to_string())]));
+                    c.field.set_title(&if i == 0 {
+                        i18n("Where")
+                    } else if any {
+                        i18n("Or where")
+                    } else {
+                        i18n("And where")
+                    });
+                    c.remove.set_visible(several);
+                }
+                combine_group.set_visible(several);
+            }
+        };
+        {
+            let relabel = relabel.clone();
+            combine_row.connect_selected_notify(move |_| relabel());
+        }
+        let add_cond = {
+            let (conds, page_box, where_group, relabel) =
+                (conds.clone(), page_box.clone(), where_group.clone(), relabel.clone());
+            let (form_save, nav) = (self.form_save.clone(), nav.clone());
+            move |init: Option<&SmartCondition>| {
+                let c = make_cond(init);
+                let after: gtk::Widget = conds
+                    .borrow()
+                    .last()
+                    .map(|last| last.group.clone().upcast())
+                    .unwrap_or_else(|| where_group.clone().upcast());
+                page_box.insert_child_after(&c.group, Some(&after));
+                {
+                    let (conds, page_box, relabel, group) =
+                        (conds.clone(), page_box.clone(), relabel.clone(), c.group.clone());
+                    c.remove.connect_clicked(move |_| {
+                        let gone = {
+                            let mut conds = conds.borrow_mut();
+                            if conds.len() < 2 {
+                                return;
+                            }
+                            conds.iter().position(|c| c.group == group).map(|i| conds.remove(i))
+                        };
+                        if let Some(gone) = gone {
+                            page_box.remove(&gone.group);
+                            relabel();
+                        }
+                    });
+                }
+                {
+                    let (form_save, nav) = (form_save.clone(), nav.clone());
+                    c.value.connect_entry_activated(move |_| {
+                        if form_save.borrow().as_ref().is_some_and(|save| save()) {
+                            nav.pop();
+                        }
+                    });
+                }
+                conds.borrow_mut().push(c);
+                relabel();
+            }
+        };
+        {
+            let add_cond = add_cond.clone();
+            add_row.connect_activated(move |_| add_cond(None));
+        }
+
+        let edit_index = edit.as_ref().map(|(i, _)| *i);
+        let id = edit.as_ref().map_or_else(crate::config::new_smart_folder_id, |(_, f)| f.id.clone());
+        if let Some((_, f)) = &edit {
+            name_row.set_text(&f.name);
+            if let Some(i) = emails.iter().position(|e| e.eq_ignore_ascii_case(&f.account_email)) {
+                account_row.set_selected(i as u32 + 1);
+            }
+            if let Some(i) = f.folder.and_then(|k| SmartFolderKind::ALL.iter().position(|x| *x == k)) {
+                folder_row.set_selected(i as u32 + 1);
+            }
+            combine_row.set_selected(u32::from(f.any));
+        }
+
+        page_box.append(&where_group);
+        page_box.append(&add_group);
+        page_box.append(&combine_group);
+        match &edit {
+            Some((_, f)) if !f.conditions.is_empty() => {
+                for c in &f.conditions {
+                    add_cond(Some(c));
+                }
+            }
+            _ => add_cond(None),
+        }
+
+        let s = sender.clone();
+        self.push_form_content(nav, "smart", &title, &verb, scrolled.upcast_ref(), vec![name_row.clone()], move || {
+            let name = name_row.text().trim().to_string();
+            // A text condition with no text says nothing and is dropped;
+            // the others need none.
+            let conditions: Vec<SmartCondition> = conds
+                .borrow()
+                .iter()
+                .filter_map(|c| {
+                    let field = SmartField::ALL[c.field.selected() as usize % SmartField::ALL.len()];
+                    let value = if field == SmartField::Tagged {
+                        match c.tag.selected() {
+                            0 => String::new(),
+                            i => tags.get(i as usize - 1).map(|t| t.keyword.clone()).unwrap_or_default(),
+                        }
+                    } else if field.takes_text() {
+                        let v = c.value.text().trim().to_string();
+                        if v.is_empty() {
+                            return None;
+                        }
+                        v
+                    } else {
+                        String::new()
+                    };
+                    Some(SmartCondition {
+                        field,
+                        matcher: FilterMatch::ALL[c.matcher.selected() as usize % FilterMatch::ALL.len()],
+                        value,
+                    })
+                })
+                .collect();
+            if name.is_empty() || conditions.is_empty() {
+                return false;
+            }
+            let account_email = match account_row.selected() {
+                0 => String::new(),
+                i => emails.get(i as usize - 1).cloned().unwrap_or_default(),
+            };
+            let folder = match folder_row.selected() {
+                0 => None,
+                i => SmartFolderKind::ALL.get(i as usize - 1).copied(),
+            };
+            let folder = SmartFolder {
+                id: id.clone(),
+                name,
+                account_email,
+                folder,
+                any: combine_row.selected() == 1,
+                conditions,
+            };
+            s.input(AccountsInput::SmartFolderSaved(edit_index, folder));
+            true
+        });
     }
 
     /// The Tags list (#71): a row per tag — its color as a disc, its name,
@@ -5973,6 +6601,17 @@ impl AccountsWindow {
             true
         });
     }
+}
+
+/// One condition of the smart folder editor (#417): the filter editor's
+/// rows, and a tag chooser for Tagged.
+struct SmartCondRows {
+    group: adw::PreferencesGroup,
+    remove: gtk::Button,
+    field: adw::ComboRow,
+    matcher: adw::ComboRow,
+    value: adw::EntryRow,
+    tag: adw::ComboRow,
 }
 
 /// One condition of the filter editor (#192): its own titled group with a

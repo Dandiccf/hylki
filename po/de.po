@@ -400,6 +400,10 @@ msgid "Mail Accounts"
 msgstr "E-Mail-Konten"
 
 #, fuzzy
+msgid "New Smart Folder…"
+msgstr "Neuer Ordner…"
+
+#, fuzzy
 msgid "About Hylki"
 msgstr "Über Hylki"
 
@@ -426,6 +430,10 @@ msgstr "Postausgang"
 #, fuzzy
 msgid "Tag"
 msgstr "Tags"
+
+#, fuzzy
+msgid "Smart Folder"
+msgstr "Ordner sortieren"
 
 #, fuzzy
 msgid ""
@@ -729,11 +737,32 @@ msgstr ""
 msgid "Empty"
 msgstr "Leeren"
 
+msgid "Empty Trash in Every Account?"
+msgstr ""
+
+msgid "Empty Junk in Every Account?"
+msgstr ""
+
+#, fuzzy
+msgid ""
+"Every message in them will be erased from the server. This can’t be undone."
+msgstr ""
+"Jede Nachricht darin wird vom Server gelöscht. Das kann nicht rückgängig "
+"gemacht werden."
+
 msgid "No Junk folder available for this account"
 msgstr "Für dieses Konto ist kein Spam-Ordner verfügbar"
 
 msgid "No Inbox folder available for this account"
 msgstr "Kein Posteingangsordner für dieses Konto verfügbar"
+
+#, fuzzy
+msgid "Delete “{name}”?"
+msgstr "„{name}“ leeren?"
+
+msgid ""
+"The smart folder goes from the sidebar. The mail it shows stays where it is."
+msgstr ""
 
 msgid "No address book available to add contacts"
 msgstr "Kein Adressbuch verfügbar, um Kontakte hinzuzufügen"
@@ -1624,6 +1653,32 @@ msgstr ""
 msgid "Enter the LibreTranslate server's address in Settings → Translation."
 msgstr ""
 
+msgid "Labeled"
+msgstr ""
+
+msgid "Personal"
+msgstr ""
+
+#, fuzzy
+msgid "Private"
+msgstr "Datenschutz"
+
+msgid "Confidential"
+msgstr ""
+
+msgid "The sender marked this message “{label}”."
+msgstr ""
+
+msgid ""
+"The sender's organization labeled this message, without saying the label's "
+"name. Hylki shows the label but does not apply its rules."
+msgstr ""
+
+msgid ""
+"The sender's organization labeled this message “{label}”. Hylki shows the "
+"label but does not apply its rules."
+msgstr ""
+
 msgid "Open Hylki"
 msgstr "Hylki öffnen"
 
@@ -1660,6 +1715,12 @@ msgid ""
 msgstr ""
 "Geben Sie die Adresse Ihres Stalwart-Servers ein. Mail wird gelesen und über "
 "JMAP gesendet; es sind keine SMTP-Einstellungen erforderlich."
+
+msgid ""
+"For your organization's own Exchange server. Leave the server empty to find "
+"it from your address. Sign in as user@domain or DOMAIN\\user. Microsoft 365 "
+"accounts use the entry below."
+msgstr ""
 
 msgid "Sign in with your browser — no password needed."
 msgstr "Melden Sie sich mit Ihrem Browser an - kein Passwort erforderlich."
@@ -1727,6 +1788,20 @@ msgstr ""
 
 msgid "Find Tags…"
 msgstr "Tags suchen…"
+
+#, fuzzy
+msgid "Smart Folders"
+msgstr "Ordner sortieren"
+
+msgid ""
+"A smart folder lists the messages that match its conditions, from every "
+"folder or one kind of folder, in one account or all of them. It searches the "
+"mail on this computer and appears in the sidebar under the unified rows."
+msgstr ""
+
+#, fuzzy
+msgid "Add Smart Folder…"
+msgstr "Ordner hinzufügen"
 
 msgid "Search filters"
 msgstr "Suchfilter"
@@ -2076,6 +2151,10 @@ msgid ""
 "link) older than this, unless starred. Checked at each sync."
 msgstr ""
 
+#, fuzzy
+msgid "Search the organization directory"
+msgstr "Verzeichnis speichern?"
+
 msgid "Folder Order"
 msgstr "Reihenfolge der Ordner"
 
@@ -2208,6 +2287,14 @@ msgstr "Konnte die Anmeldung nicht im Schlüsselring speichern: {e}"
 msgid "Opening browser… complete sign-in there."
 msgstr "Browser wird geöffnet… Schließen Sie die Anmeldung dort ab."
 
+#, fuzzy
+msgid "Opening browser… approve access to the directory there."
+msgstr "Browser wird geöffnet… Schließen Sie die Anmeldung dort ab."
+
+#, fuzzy
+msgid "Approve access to the directory in the window that opened."
+msgstr "Konnte die Anmeldung nicht im Schlüsselring speichern: {e}"
+
 msgid "Signature HTML"
 msgstr "HTML-Signatur"
 
@@ -2250,6 +2337,16 @@ msgstr "✓ Angemeldet – speichern Sie das Konto, um den Vorgang abzuschließe
 
 msgid "Sign-in failed: {e}"
 msgstr "Anmeldung fehlgeschlagen: {e}"
+
+#, fuzzy
+msgid "Signed in as {address}, not {email}."
+msgstr "Angemeldet als {who}. {terms}"
+
+msgid "Access to the directory approved. Save the account to finish."
+msgstr ""
+
+msgid "Access to the directory was not approved: {e}"
+msgstr ""
 
 msgid "✓ SMTP: connected"
 msgstr "✓ SMTP: verbunden"
@@ -2350,6 +2447,18 @@ msgstr ""
 msgid "Use this account in Hylki"
 msgstr "Verwenden Sie dieses Konto in Hylki"
 
+msgid ""
+"Only for an account signed in within Hylki. To use it, add this account with "
+"Microsoft 365 / Outlook as the provider, instead of from GNOME Online "
+"Accounts."
+msgstr ""
+
+msgid ""
+"Suggest people from your organization as you type a recipient. Turning this "
+"on asks Microsoft for access to the directory; some organizations need an "
+"administrator to approve it."
+msgstr ""
+
 msgid "Never"
 msgstr "Nie"
 
@@ -2361,13 +2470,14 @@ msgstr[1] "Nach {n} Tagen"
 msgid "API Token"
 msgstr ""
 
-#. A JMAP server is one address, and it sends the mail
-#. itself: no SMTP rows.
 msgid "Server (host name or URL)"
 msgstr "Server (Hostname oder URL)"
 
 msgid "Port (default 443)"
 msgstr "Port (Standard 443)"
+
+msgid "EWS address (empty to find it)"
+msgstr ""
 
 msgid "Google (Gmail)"
 msgstr "Google (Gmail)"
@@ -2480,6 +2590,105 @@ msgstr "Alle importieren"
 msgid "{n} messages"
 msgstr "{n} Nachrichten"
 
+msgid "All but Trash and Junk"
+msgstr ""
+
+#, fuzzy
+msgid "Remove smart folder"
+msgstr "Filter entfernen"
+
+msgid "Inbox"
+msgstr "Posteingang"
+
+msgid "Starred"
+msgstr "Markiert"
+
+#, fuzzy
+msgid "Not starred"
+msgstr "Nicht installiert"
+
+#, fuzzy
+msgid "Unread"
+msgstr "Gelesen/Ungelesen"
+
+#, fuzzy
+msgid "Read"
+msgstr "Lesen"
+
+#, fuzzy
+msgid "Has attachments"
+msgstr "Keine Anhänge"
+
+msgid "Tagged"
+msgstr ""
+
+#, fuzzy
+msgid "Message preview"
+msgstr "Nachrichtenquelle"
+
+#, fuzzy
+msgid "Edit Smart Folder"
+msgstr "Ordner sortieren"
+
+#, fuzzy
+msgid "Add Smart Folder"
+msgstr "Ordner hinzufügen"
+
+#, fuzzy
+msgid "All accounts means those in the unified section"
+msgstr "Die Kontoliste unter der einheitlichen gesendeten Zeile."
+
+msgid "Folders"
+msgstr "Ordner"
+
+msgid "Any tag"
+msgstr ""
+
+msgid "Remove condition"
+msgstr "Bedingung entfernen"
+
+msgid "Where"
+msgstr "Wo"
+
+msgid "Match"
+msgstr "Übereinstimmung"
+
+msgid "Commas separate alternatives; any one of them counts"
+msgstr "Alternativen durch Kommas trennen; eine Übereinstimmung genügt"
+
+msgid "Text to match"
+msgstr "Suchtext"
+
+msgid "The preview each message has in the list"
+msgstr ""
+
+msgid "From address when no Reply-To is set"
+msgstr "Von der Adresse, wenn kein Reply-To gesetzt ist"
+
+msgid "Looks in the system address books and the Hylki book"
+msgstr ""
+
+msgid "Add Condition"
+msgstr "Bedingung hinzufügen"
+
+msgid "Condition matching"
+msgstr "Bedingungen verknüpfen"
+
+msgid "All must match"
+msgstr "Alle müssen zutreffen"
+
+msgid "Any one may match"
+msgstr "Eine Übereinstimmung genügt"
+
+msgid "Condition {n}"
+msgstr "Bedingung {n}"
+
+msgid "Or where"
+msgstr "Oder wo"
+
+msgid "And where"
+msgstr "Und wo"
+
 msgid ""
 "Press this key on a message to add or remove the tag (with single-key "
 "shortcuts on)"
@@ -2525,50 +2734,8 @@ msgstr "Filter hinzufügen"
 msgid "Name (optional)"
 msgstr "Name (optional)"
 
-msgid "Remove condition"
-msgstr "Bedingung entfernen"
-
-msgid "Where"
-msgstr "Wo"
-
-msgid "Match"
-msgstr "Übereinstimmung"
-
-msgid "Commas separate alternatives; any one of them counts"
-msgstr "Alternativen durch Kommas trennen; eine Übereinstimmung genügt"
-
-msgid "Text to match"
-msgstr "Suchtext"
-
 msgid "Searched on the server; nothing is downloaded"
 msgstr "Auf dem Server gesucht; nichts wird heruntergeladen"
-
-msgid "From address when no Reply-To is set"
-msgstr "Von der Adresse, wenn kein Reply-To gesetzt ist"
-
-msgid "Looks in the system address books and the Hylki book"
-msgstr ""
-
-msgid "Add Condition"
-msgstr "Bedingung hinzufügen"
-
-msgid "Condition matching"
-msgstr "Bedingungen verknüpfen"
-
-msgid "All must match"
-msgstr "Alle müssen zutreffen"
-
-msgid "Any one may match"
-msgstr "Eine Übereinstimmung genügt"
-
-msgid "Condition {n}"
-msgstr "Bedingung {n}"
-
-msgid "Or where"
-msgstr "Oder wo"
-
-msgid "And where"
-msgstr "Und wo"
 
 msgid "Then"
 msgstr "Dann"
@@ -2832,7 +2999,7 @@ msgstr "Kopieren"
 msgid "Command Palette"
 msgstr ""
 
-msgid "Type an action, a folder or a tag"
+msgid "Type an action, a folder or a tag, or > for actions only"
 msgstr ""
 
 msgid "Cloud Storage"
@@ -3994,15 +4161,8 @@ msgstr "Diese Nachricht stammt aus einer Mailingliste."
 msgid "Translate"
 msgstr "Übersetzt von"
 
-msgid "Starred"
-msgstr "Markiert"
-
 msgid "Received"
 msgstr ""
-
-#, fuzzy
-msgid "Has attachments"
-msgstr "Keine Anhänge"
 
 #, fuzzy
 msgid "Click to open this message"
@@ -4770,6 +4930,18 @@ msgstr "Filter speichern?"
 msgid ""
 "The filter editor is open. Save what you changed, or discard it, before "
 "moving on."
+msgstr ""
+"Der Filter-Editor ist geöffnet. Speichern Sie, was Sie geändert haben, oder "
+"verwerfen Sie es, bevor Sie fortfahren."
+
+#, fuzzy
+msgid "Save the smart folder?"
+msgstr "Filter speichern?"
+
+#, fuzzy
+msgid ""
+"The smart folder editor is open. Save what you changed, or discard it, "
+"before moving on."
 msgstr ""
 "Der Filter-Editor ist geöffnet. Speichern Sie, was Sie geändert haben, oder "
 "verwerfen Sie es, bevor Sie fortfahren."
@@ -6469,11 +6641,22 @@ msgstr ""
 msgid "Monospace"
 msgstr "Monospace-Schrift"
 
+#, fuzzy
+msgid "Custom…"
+msgstr "Benutzerdefinierte Farbe…"
+
 msgid "Paragraph style"
 msgstr ""
 
 msgid "Font"
 msgstr ""
+
+msgid "Other Font…"
+msgstr ""
+
+#, fuzzy
+msgid "Font size"
+msgstr "Textgröße"
 
 msgid "Bold"
 msgstr "Fett"
@@ -6589,14 +6772,22 @@ msgstr "Konto entfernen…"
 msgid "Show or hide sub-folders"
 msgstr "Unterordner ein- oder ausblenden"
 
+#, fuzzy
+msgid "Show or hide labels"
+msgstr "Tags ein- oder ausblenden"
+
 msgid "Show or hide folders"
 msgstr "Ordner ein- oder ausblenden"
+
+#, fuzzy
+msgid "Labels ({len})"
+msgstr "Ordner ({len})"
 
 msgid "Folders ({len})"
 msgstr "Ordner ({len})"
 
-msgid "Folders"
-msgstr "Ordner"
+msgid "Labels"
+msgstr ""
 
 msgid "Sort Folders"
 msgstr "Ordner sortieren"
@@ -6616,6 +6807,10 @@ msgstr "Jeden Ordner anzeigen"
 msgid "Show each tag"
 msgstr "Jedes Tag anzeigen"
 
+#, fuzzy
+msgid "Show each smart folder"
+msgstr "Jeden Ordner anzeigen"
+
 msgid "Long-press to expand or collapse"
 msgstr "Lange drücken, um aus- oder einzuklappen"
 
@@ -6624,6 +6819,14 @@ msgstr "Papierkorb leeren…"
 
 msgid "Empty Junk…"
 msgstr "Spam-Ordner leeren…"
+
+#, fuzzy
+msgid "Edit Smart Folder…"
+msgstr "Filter bearbeiten…"
+
+#, fuzzy
+msgid "Delete Smart Folder…"
+msgstr "Ordner löschen…"
 
 msgid "Show or hide filters"
 msgstr "Filter ein- oder ausblenden"
@@ -6715,8 +6918,6 @@ msgstr "Angaben zum Server"
 msgid "Filled in for known providers"
 msgstr "Ausgefüllt für bekannte Anbieter"
 
-#. A JMAP server is one address, and it sends the mail
-#. itself: no SMTP rows.
 msgid "IMAP server"
 msgstr "IMAP-Server"
 
@@ -6908,14 +7109,38 @@ msgstr ""
 "{from} wurde bestätigt, aber die Adressangaben passen nicht zum Namen in der "
 "Nachricht."
 
+msgid "This Exchange account has no server address. Add it in its settings."
+msgstr ""
+
+msgid ""
+"Could not find the Exchange server for {email}: {why}. Enter its EWS "
+"address, such as https://mail.example.org/EWS/Exchange.asmx."
+msgstr ""
+
+msgid ""
+"The Exchange server refused the sign-in for {email}. Check the user name and "
+"password in its settings."
+msgstr ""
+
+#, fuzzy
+msgid "unknown folder {path}"
+msgstr "Jeden Ordner anzeigen"
+
+#, fuzzy
+msgid "message not found"
+msgstr "Schriftart der Nachricht"
+
+msgid "Could not list folders: {e}"
+msgstr "Ordner konnten nicht aufgelistet werden: {e}"
+
+msgid "Could not load message: {e}"
+msgstr "Nachricht konnte nicht geladen werden: {e}"
+
 msgid "Syncing…"
 msgstr "Wird synchronisiert…"
 
 msgid "Could not fetch mail: {e}"
 msgstr "Konnte keine Post abrufen: {e}"
-
-msgid "Could not load message: {e}"
-msgstr "Nachricht konnte nicht geladen werden: {e}"
 
 msgid "Could not load source: {e}"
 msgstr "Quelltext konnte nicht geladen werden: {e}"
@@ -6932,11 +7157,12 @@ msgstr "Konnte nicht als Spam markiert werden: {e}"
 msgid "Could not mark as not spam: {e}"
 msgstr "Markierung als „Kein Spam“ fehlgeschlagen: {e}"
 
-msgid "Could not mark {len} messages as not spam: {e}"
-msgstr "{len} Nachrichten konnten nicht als „Kein Spam“ markiert werden: {e}"
-
 msgid "Could not move messages: {e}"
 msgstr "Nachrichten konnten nicht verschoben werden: {e}"
+
+#, fuzzy
+msgid "Could not delete messages: {e}"
+msgstr "Nachricht konnte nicht gelöscht werden: {e}"
 
 msgid "Could not empty the folder: {e}"
 msgstr "Konnte den Ordner nicht leeren: {e}"
@@ -6959,6 +7185,24 @@ msgstr "Ordner konnte nicht gelöscht werden: unbekannter Ordner"
 msgid "Could not delete folder: {e}"
 msgstr "Ordner konnte nicht gelöscht werden: {e}"
 
+msgid "Sending…"
+msgstr "Wird gesendet…"
+
+msgid "Removing the attachment…"
+msgstr "Anhang wird entfernt…"
+
+msgid "The attachment is no longer in the message on the server"
+msgstr "Der Anhang ist nicht mehr in der Nachricht auf dem Server vorhanden"
+
+msgid "Could not remove the attachment: {e}"
+msgstr "Anhang konnte nicht entfernt werden: {e}"
+
+msgid "Still could not send “{subject}”: {e}"
+msgstr "„{subject}“ konnte immer noch nicht gesendet werden: {e}"
+
+msgid "Could not mark {len} messages as not spam: {e}"
+msgstr "{len} Nachrichten konnten nicht als „Kein Spam“ markiert werden: {e}"
+
 #, fuzzy
 msgid "unknown folder"
 msgstr "Jeden Ordner anzeigen"
@@ -6966,27 +7210,9 @@ msgstr "Jeden Ordner anzeigen"
 msgid "Could not reach the server"
 msgstr "Server konnte nicht erreicht werden"
 
-msgid "Sending…"
-msgstr "Wird gesendet…"
-
 msgid "A Microsoft account can't receive mail from another account"
 msgstr ""
 "Ein Microsoft-Konto kann keine E-Mails von einem anderen Konto übernehmen"
-
-msgid "Removing the attachment…"
-msgstr "Anhang wird entfernt…"
-
-msgid "Could not remove the attachment: {e}"
-msgstr "Anhang konnte nicht entfernt werden: {e}"
-
-msgid "Could not list folders: {e}"
-msgstr "Ordner konnten nicht aufgelistet werden: {e}"
-
-msgid "The attachment is no longer in the message on the server"
-msgstr "Der Anhang ist nicht mehr in der Nachricht auf dem Server vorhanden"
-
-msgid "Still could not send “{subject}”: {e}"
-msgstr "„{subject}“ konnte immer noch nicht gesendet werden: {e}"
 
 msgid "IMAP connection stopped making progress"
 msgstr ""
@@ -7142,9 +7368,6 @@ msgstr ""
 "POP3 kann Nachrichten auf dem Server nicht ändern. Daher wurde der Anhang "
 "nicht entfernt"
 
-msgid "Inbox"
-msgstr "Posteingang"
-
 msgid "Email Client"
 msgstr "E-Mail-Client"
 
@@ -7280,6 +7503,11 @@ msgstr "Der einheitliche Posteingang im Lichtmodus"
 
 msgid "Hyprlab"
 msgstr "Hyprlab"
+
+#, fuzzy
+#~ msgid "An Exchange account can't receive mail from another account yet"
+#~ msgstr ""
+#~ "Ein POP3-Konto kann keine E-Mails von einem anderen Konto übernehmen"
 
 #, fuzzy
 #~ msgid "Import contacts…"

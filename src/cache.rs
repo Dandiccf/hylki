@@ -36,6 +36,13 @@ CREATE TABLE IF NOT EXISTS refs_repair (
     done        INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (account_id, folder_path)
 );
+CREATE TABLE IF NOT EXISTS label_fill (
+    account_id  INTEGER NOT NULL,
+    folder_path TEXT    NOT NULL,
+    next_uid    INTEGER NOT NULL,
+    done        INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (account_id, folder_path)
+);
 CREATE TABLE IF NOT EXISTS messages (
     account_id     INTEGER NOT NULL,
     folder_path    TEXT    NOT NULL,
@@ -57,6 +64,7 @@ CREATE TABLE IF NOT EXISTS messages (
     keywords       TEXT    NOT NULL DEFAULT '',
     importance     INTEGER NOT NULL DEFAULT 0,
     due            INTEGER NOT NULL DEFAULT 0,
+    gmail_labels   TEXT    NOT NULL DEFAULT '',
     PRIMARY KEY (account_id, folder_path, uid)
 );
 CREATE INDEX IF NOT EXISTS messages_by_message_id ON messages (message_id);
@@ -83,6 +91,7 @@ CREATE TABLE IF NOT EXISTS sender_checks (
     pgp         TEXT NOT NULL DEFAULT '',
     unsubscribe TEXT NOT NULL DEFAULT '',
     invite      TEXT NOT NULL DEFAULT '',
+    label       TEXT NOT NULL DEFAULT '',
     PRIMARY KEY (account_id, folder_path, uid)
 );
 CREATE TABLE IF NOT EXISTS attachments (
@@ -231,6 +240,18 @@ fn split_keywords(col: String) -> Vec<String> {
         }
     }
     out
+}
+
+/// Gmail labels as one column. A label can hold a space, so they are kept
+/// apart by the unit separator, which no mailbox name contains.
+const LABEL_SEP: char = '\u{1f}';
+
+fn join_labels(labels: &[String]) -> String {
+    labels.join(&LABEL_SEP.to_string())
+}
+
+fn split_labels(col: String) -> Vec<String> {
+    col.split(LABEL_SEP).filter(|l| !l.is_empty()).map(str::to_string).collect()
 }
 
 /// Most messages one tag view lists per account; the list pages within it.
@@ -614,6 +635,10 @@ impl Cache {
         // cached reads as normal, and undated, until it is fetched again.
         let _ = conn.execute("ALTER TABLE messages ADD COLUMN importance INTEGER NOT NULL DEFAULT 0", []);
         let _ = conn.execute("ALTER TABLE messages ADD COLUMN due INTEGER NOT NULL DEFAULT 0", []);
+        // And Gmail's labels (#374): mail already cached shows none until its
+        // folder's recent window syncs, or the backfill reaches it.
+        let _ = conn
+            .execute("ALTER TABLE messages ADD COLUMN gmail_labels TEXT NOT NULL DEFAULT ''", []);
         // And the OpenPGP verdict (#133) beside the sender check, as JSON;
         // empty for a message that carried none. Kept as a marker: nothing
         // OpenPGP is cached, so a body that was (by the first build of the
@@ -625,6 +650,10 @@ impl Cache {
         // message that carries none.
         let _ = conn
             .execute("ALTER TABLE sender_checks ADD COLUMN invite TEXT NOT NULL DEFAULT ''", []);
+        // And the sensitivity label (#411). A check stored before has none:
+        // its message shows its label once it is fetched again.
+        let _ = conn
+            .execute("ALTER TABLE sender_checks ADD COLUMN label TEXT NOT NULL DEFAULT ''", []);
         for table in ["bodies", "attachments", "attachments_checked"] {
             let _ = conn.execute(
                 &format!(
@@ -913,7 +942,7 @@ impl Cache {
     pub fn load_messages(&self, account_id: u32, folder_path: &str, folder_id: u32) -> Vec<Message> {
         let run = || -> rusqlite::Result<Vec<Message>> {
             let mut stmt = self.conn.prepare(&format!(
-                "SELECT uid, from_name, from_addr, subject, date, ts, unread, starred, has_attachment, recipients, cc, message_id, references_, preview, reply_to, {KEYWORDS_COL}, importance, due
+                "SELECT uid, from_name, from_addr, subject, date, ts, unread, starred, has_attachment, recipients, cc, message_id, references_, preview, reply_to, {KEYWORDS_COL}, importance, due, gmail_labels
                  FROM messages WHERE account_id = ?1 AND folder_path = ?2 ORDER BY uid DESC",
             ))?;
             let rows = stmt.query_map(params![account_id, folder_path], |row| {
@@ -941,6 +970,7 @@ impl Cache {
                     references: row.get(12)?,
                     importance: crate::models::Importance::from_i64(row.get(16)?),
                     due: row.get(17)?,
+                    labels: split_labels(row.get(18)?),
                 };
                 // Rows written before NUL-scrubbing existed may still carry
                 // one; GTK labels abort on interior NULs.
@@ -1003,13 +1033,13 @@ impl Cache {
             for m in messages {
                 tx.execute(
                     "INSERT INTO messages
-                     (account_id, folder_path, uid, from_name, from_addr, subject, date, ts, unread, starred, has_attachment, recipients, cc, message_id, references_, preview, reply_to, keywords, importance, due)
-                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20)",
+                     (account_id, folder_path, uid, from_name, from_addr, subject, date, ts, unread, starred, has_attachment, recipients, cc, message_id, references_, preview, reply_to, keywords, importance, due, gmail_labels)
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21)",
                     params![
                         account_id, folder_path, m.uid, m.from_name, m.from_addr, m.subject,
                         m.date, m.timestamp, m.unread, m.starred, m.has_attachment, m.to, m.cc,
                         m.message_id, m.references, m.preview, m.reply_to, m.keywords.join(" "),
-                        m.importance.to_i64(), m.due
+                        m.importance.to_i64(), m.due, join_labels(&m.labels)
                     ],
                 )?;
             }
@@ -1045,8 +1075,8 @@ impl Cache {
                 // lost its preview.
                 tx.execute(
                     "INSERT INTO messages
-                     (account_id, folder_path, uid, from_name, from_addr, subject, date, ts, unread, starred, has_attachment, recipients, cc, message_id, references_, preview, reply_to, keywords, importance, due)
-                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20)
+                     (account_id, folder_path, uid, from_name, from_addr, subject, date, ts, unread, starred, has_attachment, recipients, cc, message_id, references_, preview, reply_to, keywords, importance, due, gmail_labels)
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21)
                      ON CONFLICT(account_id, folder_path, uid) DO UPDATE SET
                        from_name = excluded.from_name,
                        from_addr = excluded.from_addr,
@@ -1064,12 +1094,13 @@ impl Cache {
                        reply_to = excluded.reply_to,
                        keywords = excluded.keywords,
                        importance = excluded.importance,
-                       due = excluded.due",
+                       due = excluded.due,
+                       gmail_labels = excluded.gmail_labels",
                     params![
                         account_id, folder_path, m.uid, m.from_name, m.from_addr, m.subject,
                         m.date, m.timestamp, m.unread, m.starred, m.has_attachment, m.to, m.cc,
                         m.message_id, m.references, m.preview, m.reply_to, m.keywords.join(" "),
-                        m.importance.to_i64(), m.due
+                        m.importance.to_i64(), m.due, join_labels(&m.labels)
                     ],
                 )?;
             }
@@ -1187,7 +1218,7 @@ impl Cache {
             }
             let sql = format!(
                 "SELECT folder_path, uid, from_name, from_addr, subject, date, ts, unread, starred, \
-                        has_attachment, recipients, cc, message_id, references_, preview, reply_to, {keywords}, importance, due \
+                        has_attachment, recipients, cc, message_id, references_, preview, reply_to, {keywords}, importance, due, gmail_labels \
                  FROM messages WHERE rowid IN ({members}) ORDER BY ts DESC LIMIT ?1",
                 keywords = KEYWORDS_COL,
                 members = rowid_list(&members),
@@ -1218,6 +1249,7 @@ impl Cache {
                         references: row.get(13)?,
                         importance: crate::models::Importance::from_i64(row.get(17)?),
                         due: row.get(18)?,
+                        labels: split_labels(row.get(19)?),
                 };
                 m.scrub_nuls();
                 Ok((row.get::<_, String>(0)?, m))
@@ -1484,6 +1516,89 @@ impl Cache {
         );
     }
 
+    /// How far down a folder the one-time Gmail label fill (#374) has walked,
+    /// as [`Cache::refs_repair_state`] does for References.
+    pub fn label_fill_state(&self, account_id: u32, folder_path: &str) -> (u32, bool) {
+        self.conn
+            .query_row(
+                "SELECT next_uid, done FROM label_fill WHERE account_id = ?1 AND folder_path = ?2",
+                params![account_id, folder_path],
+                |row| Ok((row.get::<_, u32>(0)?, row.get::<_, i64>(1)? != 0)),
+            )
+            .unwrap_or((u32::MAX, false))
+    }
+
+    pub fn set_label_fill_state(&self, account_id: u32, folder_path: &str, next_uid: u32, done: bool) {
+        let _ = self.conn.execute(
+            "INSERT INTO label_fill (account_id, folder_path, next_uid, done) \
+             VALUES (?1, ?2, ?3, ?4) \
+             ON CONFLICT(account_id, folder_path) DO UPDATE SET next_uid = ?3, done = ?4",
+            params![account_id, folder_path, next_uid, done as i64],
+        );
+    }
+
+    /// Up to `limit` cached uids in a folder below `below_uid`, newest first.
+    pub fn uids_below(&self, account_id: u32, folder_path: &str, below_uid: u32, limit: usize) -> Vec<u32> {
+        let run = || -> rusqlite::Result<Vec<u32>> {
+            let mut stmt = self.conn.prepare(
+                "SELECT uid FROM messages WHERE account_id = ?1 AND folder_path = ?2 AND uid < ?3 \
+                 ORDER BY uid DESC LIMIT ?4",
+            )?;
+            let rows = stmt.query_map(params![account_id, folder_path, below_uid, limit as i64], |row| row.get(0))?;
+            rows.collect()
+        };
+        run().unwrap_or_default()
+    }
+
+    /// Store the Gmail labels read for these uids; returns how many rows
+    /// changed.
+    /// Add Gmail labels to one cached message, or take them off (#374): what
+    /// tagging on Gmail changed, before the next sync says it again.
+    pub fn set_gmail_label(&self, account_id: u32, folder_path: &str, uid: u32, labels: &[String], add: bool) {
+        let current: String = self
+            .conn
+            .query_row(
+                "SELECT gmail_labels FROM messages WHERE account_id = ?1 AND folder_path = ?2 AND uid = ?3",
+                params![account_id, folder_path, uid],
+                |r| r.get(0),
+            )
+            .unwrap_or_default();
+        let mut list = split_labels(current);
+        list.retain(|l| !labels.iter().any(|x| x.eq_ignore_ascii_case(l)));
+        if add {
+            list.extend(labels.iter().cloned());
+        }
+        let _ = self.conn.execute(
+            "UPDATE messages SET gmail_labels = ?1 WHERE account_id = ?2 AND folder_path = ?3 AND uid = ?4",
+            params![join_labels(&list), account_id, folder_path, uid],
+        );
+    }
+
+    pub fn set_gmail_labels(
+        &self,
+        account_id: u32,
+        folder_path: &str,
+        labels: &std::collections::HashMap<u32, Vec<String>>,
+    ) -> usize {
+        let run = || -> rusqlite::Result<usize> {
+            let tx = self.conn.unchecked_transaction()?;
+            let mut changed = 0;
+            for (uid, l) in labels {
+                changed += tx.execute(
+                    "UPDATE messages SET gmail_labels = ?1 \
+                     WHERE account_id = ?2 AND folder_path = ?3 AND uid = ?4 AND gmail_labels <> ?1",
+                    params![join_labels(l), account_id, folder_path, uid],
+                )?;
+            }
+            tx.commit()?;
+            Ok(changed)
+        };
+        run().unwrap_or_else(|e| {
+            tracing::warn!("cache set_gmail_labels failed: {e}");
+            0
+        })
+    }
+
     pub fn load_body(&self, account_id: u32, folder_path: &str, uid: u32) -> Option<String> {
         self.body_of(account_id, folder_path, uid).or_else(|| {
             self.sibling_copies(account_id, folder_path, uid)
@@ -1586,7 +1701,7 @@ impl Cache {
     ) -> Option<crate::models::SenderCheck> {
         self.conn
             .query_row(
-                "SELECT trust, summary, findings, pgp, unsubscribe, invite FROM sender_checks \
+                "SELECT trust, summary, findings, pgp, unsubscribe, invite, label FROM sender_checks \
                  WHERE account_id = ?1 AND folder_path = ?2 AND uid = ?3",
                 params![account_id, folder_path, uid],
                 |row| {
@@ -1604,6 +1719,7 @@ impl Cache {
                         pgp: None,
                         unsubscribe: serde_json::from_str(&row.get::<_, String>(4)?).ok(),
                         invite: serde_json::from_str(&row.get::<_, String>(5)?).ok(),
+                        label: serde_json::from_str(&row.get::<_, String>(6)?).ok(),
                     })
                 },
             )
@@ -1619,8 +1735,8 @@ impl Cache {
     ) {
         if let Err(e) = self.conn.execute(
             "INSERT OR REPLACE INTO sender_checks \
-             (account_id, folder_path, uid, trust, summary, findings, pgp, unsubscribe, invite) \
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+             (account_id, folder_path, uid, trust, summary, findings, pgp, unsubscribe, invite, label) \
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
             params![
                 account_id,
                 folder_path,
@@ -1642,6 +1758,11 @@ impl Cache {
                     .invite
                     .as_ref()
                     .and_then(|i| serde_json::to_string(i).ok())
+                    .unwrap_or_default(),
+                check
+                    .label
+                    .as_ref()
+                    .and_then(|l| serde_json::to_string(l).ok())
                     .unwrap_or_default()
             ],
         ) {
@@ -2254,6 +2375,24 @@ impl Cache {
     /// How many cached messages of the account carry `keyword` (server or
     /// local), for the tag finder's report where the server itself gives no
     /// count (Microsoft 365 categories).
+    /// Every keyword the account's cached messages carry, with how many
+    /// carry it: the tag finder's answer where the server keeps no list of
+    /// its own (Exchange's categories, #391).
+    pub fn keyword_counts(&self, account_id: u32) -> Vec<(String, usize)> {
+        let run = || -> rusqlite::Result<Vec<(String, usize)>> {
+            let mut stmt = self.conn.prepare("SELECT keywords FROM messages WHERE account_id = ?1 AND keywords <> ''")?;
+            let rows = stmt.query_map(params![account_id], |r| r.get::<_, String>(0))?;
+            let mut counts: std::collections::BTreeMap<String, usize> = Default::default();
+            for row in rows {
+                for k in split_keywords(row?) {
+                    *counts.entry(k).or_default() += 1;
+                }
+            }
+            Ok(counts.into_iter().collect())
+        };
+        run().unwrap_or_default()
+    }
+
     pub fn count_with_keyword(&self, account_id: u32, keyword: &str) -> usize {
         let needle = format!(" {} ", keyword.to_ascii_lowercase());
         let sql = format!(
@@ -2266,22 +2405,58 @@ impl Cache {
             .unwrap_or(0)
     }
 
-    /// Every cached message of the account carrying `keyword` — on the server
-    /// or locally — newest first, with the folder each sits in. Backs the
-    /// sidebar's tag views (#71); the caller maps paths to folder ids and
-    /// drops the copies Gmail keeps per label.
-    pub fn messages_with_keyword(&self, account_id: u32, keyword: &str) -> Vec<(String, Message)> {
-        let needle = format!(" {} ", keyword.to_ascii_lowercase());
-        let sql = format!(
+    /// The account's cached messages a smart folder (#417) keeps, newest
+    /// first with the folder each sits in: those in `include` (every folder
+    /// when `None`) and not in `exclude`, past what `pre` rules out, for
+    /// which `keep` says yes. Rows are read one at a time and only the kept
+    /// ones become messages, so a folder over a large index stays cheap to
+    /// hold; reading stops at `limit` kept.
+    pub fn smart_scan(
+        &self,
+        account_id: u32,
+        include: Option<&[String]>,
+        exclude: &[String],
+        pre: crate::config::SmartPrefilter,
+        limit: usize,
+        mut keep: impl FnMut(&Message) -> bool,
+    ) -> Vec<(String, Message)> {
+        use rusqlite::types::Value;
+        let mut args: Vec<Value> = vec![Value::Integer(account_id.into())];
+        let list = |paths: &[String], args: &mut Vec<Value>| -> String {
+            let marks: Vec<String> = paths
+                .iter()
+                .map(|p| {
+                    args.push(Value::Text(p.clone()));
+                    format!("?{}", args.len())
+                })
+                .collect();
+            marks.join(",")
+        };
+        let mut sql = format!(
             "SELECT folder_path, uid, from_name, from_addr, subject, date, ts, unread, starred, \
-                    has_attachment, recipients, cc, message_id, references_, preview, reply_to, {KEYWORDS_COL}, importance, due \
-             FROM messages \
-             WHERE account_id = ?1 AND instr(' ' || lower({KEYWORDS_COL}) || ' ', ?2) > 0 \
-             ORDER BY ts DESC LIMIT ?3"
+                    has_attachment, recipients, cc, message_id, references_, preview, reply_to, {KEYWORDS_COL}, importance, due, gmail_labels \
+             FROM messages WHERE account_id = ?1"
         );
-        let run = || -> rusqlite::Result<Vec<(String, Message)>> {
+        if let Some(paths) = include {
+            if paths.is_empty() {
+                return Vec::new();
+            }
+            sql.push_str(&format!(" AND folder_path IN ({})", list(paths, &mut args)));
+        }
+        if !exclude.is_empty() {
+            sql.push_str(&format!(" AND folder_path NOT IN ({})", list(exclude, &mut args)));
+        }
+        for (col, want) in [("starred", pre.starred), ("unread", pre.unread), ("has_attachment", pre.attachment)] {
+            if let Some(want) = want {
+                sql.push_str(&format!(" AND {col} = {}", i32::from(want)));
+            }
+        }
+        sql.push_str(" ORDER BY ts DESC");
+        let mut run = || -> rusqlite::Result<Vec<(String, Message)>> {
             let mut stmt = self.conn.prepare(&sql)?;
-            let rows = stmt.query_map(params![account_id, needle, TAG_VIEW_LIMIT], |row| {
+            let mut rows = stmt.query(rusqlite::params_from_iter(args.iter()))?;
+            let mut out = Vec::new();
+            while let Some(row) = rows.next()? {
                 let uid: u32 = row.get(1)?;
                 let mut m = Message {
                     id: uid,
@@ -2306,6 +2481,70 @@ impl Cache {
                     references: row.get(13)?,
                     importance: crate::models::Importance::from_i64(row.get(17)?),
                     due: row.get(18)?,
+                    labels: split_labels(row.get(19)?),
+                };
+                m.scrub_nuls();
+                if keep(&m) {
+                    out.push((row.get::<_, String>(0)?, m));
+                    if out.len() >= limit {
+                        break;
+                    }
+                }
+            }
+            Ok(out)
+        };
+        run().unwrap_or_else(|e| {
+            tracing::warn!("cache smart_scan failed: {e}");
+            Vec::new()
+        })
+    }
+
+    /// Every cached message of the account carrying `keyword` — on the server
+    /// or locally — newest first, with the folder each sits in. Backs the
+    /// sidebar's tag views (#71); the caller maps paths to folder ids and
+    /// drops the copies Gmail keeps per label. `name` is the tag's name: on
+    /// Gmail a label named like the tag (or like its keyword) counts as the
+    /// tag too (#374).
+    pub fn messages_with_keyword(&self, account_id: u32, keyword: &str, name: &str) -> Vec<(String, Message)> {
+        let needle = format!(" {} ", keyword.to_ascii_lowercase());
+        let label = |s: &str| format!("{sep}{}{sep}", crate::mutf7::encode(s).to_lowercase(), sep = LABEL_SEP);
+        let sql = format!(
+            "SELECT folder_path, uid, from_name, from_addr, subject, date, ts, unread, starred, \
+                    has_attachment, recipients, cc, message_id, references_, preview, reply_to, {KEYWORDS_COL}, importance, due, gmail_labels \
+             FROM messages \
+             WHERE account_id = ?1 AND (instr(' ' || lower({KEYWORDS_COL}) || ' ', ?2) > 0 \
+                   OR (gmail_labels <> '' AND (instr(?4 || lower(gmail_labels) || ?4, ?5) > 0 \
+                                               OR instr(?4 || lower(gmail_labels) || ?4, ?6) > 0))) \
+             ORDER BY ts DESC LIMIT ?3"
+        );
+        let run = || -> rusqlite::Result<Vec<(String, Message)>> {
+            let mut stmt = self.conn.prepare(&sql)?;
+            let rows = stmt.query_map(params![account_id, needle, TAG_VIEW_LIMIT, LABEL_SEP.to_string(), label(keyword), label(name)], |row| {
+                let uid: u32 = row.get(1)?;
+                let mut m = Message {
+                    id: uid,
+                    account_id,
+                    folder_id: 0, // filled in by the caller, which knows the ids
+                    uid,
+                    from_name: row.get(2)?,
+                    from_addr: row.get(3)?,
+                    reply_to: row.get(15)?,
+                    to: row.get(10)?,
+                    cc: row.get(11)?,
+                    subject: row.get(4)?,
+                    preview: row.get(14)?,
+                    body: String::new(),
+                    date: row.get(5)?,
+                    timestamp: row.get(6)?,
+                    unread: row.get(7)?,
+                    starred: row.get(8)?,
+                    keywords: split_keywords(row.get(16)?),
+                    has_attachment: row.get(9)?,
+                    message_id: row.get(12)?,
+                    references: row.get(13)?,
+                    importance: crate::models::Importance::from_i64(row.get(17)?),
+                    due: row.get(18)?,
+                    labels: split_labels(row.get(19)?),
                 };
                 m.scrub_nuls();
                 Ok((row.get::<_, String>(0)?, m))
@@ -2426,6 +2665,37 @@ fn kind_from_i64(v: i64) -> FolderKind {
 
 #[cfg(test)]
 mod tests {
+
+    /// A smart folder's scan (#417) keeps to the folders asked for, lets the
+    /// prefilter and the matcher narrow it, newest first, up to the limit.
+    #[test]
+    fn smart_scan_reads_only_what_it_is_asked_for() {
+        let c = Cache::in_memory().unwrap();
+        for (path, uid, ts, starred, subject) in [
+            ("INBOX", 1u32, 100i64, 1, "invoice one"),
+            ("INBOX", 2, 300, 0, "invoice two"),
+            ("Sent", 3, 200, 1, "invoice sent"),
+            ("Trash", 4, 400, 1, "invoice gone"),
+        ] {
+            c.conn.execute(
+                "INSERT INTO messages (account_id, folder_path, uid, from_name, from_addr, subject, date, ts, unread, starred, has_attachment, recipients, cc, message_id, references_) \
+                 VALUES (1, ?1, ?2, '', '', ?3, '', ?4, 1, ?5, 0, '', '', '', '')",
+                params![path, uid, subject, ts, starred],
+            ).unwrap();
+        }
+        let uids = |v: Vec<(String, Message)>| v.into_iter().map(|(_, m)| m.uid).collect::<Vec<_>>();
+        let none = crate::config::SmartPrefilter::default();
+        let trash = vec!["Trash".to_string()];
+        assert_eq!(uids(c.smart_scan(1, None, &trash, none, 10, |_| true)), [2, 3, 1]);
+        let sent = vec!["Sent".to_string()];
+        assert_eq!(uids(c.smart_scan(1, Some(&sent), &[], none, 10, |_| true)), [3]);
+        let starred = crate::config::SmartPrefilter { starred: Some(true), ..none };
+        assert_eq!(uids(c.smart_scan(1, None, &trash, starred, 10, |_| true)), [3, 1]);
+        assert_eq!(uids(c.smart_scan(1, None, &trash, none, 10, |m| m.subject.ends_with("one"))), [1]);
+        assert_eq!(uids(c.smart_scan(1, None, &[], none, 2, |_| true)), [4, 2]);
+        assert!(c.smart_scan(1, Some(&[]), &[], none, 10, |_| true).is_empty());
+        assert!(c.smart_scan(2, None, &[], none, 10, |_| true).is_empty());
+    }
 
     /// Removing downloaded mail keeps the index, and an age limit only takes
     /// what is older than it (#394).
@@ -2756,9 +3026,70 @@ mod tests {
             references: String::new(),
             importance: Default::default(),
             due: 0,
+            labels: Vec::new(),
         };
         c.save_messages(1, "Inbox", std::slice::from_ref(&m));
         assert_eq!(c.load_messages(1, "Inbox", 2), [m]);
+    }
+
+    /// Gmail labels may hold spaces, so they cannot share the keywords'
+    /// space-joined column (#374).
+    #[test]
+    fn gmail_labels_round_trip_through_the_cache() {
+        let c = Cache::in_memory().unwrap();
+        let mut m = Message {
+            id: 4,
+            account_id: 1,
+            folder_id: 1,
+            uid: 4,
+            from_name: "Ada".into(),
+            from_addr: "ada@example.com".into(),
+            reply_to: String::new(),
+            to: String::new(),
+            cc: String::new(),
+            subject: "Hello".into(),
+            preview: String::new(),
+            body: String::new(),
+            date: String::new(),
+            timestamp: 1,
+            unread: false,
+            starred: false,
+            keywords: vec!["$label1".into()],
+            has_attachment: false,
+            message_id: String::new(),
+            references: String::new(),
+            importance: Default::default(),
+            due: 0,
+            labels: vec!["My Label".into(), "Work/Projects".into(), "&AOk-t&AOk-".into()],
+        };
+        c.upsert_messages(1, "INBOX", std::slice::from_ref(&m));
+        assert_eq!(c.load_messages(1, "INBOX", 1), [m.clone()]);
+        let (_, by_keyword) = c.messages_with_keyword(1, "$label1", "Urgent").pop().unwrap();
+        assert_eq!(by_keyword.labels, m.labels);
+        // A label named like a tag finds the message for that tag (#374),
+        // whatever its case, the non-ASCII one included.
+        assert_eq!(c.messages_with_keyword(1, "work-kw", "my label").len(), 1);
+        assert_eq!(c.messages_with_keyword(1, "x", "été").len(), 1);
+        assert_eq!(c.messages_with_keyword(1, "x", "Work").len(), 0, "a nested label is its own name");
+        assert_eq!(c.messages_with_keyword(1, "nothing", "Nothing").len(), 0);
+
+        // A label taken off in Gmail comes off here at the next sync.
+        m.labels.clear();
+        c.upsert_messages(1, "INBOX", std::slice::from_ref(&m));
+        assert!(c.load_messages(1, "INBOX", 1)[0].labels.is_empty());
+
+        // The one-time fill writes labels alone, and walks down the folder.
+        assert_eq!(c.label_fill_state(1, "INBOX"), (u32::MAX, false));
+        assert_eq!(c.uids_below(1, "INBOX", u32::MAX, 10), [4]);
+        assert!(c.uids_below(1, "INBOX", 4, 10).is_empty());
+        let found = std::collections::HashMap::from([(4, vec!["Filled In".to_string()]), (99, vec![])]);
+        assert_eq!(c.set_gmail_labels(1, "INBOX", &found), 1);
+        assert_eq!(c.set_gmail_labels(1, "INBOX", &found), 0, "nothing new the second time");
+        let back = c.load_messages(1, "INBOX", 1).remove(0);
+        assert_eq!(back.labels, ["Filled In"]);
+        assert_eq!(back.keywords, ["$label1"]);
+        c.set_label_fill_state(1, "INBOX", 4, true);
+        assert_eq!(c.label_fill_state(1, "INBOX"), (4, true));
     }
 
     fn add_msg(c: &Cache, folder: &str, uid: u32, from: &str, subject: &str, ts: i64) {

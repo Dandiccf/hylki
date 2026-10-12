@@ -399,6 +399,10 @@ msgid "Mail Accounts"
 msgstr "Λογαριασμοί αλληλογραφίας"
 
 #, fuzzy
+msgid "New Smart Folder…"
+msgstr "Νέος φάκελος…"
+
+#, fuzzy
 msgid "About Hylki"
 msgstr "Σχετικά"
 
@@ -425,6 +429,10 @@ msgstr "Εξερχόμενα"
 #, fuzzy
 msgid "Tag"
 msgstr "Ετικέτες"
+
+#, fuzzy
+msgid "Smart Folder"
+msgstr "Ταξινόμηση φακέλων"
 
 msgid ""
 "Single-key shortcuts are switched off. Turn them on in Settings → System."
@@ -721,11 +729,32 @@ msgstr ""
 msgid "Empty"
 msgstr "Άδειασμα"
 
+msgid "Empty Trash in Every Account?"
+msgstr ""
+
+msgid "Empty Junk in Every Account?"
+msgstr ""
+
+#, fuzzy
+msgid ""
+"Every message in them will be erased from the server. This can’t be undone."
+msgstr ""
+"Κάθε μήνυμα σε αυτόν θα διαγραφεί από τον διακομιστή. Αυτή η ενέργεια δεν "
+"αναιρείται."
+
 msgid "No Junk folder available for this account"
 msgstr "Δεν υπάρχει φάκελος Ανεπιθύμητων για αυτόν τον λογαριασμό"
 
 msgid "No Inbox folder available for this account"
 msgstr "Δεν υπάρχει φάκελος Εισερχομένων για αυτόν τον λογαριασμό"
+
+#, fuzzy
+msgid "Delete “{name}”?"
+msgstr "Άδειασμα του «{name}»;"
+
+msgid ""
+"The smart folder goes from the sidebar. The mail it shows stays where it is."
+msgstr ""
 
 msgid "No address book available to add contacts"
 msgstr "Δεν υπάρχει διαθέσιμο βιβλίο διευθύνσεων για προσθήκη επαφών"
@@ -1602,6 +1631,32 @@ msgstr ""
 "Εισαγάγετε τη διεύθυνση του διακομιστή LibreTranslate στις Ρυθμίσεις → "
 "Μετάφραση."
 
+msgid "Labeled"
+msgstr ""
+
+msgid "Personal"
+msgstr ""
+
+#, fuzzy
+msgid "Private"
+msgstr "Απόρρητο"
+
+msgid "Confidential"
+msgstr ""
+
+msgid "The sender marked this message “{label}”."
+msgstr ""
+
+msgid ""
+"The sender's organization labeled this message, without saying the label's "
+"name. Hylki shows the label but does not apply its rules."
+msgstr ""
+
+msgid ""
+"The sender's organization labeled this message “{label}”. Hylki shows the "
+"label but does not apply its rules."
+msgstr ""
+
 msgid "Open Hylki"
 msgstr "Άνοιγμα Hylki"
 
@@ -1638,6 +1693,12 @@ msgstr ""
 "Εισαγάγετε τη διεύθυνση του διακομιστή JMAP ή τη διεύθυνση URL του πόρου "
 "συνεδρίας του. Η αλληλογραφία διαβάζεται και αποστέλλεται μέσω JMAP· δεν "
 "απαιτούνται ρυθμίσεις SMTP."
+
+msgid ""
+"For your organization's own Exchange server. Leave the server empty to find "
+"it from your address. Sign in as user@domain or DOMAIN\\user. Microsoft 365 "
+"accounts use the entry below."
+msgstr ""
 
 msgid "Sign in with your browser — no password needed."
 msgstr ""
@@ -1710,6 +1771,20 @@ msgstr ""
 
 msgid "Find Tags…"
 msgstr "Εύρεση ετικετών…"
+
+#, fuzzy
+msgid "Smart Folders"
+msgstr "Ταξινόμηση φακέλων"
+
+msgid ""
+"A smart folder lists the messages that match its conditions, from every "
+"folder or one kind of folder, in one account or all of them. It searches the "
+"mail on this computer and appears in the sidebar under the unified rows."
+msgstr ""
+
+#, fuzzy
+msgid "Add Smart Folder…"
+msgstr "Προσθήκη φακέλου"
 
 msgid "Search filters"
 msgstr "Αναζήτηση φίλτρων"
@@ -2066,6 +2141,10 @@ msgid ""
 "link) older than this, unless starred. Checked at each sync."
 msgstr ""
 
+#, fuzzy
+msgid "Search the organization directory"
+msgstr "Αποθήκευση του καταλόγου;"
+
 msgid "Folder Order"
 msgstr "Σειρά φακέλων"
 
@@ -2196,6 +2275,14 @@ msgstr "Ολοκληρώστε τη σύνδεση στο παράθυρο πο�
 msgid "Opening browser… complete sign-in there."
 msgstr "Άνοιγμα προγράμματος περιήγησης… ολοκληρώστε τη σύνδεση εκεί."
 
+#, fuzzy
+msgid "Opening browser… approve access to the directory there."
+msgstr "Άνοιγμα προγράμματος περιήγησης… ολοκληρώστε τη σύνδεση εκεί."
+
+#, fuzzy
+msgid "Approve access to the directory in the window that opened."
+msgstr "Ολοκληρώστε τη σύνδεση στο παράθυρο που άνοιξε."
+
 msgid "Signature HTML"
 msgstr "HTML υπογραφής"
 
@@ -2238,6 +2325,16 @@ msgstr "✓ Έγινε σύνδεση — αποθηκεύστε τον λογα
 
 msgid "Sign-in failed: {e}"
 msgstr "Η σύνδεση απέτυχε: {e}"
+
+#, fuzzy
+msgid "Signed in as {address}, not {email}."
+msgstr "Συνδεθήκατε ως {who}. {terms}"
+
+msgid "Access to the directory approved. Save the account to finish."
+msgstr ""
+
+msgid "Access to the directory was not approved: {e}"
+msgstr ""
 
 msgid "✓ SMTP: connected"
 msgstr "✓ SMTP: συνδέθηκε"
@@ -2342,6 +2439,18 @@ msgstr ""
 msgid "Use this account in Hylki"
 msgstr "Χρήση αυτού του λογαριασμού στο Hylki"
 
+msgid ""
+"Only for an account signed in within Hylki. To use it, add this account with "
+"Microsoft 365 / Outlook as the provider, instead of from GNOME Online "
+"Accounts."
+msgstr ""
+
+msgid ""
+"Suggest people from your organization as you type a recipient. Turning this "
+"on asks Microsoft for access to the directory; some organizations need an "
+"administrator to approve it."
+msgstr ""
+
 msgid "Never"
 msgstr "Ποτέ"
 
@@ -2353,13 +2462,14 @@ msgstr[1] "Μετά από {n} ημέρες"
 msgid "API Token"
 msgstr "Διακριτικό API"
 
-#. A JMAP server is one address, and it sends the mail
-#. itself: no SMTP rows.
 msgid "Server (host name or URL)"
 msgstr "Διακομιστής (όνομα κεντρικού υπολογιστή ή URL)"
 
 msgid "Port (default 443)"
 msgstr "Θύρα (προεπιλογή 443)"
+
+msgid "EWS address (empty to find it)"
+msgstr ""
 
 msgid "Google (Gmail)"
 msgstr "Google (Gmail)"
@@ -2472,6 +2582,104 @@ msgstr "Εισαγωγή όλων"
 msgid "{n} messages"
 msgstr "{n} μηνύματα"
 
+msgid "All but Trash and Junk"
+msgstr ""
+
+#, fuzzy
+msgid "Remove smart folder"
+msgstr "Αφαίρεση φίλτρου"
+
+msgid "Inbox"
+msgstr "Εισερχόμενα"
+
+msgid "Starred"
+msgstr "Με αστέρι"
+
+#, fuzzy
+msgid "Not starred"
+msgstr "Δεν είναι εγκατεστημένο"
+
+#, fuzzy
+msgid "Unread"
+msgstr "Αναγνωσμένο/Μη αναγνωσμένο"
+
+#, fuzzy
+msgid "Read"
+msgstr "Ανάγνωση"
+
+msgid "Has attachments"
+msgstr "Έχει συνημμένα"
+
+msgid "Tagged"
+msgstr ""
+
+#, fuzzy
+msgid "Message preview"
+msgstr "Πηγαίος κώδικας μηνύματος"
+
+#, fuzzy
+msgid "Edit Smart Folder"
+msgstr "Ταξινόμηση φακέλων"
+
+#, fuzzy
+msgid "Add Smart Folder"
+msgstr "Προσθήκη φακέλου"
+
+#, fuzzy
+msgid "All accounts means those in the unified section"
+msgstr "Η λίστα λογαριασμών κάτω από την ενοποιημένη σειρά Απεσταλμένα."
+
+msgid "Folders"
+msgstr "Φάκελοι"
+
+msgid "Any tag"
+msgstr ""
+
+msgid "Remove condition"
+msgstr "Αφαίρεση συνθήκης"
+
+msgid "Where"
+msgstr "Πού"
+
+msgid "Match"
+msgstr "Αντιστοίχιση"
+
+msgid "Commas separate alternatives; any one of them counts"
+msgstr "Τα κόμματα διαχωρίζουν τις εναλλακτικές· αρκεί οποιαδήποτε από αυτές"
+
+msgid "Text to match"
+msgstr "Κείμενο προς αντιστοίχιση"
+
+msgid "The preview each message has in the list"
+msgstr ""
+
+msgid "From address when no Reply-To is set"
+msgstr "Διεύθυνση αποστολέα όταν δεν έχει οριστεί Reply-To"
+
+msgid "Looks in the system address books and the Hylki book"
+msgstr ""
+
+msgid "Add Condition"
+msgstr "Προσθήκη συνθήκης"
+
+msgid "Condition matching"
+msgstr "Αντιστοίχιση συνθηκών"
+
+msgid "All must match"
+msgstr "Πρέπει να ισχύουν όλες"
+
+msgid "Any one may match"
+msgstr "Μπορεί να ισχύει οποιαδήποτε"
+
+msgid "Condition {n}"
+msgstr "Συνθήκη {n}"
+
+msgid "Or where"
+msgstr "Ή όπου"
+
+msgid "And where"
+msgstr "Και όπου"
+
 msgid ""
 "Press this key on a message to add or remove the tag (with single-key "
 "shortcuts on)"
@@ -2517,50 +2725,8 @@ msgstr "Προσθήκη φίλτρου"
 msgid "Name (optional)"
 msgstr "Όνομα (προαιρετικό)"
 
-msgid "Remove condition"
-msgstr "Αφαίρεση συνθήκης"
-
-msgid "Where"
-msgstr "Πού"
-
-msgid "Match"
-msgstr "Αντιστοίχιση"
-
-msgid "Commas separate alternatives; any one of them counts"
-msgstr "Τα κόμματα διαχωρίζουν τις εναλλακτικές· αρκεί οποιαδήποτε από αυτές"
-
-msgid "Text to match"
-msgstr "Κείμενο προς αντιστοίχιση"
-
 msgid "Searched on the server; nothing is downloaded"
 msgstr "Η αναζήτηση γίνεται στον διακομιστή· δεν γίνεται λήψη τίποτα"
-
-msgid "From address when no Reply-To is set"
-msgstr "Διεύθυνση αποστολέα όταν δεν έχει οριστεί Reply-To"
-
-msgid "Looks in the system address books and the Hylki book"
-msgstr ""
-
-msgid "Add Condition"
-msgstr "Προσθήκη συνθήκης"
-
-msgid "Condition matching"
-msgstr "Αντιστοίχιση συνθηκών"
-
-msgid "All must match"
-msgstr "Πρέπει να ισχύουν όλες"
-
-msgid "Any one may match"
-msgstr "Μπορεί να ισχύει οποιαδήποτε"
-
-msgid "Condition {n}"
-msgstr "Συνθήκη {n}"
-
-msgid "Or where"
-msgstr "Ή όπου"
-
-msgid "And where"
-msgstr "Και όπου"
 
 msgid "Then"
 msgstr "Τότε"
@@ -2827,7 +2993,7 @@ msgstr "Αντιγραφή"
 msgid "Command Palette"
 msgstr ""
 
-msgid "Type an action, a folder or a tag"
+msgid "Type an action, a folder or a tag, or > for actions only"
 msgstr ""
 
 msgid "Cloud Storage"
@@ -3979,14 +4145,8 @@ msgstr "Αυτό το μήνυμα είναι στα {language}."
 msgid "Translate"
 msgstr "Μετάφραση"
 
-msgid "Starred"
-msgstr "Με αστέρι"
-
 msgid "Received"
 msgstr "Ελήφθη"
-
-msgid "Has attachments"
-msgstr "Έχει συνημμένα"
 
 msgid "Click to open this message"
 msgstr "Κάντε κλικ για να ανοίξετε αυτό το μήνυμα"
@@ -4747,6 +4907,18 @@ msgstr "Αποθήκευση του φίλτρου;"
 msgid ""
 "The filter editor is open. Save what you changed, or discard it, before "
 "moving on."
+msgstr ""
+"Το πρόγραμμα επεξεργασίας φίλτρου είναι ανοικτό. Αποθηκεύστε τις αλλαγές σας "
+"ή απορρίψτε τις πριν συνεχίσετε."
+
+#, fuzzy
+msgid "Save the smart folder?"
+msgstr "Αποθήκευση του φίλτρου;"
+
+#, fuzzy
+msgid ""
+"The smart folder editor is open. Save what you changed, or discard it, "
+"before moving on."
 msgstr ""
 "Το πρόγραμμα επεξεργασίας φίλτρου είναι ανοικτό. Αποθηκεύστε τις αλλαγές σας "
 "ή απορρίψτε τις πριν συνεχίσετε."
@@ -6469,11 +6641,22 @@ msgstr "Serif"
 msgid "Monospace"
 msgstr "Σταθερού πλάτους"
 
+#, fuzzy
+msgid "Custom…"
+msgstr "Προσαρμοσμένο χρώμα…"
+
 msgid "Paragraph style"
 msgstr "Στυλ παραγράφου"
 
 msgid "Font"
 msgstr "Γραμματοσειρά"
+
+msgid "Other Font…"
+msgstr ""
+
+#, fuzzy
+msgid "Font size"
+msgstr "Μέγεθος κειμένου"
 
 msgid "Bold"
 msgstr "Έντονα"
@@ -6582,14 +6765,22 @@ msgstr "Αφαίρεση λογαριασμού…"
 msgid "Show or hide sub-folders"
 msgstr "Εμφάνιση ή απόκρυψη υποφακέλων"
 
+#, fuzzy
+msgid "Show or hide labels"
+msgstr "Εμφάνιση ή απόκρυψη ετικετών"
+
 msgid "Show or hide folders"
 msgstr "Εμφάνιση ή απόκρυψη φακέλων"
+
+#, fuzzy
+msgid "Labels ({len})"
+msgstr "Φάκελοι ({len})"
 
 msgid "Folders ({len})"
 msgstr "Φάκελοι ({len})"
 
-msgid "Folders"
-msgstr "Φάκελοι"
+msgid "Labels"
+msgstr ""
 
 msgid "Sort Folders"
 msgstr "Ταξινόμηση φακέλων"
@@ -6609,6 +6800,10 @@ msgstr "Εμφάνιση κάθε φακέλου"
 msgid "Show each tag"
 msgstr "Εμφάνιση κάθε ετικέτας"
 
+#, fuzzy
+msgid "Show each smart folder"
+msgstr "Εμφάνιση κάθε φακέλου"
+
 msgid "Long-press to expand or collapse"
 msgstr "Παρατεταμένο πάτημα για ανάπτυξη ή σύμπτυξη"
 
@@ -6617,6 +6812,14 @@ msgstr "Άδειασμα κάδου…"
 
 msgid "Empty Junk…"
 msgstr "Άδειασμα ανεπιθύμητων…"
+
+#, fuzzy
+msgid "Edit Smart Folder…"
+msgstr "Επεξεργασία φίλτρου…"
+
+#, fuzzy
+msgid "Delete Smart Folder…"
+msgstr "Διαγραφή φακέλου…"
 
 msgid "Show or hide filters"
 msgstr "Εμφάνιση ή απόκρυψη φίλτρων"
@@ -6708,8 +6911,6 @@ msgstr "Στοιχεία διακομιστή"
 msgid "Filled in for known providers"
 msgstr "Συμπληρώνονται για γνωστούς παρόχους"
 
-#. A JMAP server is one address, and it sends the mail
-#. itself: no SMTP rows.
 msgid "IMAP server"
 msgstr "Διακομιστής IMAP"
 
@@ -6908,14 +7109,38 @@ msgstr ""
 "Το {from} είναι έγκυρο, αλλά οι διευθύνσεις δεν ταιριάζουν με το όνομα στο "
 "μήνυμα."
 
+msgid "This Exchange account has no server address. Add it in its settings."
+msgstr ""
+
+msgid ""
+"Could not find the Exchange server for {email}: {why}. Enter its EWS "
+"address, such as https://mail.example.org/EWS/Exchange.asmx."
+msgstr ""
+
+msgid ""
+"The Exchange server refused the sign-in for {email}. Check the user name and "
+"password in its settings."
+msgstr ""
+
+#, fuzzy
+msgid "unknown folder {path}"
+msgstr "άγνωστος φάκελος"
+
+#, fuzzy
+msgid "message not found"
+msgstr "Γραμματοσειρά μηνυμάτων"
+
+msgid "Could not list folders: {e}"
+msgstr "Δεν ήταν δυνατή η εμφάνιση των φακέλων: {e}"
+
+msgid "Could not load message: {e}"
+msgstr "Δεν ήταν δυνατή η φόρτωση του μηνύματος: {e}"
+
 msgid "Syncing…"
 msgstr "Συγχρονισμός…"
 
 msgid "Could not fetch mail: {e}"
 msgstr "Δεν ήταν δυνατή η ανάκτηση αλληλογραφίας: {e}"
-
-msgid "Could not load message: {e}"
-msgstr "Δεν ήταν δυνατή η φόρτωση του μηνύματος: {e}"
 
 msgid "Could not load source: {e}"
 msgstr "Δεν ήταν δυνατή η φόρτωση του πηγαίου κώδικα: {e}"
@@ -6932,11 +7157,12 @@ msgstr "Δεν ήταν δυνατή η σήμανση ως ανεπιθύμητ
 msgid "Could not mark as not spam: {e}"
 msgstr "Δεν ήταν δυνατή η σήμανση ως επιθυμητού: {e}"
 
-msgid "Could not mark {len} messages as not spam: {e}"
-msgstr "Δεν ήταν δυνατή η σήμανση {len} μηνυμάτων ως επιθυμητών: {e}"
-
 msgid "Could not move messages: {e}"
 msgstr "Δεν ήταν δυνατή η μετακίνηση μηνυμάτων: {e}"
+
+#, fuzzy
+msgid "Could not delete messages: {e}"
+msgstr "Δεν ήταν δυνατή η διαγραφή του μηνύματος: {e}"
 
 msgid "Could not empty the folder: {e}"
 msgstr "Δεν ήταν δυνατό το άδειασμα του φακέλου: {e}"
@@ -6959,34 +7185,34 @@ msgstr "Δεν ήταν δυνατή η διαγραφή φακέλου: άγν�
 msgid "Could not delete folder: {e}"
 msgstr "Δεν ήταν δυνατή η διαγραφή φακέλου: {e}"
 
+msgid "Sending…"
+msgstr "Αποστολή…"
+
+msgid "Removing the attachment…"
+msgstr "Αφαίρεση του συνημμένου…"
+
+msgid "The attachment is no longer in the message on the server"
+msgstr "Το συνημμένο δεν υπάρχει πλέον στο μήνυμα στον διακομιστή"
+
+msgid "Could not remove the attachment: {e}"
+msgstr "Δεν ήταν δυνατή η αφαίρεση του συνημμένου: {e}"
+
+msgid "Still could not send “{subject}”: {e}"
+msgstr "Εξακολουθεί να μην είναι δυνατή η αποστολή του «{subject}»: {e}"
+
+msgid "Could not mark {len} messages as not spam: {e}"
+msgstr "Δεν ήταν δυνατή η σήμανση {len} μηνυμάτων ως επιθυμητών: {e}"
+
 msgid "unknown folder"
 msgstr "άγνωστος φάκελος"
 
 msgid "Could not reach the server"
 msgstr "Δεν ήταν δυνατή η επικοινωνία με τον διακομιστή"
 
-msgid "Sending…"
-msgstr "Αποστολή…"
-
 msgid "A Microsoft account can't receive mail from another account"
 msgstr ""
 "Ένας λογαριασμός Microsoft δεν μπορεί να λαμβάνει αλληλογραφία από άλλον "
 "λογαριασμό"
-
-msgid "Removing the attachment…"
-msgstr "Αφαίρεση του συνημμένου…"
-
-msgid "Could not remove the attachment: {e}"
-msgstr "Δεν ήταν δυνατή η αφαίρεση του συνημμένου: {e}"
-
-msgid "Could not list folders: {e}"
-msgstr "Δεν ήταν δυνατή η εμφάνιση των φακέλων: {e}"
-
-msgid "The attachment is no longer in the message on the server"
-msgstr "Το συνημμένο δεν υπάρχει πλέον στο μήνυμα στον διακομιστή"
-
-msgid "Still could not send “{subject}”: {e}"
-msgstr "Εξακολουθεί να μην είναι δυνατή η αποστολή του «{subject}»: {e}"
 
 msgid "IMAP connection stopped making progress"
 msgstr "Η σύνδεση IMAP σταμάτησε να προχωρά"
@@ -7142,9 +7368,6 @@ msgstr ""
 "Το POP3 δεν μπορεί να τροποποιήσει ένα μήνυμα στον διακομιστή, επομένως το "
 "συνημμένο δεν αφαιρέθηκε."
 
-msgid "Inbox"
-msgstr "Εισερχόμενα"
-
 msgid "Email Client"
 msgstr "Πρόγραμμα-πελάτης email"
 
@@ -7281,6 +7504,12 @@ msgstr "Τα ενοποιημένα εισερχόμενα σε φωτεινή �
 
 msgid "Hyprlab"
 msgstr "Hyprlab"
+
+#, fuzzy
+#~ msgid "An Exchange account can't receive mail from another account yet"
+#~ msgstr ""
+#~ "Ένας λογαριασμός POP3 δεν μπορεί να λαμβάνει αλληλογραφία από άλλον "
+#~ "λογαριασμό"
 
 #, fuzzy
 #~ msgid "Import contacts…"
