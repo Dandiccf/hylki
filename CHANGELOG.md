@@ -1,5 +1,58 @@
 # Changelog
 
+## 1.44.0-beta.5 — 2026-10-11
+
+The fifth beta previewing 1.44.0.
+
+- **Added: smart folders** (#417, requested by amadeusp). A smart folder
+  is a saved search over the mail on this computer: starred or not, unread
+  or read, has attachments, tagged, and the filter conditions, all of them
+  or any one, held to one account and one kind of folder or not. They are
+  listed in a Smart Folders row of the unified section with unread counts,
+  and made in **Settings → Smart Folders**, from the row's right-click menu
+  or with **New Smart Folder…** in the command palette.
+- **Added: Gmail labels show as pills** (#374, requested by vieira-temes and
+  3v1n0), beside the tags in the message list and the reader. Gmail's own
+  labels and the label of the folder being read are left out. A label named
+  like a tag counts as the tag in its view, the tag menus and smart
+  folders, and tagging on Gmail sets the label as well as the keyword. A
+  Gmail account's own folders are headed Labels in the sidebar and wear a
+  tag rather than a folder.
+- **Added: the Microsoft 365 organization directory** (#410, requested by
+  erenoglu). A Microsoft 365 account signed in within Hylki can suggest
+  colleagues as a recipient is typed: **Search the organization directory**
+  in the account's settings asks Microsoft for access to the directory.
+  Accounts from GNOME Online Accounts cannot use it.
+- **Added: font sizes, more fonts and any color in the composer** (#358,
+  requested by urkos101). The font menu offers the fonts most mail programs
+  do and **Other Font…** for any installed one, a size menu sets points from
+  8 to 36, and both color menus carry the GNOME palette and **Custom…**.
+- **Added: empty Trash or Junk in every account at once** (#413, requested
+  by amadeusp), from the right-click menu of the unified Trash or Junk row.
+- **Added: `>` in the command palette lists actions only** (#399, suggested
+  by 3v1n0), the way an editor's palette tells commands from places.
+- **Added: sensitivity labels show in the reader** (#411, requested by
+  erenoglu). A message classified with Microsoft Purview, or with Outlook's
+  older Sensitivity setting, shows its label as a pill beside the sender's
+  name. Hylki shows the label only; it does not apply its rules or set one.
+- **Added: on-premise Exchange servers** (#391, requested by
+  johanneskoester). **Microsoft Exchange (on-premise)** in the Provider list
+  connects over Exchange Web Services, finding the server from the email
+  address with Autodiscover, and signs in with NTLM, the TLS channel binding
+  included, or Basic over HTTPS. Folders and their management, reading,
+  read state, stars, categories, spam reports, moving in either direction,
+  deleting, removing attachments, sending, drafts and the automatic
+  emptying of Junk and Trash work. New mail arrives by push through a
+  streaming subscription, with polling as the fallback.
+- **Fixed: an open account could fold up in the sidebar by itself**, at the
+  next change to the folder list (tagging on Gmail makes one). Opening an
+  account to show a folder picked inside it was recorded twice and undone.
+- **Fixed: the main menu button could show a gear** instead of three bars,
+  where a theme or another program had an icon of the same name. GTK still
+  searched the icon folders on disk before Hylki's built-in icons; unless
+  **Use the desktop's icons** is on, it now searches only Hylki's own, and
+  the app icon is built in too.
+
 ## 1.44.0-beta.4 — 2026-10-11
 
 The fourth beta previewing 1.44.0.
