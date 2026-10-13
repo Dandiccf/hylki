@@ -10,7 +10,7 @@ use relm4::prelude::*;
 use crate::models::{Message, ThreadSummary};
 use crate::ui::context_menu::{show_context_menu_popover, MenuEntry};
 use crate::i18n::i18n;
-use crate::ui::message_row::{RowData, RowMeta, RowShared};
+use crate::ui::message_row::{DaySection, RowData, RowMeta, RowShared};
 pub use crate::ui::message_row::{tag_menu_entries, RowAction};
 
 /// The message-list pane's floor: exactly what a conversation-member card
@@ -72,15 +72,41 @@ fn message_cmp(a: &Message, b: &Message, order: SortOrder) -> std::cmp::Ordering
             .then(b.timestamp.cmp(&a.timestamp)),
         // Soonest due first; mail with no due date after all that has one.
         SortOrder::Due => (a.due == 0, a.due).cmp(&(b.due == 0, b.due)).then(b.timestamp.cmp(&a.timestamp)),
+        // Both are put in order by the rebuild, which knows a conversation's
+        // writers and the tags' names (#443); one message alone goes by its
+        // sender and its keywords.
+        SortOrder::Correspondents => name_of(a).cmp(&name_of(b)).then(b.timestamp.cmp(&a.timestamp)),
+        SortOrder::Tags => {
+            let tags = |m: &Message| m.keywords.join(",").to_lowercase();
+            tags(a).cmp(&tags(b)).then(b.timestamp.cmp(&a.timestamp))
+        }
     }
 }
 
-/// The order a click on a column's heading sorts by (#334), if the column
-/// has one. In Sent the sender column names the recipients, and sorts by
-/// them.
-pub fn column_sort(column: crate::config::ListColumn, show_recipient: bool) -> Option<SortOrder> {
+/// What the Tags column sorts by (#443): the names of the tags a message
+/// wears, as its row shows them. Empty for a message without any.
+fn tag_sort_key(m: &Message, tags: &[crate::config::Tag]) -> String {
+    let names: Vec<String> = m
+        .pills(tags)
+        .iter()
+        .map(|p| match p {
+            crate::models::Pill::Tag(t) => t.name.to_lowercase(),
+            crate::models::Pill::Label(name) => name.to_lowercase(),
+        })
+        .collect();
+    names.join(", ")
+}
+
+/// Order two sort keys of text, A to Z, an empty key after every other.
+fn text_key_cmp(a: &str, b: &str) -> std::cmp::Ordering {
+    (a.is_empty(), a).cmp(&(b.is_empty(), b))
+}
+
+/// The order a click on a column's heading sorts by (#334). In Sent the
+/// sender column names the recipients, and sorts by them.
+pub fn column_sort(column: crate::config::ListColumn, show_recipient: bool) -> SortOrder {
     use crate::config::ListColumn as C;
-    Some(match column {
+    match column {
         C::Star => SortOrder::FlaggedFirst,
         C::Sender if show_recipient => SortOrder::Recipients,
         C::Sender => SortOrder::Sender,
@@ -91,8 +117,9 @@ pub fn column_sort(column: crate::config::ListColumn, show_recipient: bool) -> O
         C::Account => SortOrder::Account,
         C::Due => SortOrder::Due,
         C::Date => SortOrder::DateNewest,
-        C::Correspondents | C::Tags => return None,
-    })
+        C::Correspondents => SortOrder::Correspondents,
+        C::Tags => SortOrder::Tags,
+    }
 }
 
 /// The conversation key a message belongs to: its owning account plus the
@@ -473,6 +500,25 @@ fn after_next_paint(clock: &gtk::gdk::FrameClock, f: impl FnOnce() + 'static) {
     glib::timeout_add_local_once(std::time::Duration::from_millis(100), once);
 }
 
+/// Keep `adj` at the very top for a moment (#435). A `scroll_to` the first
+/// row lines that row up with the top once the view is laid out, which
+/// leaves the date heading above the row out of sight. Only a move no
+/// further than that heading is undone, and only briefly, so a scroll of the
+/// user's own goes on. It is undone after the layout, not during it: the
+/// view does not follow a move made while it is being laid out.
+fn hold_top(adj: &gtk::Adjustment, shared: &Rc<RowShared>) {
+    let shared = Rc::downgrade(shared);
+    let id = adj.connect_value_changed(move |adj| {
+        let heading = shared.upgrade().and_then(|s| s.first_heading_height()).map_or(f64::MAX, f64::from);
+        if adj.value() > 0.0 && adj.value() <= heading + 1.0 {
+            let adj = adj.clone();
+            glib::idle_add_local_once(move || adj.set_value(0.0));
+        }
+    });
+    let adj = adj.clone();
+    glib::timeout_add_local_once(std::time::Duration::from_millis(300), move || adj.disconnect(id));
+}
+
 /// Where [`compute_thread_keys`] files a message: its account, folder and id.
 /// The id alone is a UID, which only means something inside one folder, and a
 /// search over every folder holds the same UID many times; keyed without the
@@ -705,23 +751,33 @@ pub struct MessageList {
     graph_in_view: bool,
     /// The sort runs the other way: a heading clicked twice (#334).
     sort_reversed: bool,
+    /// Headings divide a list sorted by date into Today, Yesterday and so
+    /// on (#435), and whether the view draws them now: only a date sort
+    /// has them.
+    group_by_date: bool,
+    day_headings: bool,
     /// Show the column headings over a single-line list (#334).
     headings: bool,
     headings_bar: gtk::Box,
     /// The widths columns were dragged to by their headings (#334).
     widths: std::collections::HashMap<crate::config::ListColumn, i32>,
+    /// Columns keep their widths and a list too narrow for them scrolls
+    /// sideways; off, the name columns narrow to fit the pane (#443).
+    column_scroll: bool,
     /// How wide the rows are, for fitting the columns into it.
     pane_width: i32,
     /// The headings' sized cells, which a drag resizes in place.
     heading_bins: std::cell::RefCell<std::collections::HashMap<crate::config::ListColumn, crate::ui::column_bin::ColumnBin>>,
 }
 
-/// The Correspondents column (#334): who wrote in a conversation, oldest
-/// first and each once, you as "me". A conversation only you have written
-/// in, a message in Sent say, names who it went to instead.
+/// The Correspondents column (#334): who wrote in a conversation, newest
+/// first and each once, you as "me". The newest leads because it is who the
+/// conversation waits on, as the row's sender does (#443). A conversation
+/// only you have written in, a message in Sent say, names who it went to
+/// instead.
 fn correspondents(msgs: &[&Message]) -> String {
     let mut sorted = msgs.to_vec();
-    sorted.sort_by_key(|m| m.timestamp);
+    sorted.sort_by_key(|m| std::cmp::Reverse(m.timestamp));
     let mut seen = std::collections::HashSet::new();
     let mut names: Vec<String> = Vec::new();
     let mut others = false;
@@ -739,7 +795,7 @@ fn correspondents(msgs: &[&Message]) -> String {
         }
     }
     if !others {
-        if let Some(newest) = sorted.last() {
+        if let Some(newest) = sorted.first() {
             let to = crate::ui::message_row::recipient_names(&newest.to);
             if !to.is_empty() {
                 return format!("To: {to}");
@@ -763,10 +819,12 @@ pub enum SortOrder {
     Attachment,
     Importance,
     Due,
+    Correspondents,
+    Tags,
 }
 
 impl SortOrder {
-    const KEYS: [(SortOrder, &'static str); 11] = [
+    const KEYS: [(SortOrder, &'static str); 13] = [
         (SortOrder::DateNewest, "date_newest"),
         (SortOrder::DateOldest, "date_oldest"),
         (SortOrder::Sender, "sender"),
@@ -778,6 +836,8 @@ impl SortOrder {
         (SortOrder::Attachment, "attachment"),
         (SortOrder::Importance, "importance"),
         (SortOrder::Due, "due"),
+        (SortOrder::Correspondents, "correspondents"),
+        (SortOrder::Tags, "tags"),
     ];
 
     pub fn from_key(key: &str) -> Self {
@@ -874,6 +934,12 @@ pub enum MessageListInput {
     MoveCursor(i32),
     /// Open the row the cursor is on in the reader (Gmail's o, #392).
     OpenCursor,
+    /// A click in the list: the keyboard cursor's outline goes, since the
+    /// pointer, not j or k, says where the user is now.
+    ClearCursor,
+    /// Open the next (or previous) conversation, from the one open, while
+    /// the keyboard stays in the reader (Gmail's j/k there, #392).
+    StepConversation(i32),
     /// Select every row shown (Gmail's * a).
     SelectAllShown,
     /// The addresses you send from, for leaving your own replies out of a
@@ -903,6 +969,8 @@ pub enum MessageListInput {
     SetColumns(Vec<crate::config::ListColumn>),
     /// Show the column headings over a single-line list, or not (#334).
     SetHeadings(bool),
+    /// Divide a list sorted by date under Today, Yesterday and so on (#435).
+    SetGroupByDate(bool),
     /// A column's heading was clicked: sort by it, or the other way (#334).
     SortByColumn(crate::config::ListColumn),
     /// A heading's edge was dragged to `width`, or double-clicked (`None`:
@@ -912,6 +980,8 @@ pub enum MessageListInput {
     SetColumnWidths(std::collections::HashMap<crate::config::ListColumn, i32>),
     /// Fill the headings again, once a handler that set them going is over.
     RefreshHeadings,
+    /// Scroll a single line wider than the pane, or fit its columns (#443).
+    SetColumnScroll(bool),
     /// The rows are this wide now.
     PaneWidth(i32),
     /// Each account's name for the Account column, and which accounts are
@@ -1076,6 +1146,9 @@ pub enum MessageListOutput {
     /// Every selected message, whenever that changes — the reader outlines the
     /// matching cards.
     SelectionKeys(Vec<(u32, u32)>),
+    /// Gmail's o or Enter opened a row (#392); `already_open` when it was
+    /// the one already in the reader, so no new selection follows.
+    OpenedByKey { already_open: bool },
     /// The header-bar count changed — app.rs shows it.
     CountChanged(String),
     /// A row was double-clicked: open it in its own window. `thread` is the
@@ -1121,6 +1194,8 @@ pub enum MessageListOutput {
     SortChanged(&'static str),
     /// A column was resized by its heading (#334): the widths to keep.
     ColumnWidths(std::collections::HashMap<crate::config::ListColumn, i32>),
+    /// Customize Columns… from the headings' right-click menu (#443).
+    CustomizeColumns,
 }
 
 #[relm4::component(pub)]
@@ -1316,13 +1391,23 @@ impl SimpleComponent for MessageList {
 
             // The single line's column headings (#334), filled by
             // `sync_headings`; a click on one sorts by its column.
+            #[name = "headings_area"]
             gtk::Box {
                 add_css_class: "list-headings-bar",
                 #[watch]
                 set_visible: model.single_line && model.headings,
-                #[local_ref]
-                headings_bar -> gtk::Box {
+                // Scrolled sideways with the rows, never by itself: no bar
+                // of its own, its place set from the list's (#443).
+                #[name = "headings_scroller"]
+                gtk::ScrolledWindow {
                     set_hexpand: true,
+                    set_hscrollbar_policy: gtk::PolicyType::External,
+                    set_vscrollbar_policy: gtk::PolicyType::Never,
+                    set_propagate_natural_height: true,
+                    #[local_ref]
+                    headings_bar -> gtk::Box {
+                        set_hexpand: true,
+                    },
                 },
             },
 
@@ -1337,7 +1422,11 @@ impl SimpleComponent for MessageList {
                     // which pushed it past half of a 1920px screen — at which point
                     // GNOME refuses to tile the window to the left/right edge. Rows
                     // ellipsize, so a narrow pane clips gracefully instead.
-                    set_hscrollbar_policy: gtk::PolicyType::External,
+                    // Automatic does not propagate it either: a single line
+                    // too wide for the pane scrolls to its columns past the
+                    // edge (#443), with a bar that says so.
+                    #[watch]
+                    set_hscrollbar_policy: if model.single_line && model.column_scroll { gtk::PolicyType::Automatic } else { gtk::PolicyType::External },
                     // The pane's own floor, now that rows no longer set one: room
                     // for a row's full actions palette (avatar + dot + the reserved
                     // actions line), so opening the palette never needs to clip —
@@ -1482,9 +1571,12 @@ impl SimpleComponent for MessageList {
             graph_accounts: std::collections::HashSet::new(),
             graph_in_view: false,
             sort_reversed: false,
+            group_by_date: crate::config::load_privacy().list_group_by_date,
+            day_headings: false,
             headings: false,
             headings_bar: gtk::Box::new(gtk::Orientation::Horizontal, 8),
             widths: std::collections::HashMap::new(),
+            column_scroll: false,
             pane_width: 0,
             heading_bins: Default::default(),
             bulk_tag_btn: gtk::Button::new(),
@@ -1495,8 +1587,41 @@ impl SimpleComponent for MessageList {
         let widgets = view_output!();
         model.scroller = Some(widgets.scroller.clone());
         {
-            // The rows' width, which the single line's columns fit into: the
-            // view's page across, set as it is allocated.
+            // The headings follow the rows sideways, and a scroll over the
+            // headings moves the rows. Setting the value it already has
+            // emits nothing, so the two do not chase each other.
+            let rows = widgets.scroller.hadjustment();
+            let heads = widgets.headings_scroller.hadjustment();
+            let h = heads.clone();
+            rows.connect_value_changed(move |a| h.set_value(a.value()));
+            let r = rows.clone();
+            heads.connect_value_changed(move |a| r.set_value(a.value()));
+            // The headings take their full width a frame after the rows
+            // may have scrolled: put them back in step then.
+            let r = rows.clone();
+            heads.connect_changed(move |a| a.set_value(r.value()));
+        }
+        {
+            // A right-click on the headings offers the way to the columns'
+            // settings (#443).
+            let click = gtk::GestureClick::new();
+            click.set_button(3);
+            let area = widgets.headings_area.clone();
+            let s = sender.clone();
+            click.connect_pressed(move |g, _, x, y| {
+                g.set_state(gtk::EventSequenceState::Claimed);
+                let s = s.clone();
+                let entry = crate::ui::context_menu::MenuEntry::new(i18n("Customize Columns…"), move || {
+                    let _ = s.output(MessageListOutput::CustomizeColumns);
+                })
+                .icon("view-list-bullet-symbolic");
+                crate::ui::context_menu::show_context_menu(&area, x, y, vec![vec![entry]]);
+            });
+            widgets.headings_area.add_controller(click);
+        }
+        {
+            // The rows' width, which fitted columns fit into: the view's
+            // page across, set as it is allocated.
             let input = sender.input_sender().clone();
             widgets.scroller.hadjustment().connect_notify_local(Some("page-size"), move |adj, _| {
                 let _ = input.send(MessageListInput::PaneWidth(adj.page_size() as i32));
@@ -1829,6 +1954,12 @@ impl SimpleComponent for MessageList {
             MessageListInput::SetSingleLine(on) => {
                 if self.single_line != on {
                     self.single_line = on;
+                    // The date headings line up with a single line's text.
+                    if on {
+                        self.list_view.add_css_class("single-line");
+                    } else {
+                        self.list_view.remove_css_class("single-line");
+                    }
                     self.sync_look();
                 }
             }
@@ -2130,6 +2261,7 @@ impl SimpleComponent for MessageList {
                     .map(|&p| p as i64)
                     .unwrap_or(if delta > 0 { -1 } else { self.shown.len() as i64 });
                 let next = (current + delta as i64).clamp(0, self.shown.len() as i64 - 1) as usize;
+                self.shared.set_cursor(None);
                 self.shared.selection.select_item(next as u32, true);
                 self.focus_row(next);
             }
@@ -2144,20 +2276,43 @@ impl SimpleComponent for MessageList {
                 }
                 // From the row the keyboard is on, else the open one, else
                 // the top or the bottom.
-                let current = self
-                    .cursor_position()
-                    .or_else(|| self.selected_positions().first().copied())
-                    .map(|p| p as i64)
-                    .unwrap_or(if delta > 0 { -1 } else { self.shown.len() as i64 });
-                let next = (current + delta as i64).clamp(0, self.shown.len() as i64 - 1) as usize;
+                let from = self.cursor_position().or_else(|| self.selected_positions().first().copied());
+                let next = self.conversation_step(from, delta);
                 self.focus_row(next);
+                // Drawn by the row itself: the list's focus ring is off, and
+                // the window's focus-visible flag is not reliably set by a key
+                // a shortcut handler consumed.
+                self.shared.set_cursor(self.shown.get(next).map(|m| (m.account_id, m.id)));
             }
             MessageListInput::OpenCursor => {
                 let Some(pos) = self.cursor_position().or_else(|| self.selected_positions().first().copied()) else {
                     return;
                 };
+                self.shared.set_cursor(None);
+                let already_open = self.selected_positions() == [pos];
                 self.shared.selection.select_item(pos as u32, true);
                 self.focus_row(pos);
+                let _ = sender.output(MessageListOutput::OpenedByKey { already_open });
+            }
+            MessageListInput::ClearCursor => self.shared.set_cursor(None),
+            MessageListInput::StepConversation(delta) => {
+                if self.shown.is_empty() {
+                    return;
+                }
+                if delta != 0 {
+                    self.nav_direction = delta.signum();
+                }
+                let from = self.selected_positions().first().copied();
+                let next = self.conversation_step(from, delta);
+                if from == Some(next) {
+                    return;
+                }
+                self.shared.set_cursor(None);
+                // Selecting opens it; the keyboard stays where it is, in the
+                // reader, so the next j or k goes on from there.
+                self.shared.selection.select_item(next as u32, true);
+                self.list_view.scroll_to(next as u32, gtk::ListScrollFlags::NONE, None);
+                self.reveal_first_heading(next);
             }
             MessageListInput::SelectAllShown => {
                 if !self.shown.is_empty() {
@@ -2197,6 +2352,7 @@ impl SimpleComponent for MessageList {
                 // from what you were reading), so it's allowed to scroll.
                 if !self.shown.is_empty() {
                     let pos = self.selected_positions().first().copied().unwrap_or(0);
+                    self.shared.set_cursor(None);
                     self.focus_row(pos);
                 }
             }
@@ -2298,11 +2454,17 @@ impl SimpleComponent for MessageList {
                 // The rows follow every step; the headings are left alone
                 // while their handle is held, as rebuilding them would drop
                 // it mid-drag. It has moved its own heading already.
+                let min_width = self.row_min_width();
                 let fitted = self.fitted_widths();
                 for (c, bin) in self.heading_bins.borrow().iter() {
                     bin.set_width(fitted.get(c).copied().unwrap_or_else(|| crate::ui::message_row::default_width(*c)));
                 }
-                self.shared.look.borrow_mut().widths = fitted;
+                self.headings_bar.set_size_request(min_width, -1);
+                {
+                    let mut look = self.shared.look.borrow_mut();
+                    look.widths = fitted;
+                    look.min_width = min_width;
+                }
                 self.shared.refresh_all();
                 if done {
                     let input = self.shared.input.clone();
@@ -2319,9 +2481,16 @@ impl SimpleComponent for MessageList {
                 }
             }
             MessageListInput::RefreshHeadings => self.sync_headings(),
+            MessageListInput::SetColumnScroll(on) => {
+                if self.column_scroll != on {
+                    self.column_scroll = on;
+                    self.sync_look();
+                }
+            }
             MessageListInput::PaneWidth(width) => {
                 if self.pane_width != width {
-                    let before = self.single_line.then(|| self.fitted_widths());
+                    let fits = self.single_line && !self.column_scroll;
+                    let before = fits.then(|| self.fitted_widths());
                     self.pane_width = width;
                     if before.is_some_and(|b| b != self.fitted_widths()) {
                         self.sync_look();
@@ -2332,8 +2501,14 @@ impl SimpleComponent for MessageList {
                 self.headings = on;
                 self.sync_headings();
             }
+            MessageListInput::SetGroupByDate(on) => {
+                if self.group_by_date != on {
+                    self.group_by_date = on;
+                    self.queue_rebuild(true);
+                }
+            }
             MessageListInput::SortByColumn(column) => {
-                let Some(order) = column_sort(column, self.show_recipient) else { return };
+                let order = column_sort(column, self.show_recipient);
                 match (order, self.sort) {
                     // Date has an order each way of its own.
                     (SortOrder::DateNewest, SortOrder::DateNewest) => self.sort = SortOrder::DateOldest,
@@ -2922,11 +3097,10 @@ impl MessageList {
                 section.push(item(RowAction::Delete, &i18n("Delete"), "user-trash-symbolic"));
                 section
             },
-            vec![item(
-                RowAction::AddContact,
-                &i18n("Add Sender to Contacts"),
-                "contact-new-symbolic",
-            )],
+            vec![
+                item(RowAction::AddContact, &i18n("Add Sender to Contacts"), "contact-new-symbolic"),
+                item(RowAction::CreateFilter, &i18n("Create Filter from Message…"), "filter-folder-symbolic"),
+            ],
             vec![
                 item(RowAction::ViewSource, &i18n("View Source"), "code-symbolic"),
                 item(RowAction::SaveAsFile, &i18n("Save as File…"), "document-save-symbolic"),
@@ -3176,6 +3350,7 @@ impl MessageList {
         // past the old size yet: move the view's own anchor too.
         if self.shared.model.len() > 0 {
             self.list_view.scroll_to(0, gtk::ListScrollFlags::NONE, None);
+            self.reveal_first_heading(0);
         }
     }
 
@@ -3207,6 +3382,7 @@ impl MessageList {
             look.face_gen = self.face_gen;
             look.tags_gen = self.tags_gen;
             look.widths = self.fitted_widths();
+            look.min_width = self.row_min_width();
         }
         // The rows on screen are about to be another view's, filled anyway.
         if self.switched {
@@ -3217,23 +3393,17 @@ impl MessageList {
         self.sync_headings();
     }
 
-    /// The columns' widths as the rows and the headings draw them (#334):
-    /// as set, unless together they leave the subject too little room, when
-    /// the name columns give way in proportion (the dates keep theirs). Fitted here rather than left to each
-    /// row's box, which shares out a shortage by what that row holds (tags,
-    /// a conversation's count), so a heading and its column would part.
-    fn fitted_widths(&self) -> std::collections::HashMap<crate::config::ListColumn, i32> {
+    /// What a single line's columns take, apart from the subject's room:
+    /// the room the fixed ones need (with the pill's own and the spacing),
+    /// and each column whose width can change, at its own or the one it
+    /// was dragged to.
+    fn column_room(&self) -> (i32, Vec<(crate::config::ListColumn, i32)>) {
         use crate::config::ListColumn as C;
         use crate::ui::message_row::{default_width, resizable};
         /// What a date as wide as its text takes, about.
         const DATE_PX: i32 = 64;
-        /// Room kept for the subject, and for tags beside it.
+        /// Room kept for the subject.
         const SUBJECT_PX: i32 = 100;
-        const TAGS_PX: i32 = 60;
-        let mut widths = self.widths.clone();
-        if self.pane_width <= 0 {
-            return widths;
-        }
         let columns: Vec<C> =
             self.columns.iter().copied().filter(|c| *c != C::Due || self.graph_in_view).collect();
         // The pill's margins and padding, the unread dot and the spacing.
@@ -3241,29 +3411,50 @@ impl MessageList {
         if self.avatars {
             fixed += 16 + 8;
         }
-        let mut wanted: Vec<(C, i32)> = Vec::new();
+        let mut names = Vec::new();
         for c in &columns {
+            let px = self.widths.get(c).copied().unwrap_or_else(|| default_width(*c));
             match c {
                 C::Star | C::Attachment => fixed += 12,
                 C::Importance => fixed += 16,
-                C::Tags => fixed += TAGS_PX,
                 C::Subject => fixed += SUBJECT_PX,
-                // A date cut short says nothing: the names give way instead.
-                C::Due | C::Date => {
-                    let px = widths.get(c).copied().unwrap_or_else(|| default_width(*c));
-                    fixed += if px > 0 { px } else { DATE_PX };
-                }
-                c if resizable(*c) => {
-                    let px = widths.get(c).copied().unwrap_or_else(|| default_width(*c));
-                    wanted.push((*c, px.max(1)));
-                }
+                // A date cut short says nothing: it keeps its width.
+                C::Due | C::Date => fixed += if px > 0 { px } else { DATE_PX },
+                c if resizable(*c) => names.push((*c, px.max(1))),
                 _ => {}
             }
         }
-        let sum: i32 = wanted.iter().map(|(_, px)| px).sum();
+        (fixed, names)
+    }
+
+    /// The narrowest a scrolling single line goes (#443): every column at
+    /// its width and the subject at a little room. A pane narrower than
+    /// that scrolls sideways to the columns past its edge. -1 when the
+    /// columns fit the pane instead.
+    fn row_min_width(&self) -> i32 {
+        if !(self.single_line && self.column_scroll) {
+            return -1;
+        }
+        let (fixed, names) = self.column_room();
+        fixed + names.iter().map(|(_, px)| px).sum::<i32>()
+    }
+
+    /// The columns' widths as the rows and the headings draw them (#334):
+    /// as set, unless the columns fit the pane and together leave the
+    /// subject too little room, when the name and tag columns give way in
+    /// proportion (the dates keep theirs). Fitted here rather than left to
+    /// each row's box, which shares out a shortage by what that row holds,
+    /// so a heading and its column would part.
+    fn fitted_widths(&self) -> std::collections::HashMap<crate::config::ListColumn, i32> {
+        let mut widths = self.widths.clone();
+        if self.column_scroll || !self.single_line || self.pane_width <= 0 {
+            return widths;
+        }
+        let (fixed, names) = self.column_room();
+        let sum: i32 = names.iter().map(|(_, px)| px).sum();
         let room = (self.pane_width - fixed).max(0);
         if sum > room && sum > 0 {
-            for (c, px) in wanted {
+            for (c, px) in names {
                 widths.insert(c, ((px as i64 * room as i64 / sum as i64) as i32).max(40));
             }
         }
@@ -3283,9 +3474,8 @@ impl MessageList {
             .iter()
             .copied()
             .find(|c| match (column_sort(*c, show_recipient), self.sort) {
-                (Some(SortOrder::DateNewest), SortOrder::DateOldest) => true,
-                (Some(order), current) => order == current,
-                (None, _) => false,
+                (SortOrder::DateNewest, SortOrder::DateOldest) => true,
+                (order, current) => order == current,
             })
             .map(|c| (c, self.sort.downwards() != self.sort_reversed));
         let input = self.shared.input.clone();
@@ -3294,7 +3484,6 @@ impl MessageList {
             &self.headings_bar,
             &look,
             sorted,
-            &|c| column_sort(c, show_recipient).is_some(),
             Rc::new(move |c| {
                 let _ = input.send(MessageListInput::SortByColumn(c));
             }),
@@ -3488,6 +3677,7 @@ impl MessageList {
         // The head survives the toggle (only its replies are put in), so its
         // own chevron can rotate open in place.
         self.shared.model.update_row(head_pos, |d| d.meta.expanded = true);
+        let section = self.shared.model.row(head_pos).map(|r| r.section).unwrap_or_default();
         let n = children.len();
         let rows: Vec<Rc<RowData>> = children
             .iter()
@@ -3496,6 +3686,7 @@ impl MessageList {
                 Rc::new(RowData {
                     msg: m.clone(),
                     meta: RowMeta { is_child: true, is_last: i + 1 == n, revealed: true, appear: true, ..Default::default() },
+                    section,
                 })
             })
             .collect();
@@ -3635,6 +3826,15 @@ impl MessageList {
         }
     }
 
+    /// Who took part in a conversation (#334), for its Correspondents
+    /// column: `msgs` and the replies filed in other folders.
+    fn people_of(&self, key: &(u32, String), msgs: &[Rc<Message>]) -> String {
+        let summary = self.threading.then(|| self.thread_summaries.get(key)).flatten();
+        let mut all: Vec<&Message> = msgs.iter().map(|m| &**m).collect();
+        all.extend(summary.iter().flat_map(|s| s.members.iter()));
+        correspondents(&all)
+    }
+
     /// One conversation's row: what its head says about it, and its members
     /// head first, the parts filed in other folders included (#309). `own`
     /// is the folder's own members, oldest first. Records the conversation's
@@ -3672,12 +3872,7 @@ impl MessageList {
         // found in another folder — the reply you sent, filed in Sent (#236).
         let newest_here = msgs.last().expect("a group holds at least one message").clone();
         let elsewhere = self.thread_row_newest.then(|| latest_elsewhere(summary, newest_here.timestamp)).flatten();
-        // Who took part (#334), the replies filed in other folders included.
-        let people = self.columns.contains(&crate::config::ListColumn::Correspondents).then(|| {
-            let mut all: Vec<&Message> = msgs.iter().map(|m| &**m).collect();
-            all.extend(summary.iter().flat_map(|s| s.members.iter()));
-            correspondents(&all)
-        });
+        let people = self.columns.contains(&crate::config::ListColumn::Correspondents).then(|| self.people_of(key, &msgs));
         // `expanded_threads` stores toggles away from the default state. With
         // expansion disabled no thread ever opens in the list; the stored
         // toggles survive for when it is re-enabled.
@@ -3828,10 +4023,18 @@ impl MessageList {
         }
         let sort = self.sort;
         let reversed = self.sort_reversed;
-        matches.sort_by(|a, b| {
-            let order = message_cmp(a, b, sort);
-            if reversed { order.reverse() } else { order }
-        });
+        let flip = |order: std::cmp::Ordering| if reversed { order.reverse() } else { order };
+        if sort == SortOrder::Tags {
+            // Each message's tag names are worked out once, not at every
+            // comparison.
+            let tags = self.shared.tags.borrow();
+            let mut keyed: Vec<(String, Rc<Message>)> =
+                matches.drain(..).map(|m| (tag_sort_key(&m, &tags), m)).collect();
+            keyed.sort_by(|(ka, a), (kb, b)| flip(text_key_cmp(ka, kb).then(b.timestamp.cmp(&a.timestamp))));
+            matches = keyed.into_iter().map(|(_, m)| m).collect();
+        } else {
+            matches.sort_by(|a, b| flip(message_cmp(a, b, sort)));
+        }
         self.total_matches = matches.len();
         if preview {
             matches.truncate(PREVIEW_ROWS);
@@ -3871,6 +4074,17 @@ impl MessageList {
                 groups.insert(key, vec![m]);
             }
         }
+        // Correspondents sort by the whole conversation's writers, as the
+        // column names them, which no single message knows (#443). The
+        // conversations are in date order beneath, newest first, from the
+        // sort above.
+        if sort == SortOrder::Correspondents {
+            let people: std::collections::HashMap<&(u32, String), String> =
+                order.iter().map(|k| (k, self.people_of(k, &groups[k]).to_lowercase())).collect();
+            let mut sorted = order.clone();
+            sorted.sort_by(|a, b| flip(text_key_cmp(&people[a], &people[b])));
+            order = sorted;
+        }
 
         // A reply that is sliding open, or shut, keeps doing so.
         let appearing: std::collections::HashSet<(u32, u32, u32)> = (0..self.shared.model.len())
@@ -3878,6 +4092,13 @@ impl MessageList {
             .filter(|r| r.meta.appear)
             .map(|r| r.slot())
             .collect();
+
+        // Under which date heading each conversation goes (#435): by the
+        // message that put it where it is in the sort, the newest for
+        // Newest First and the oldest for Oldest First, so a heading's rows
+        // always run together.
+        let by_date = self.group_by_date && matches!(sort, SortOrder::DateNewest | SortOrder::DateOldest);
+        let day_starts = by_date.then(|| crate::datefmt::day_starts(crate::datefmt::now()));
 
         // Flatten back into display order, recording per-row thread metadata.
         let mut shown: Vec<Rc<Message>> = Vec::new();
@@ -3890,6 +4111,7 @@ impl MessageList {
         let mut any_expanded = false;
         for key in &order {
             let mut msgs = groups.remove(key).unwrap();
+            let section = day_starts.as_ref().map_or(DaySection::None, |d| DaySection::of(msgs[0].timestamp, d));
             // A conversation reads like a transcript: the message that started it
             // is the row on screen, and its replies descend beneath it to the
             // newest. Where the *thread* sits among the other rows is still the
@@ -3913,7 +4135,7 @@ impl MessageList {
             let mut it = members.into_iter();
             let head = it.next().unwrap();
             shown.push(head.clone());
-            rows.push(Rc::new(RowData { msg: head, meta }));
+            rows.push(Rc::new(RowData { msg: head, meta, section }));
             if expanded {
                 any_expanded = true;
                 let closing = self.collapsing_threads.contains_key(key);
@@ -3931,6 +4153,7 @@ impl MessageList {
                             appear: appearing.contains(&slot),
                             ..Default::default()
                         },
+                        section,
                     }));
                 }
             }
@@ -3989,6 +4212,15 @@ impl MessageList {
         if !self.shared.model.replace(rows, stale) && stale {
             self.shared.refresh_all();
         }
+        // The headings come and go with the rows already in their sections,
+        // so the view never asks for a section of rows built without them.
+        if by_date != self.day_headings {
+            self.day_headings = by_date;
+            let factory = by_date.then(|| crate::ui::message_row::header_factory(&self.shared));
+            self.list_view.set_header_factory(factory.as_ref());
+        } else if by_date {
+            self.shared.refresh_headers();
+        }
         self.select_current();
 
         // Expanded conversations indent their member cards; give the pane the
@@ -4039,6 +4271,16 @@ impl MessageList {
             }
         });
         list.add_controller(key);
+        // Watched in the capture phase and never claimed, so the row still
+        // gets the click.
+        let click = gtk::GestureClick::new();
+        click.set_button(0);
+        click.set_propagation_phase(gtk::PropagationPhase::Capture);
+        let s = input.clone();
+        click.connect_pressed(move |_, _, _, _| {
+            let _ = s.send(MessageListInput::ClearCursor);
+        });
+        list.add_controller(click);
     }
 
     /// Ask for a rebuild at the end of the current main-loop pass, folding
@@ -4196,8 +4438,60 @@ impl MessageList {
     fn focus_row(&self, idx: usize) {
         if idx < self.shown.len() {
             self.list_view.scroll_to(idx as u32, gtk::ListScrollFlags::FOCUS, None);
+            self.reveal_first_heading(idx);
             self.list_view.grab_focus();
         }
+    }
+
+    /// A `scroll_to` the first row lines it up with the top, leaving the
+    /// date heading over it out of sight (#435): the list goes back to its
+    /// very top once laid out.
+    fn reveal_first_heading(&self, idx: usize) {
+        if let (0, true, Some(s)) = (idx, self.day_headings, &self.scroller) {
+            hold_top(&s.vadjustment(), &self.shared);
+        }
+    }
+
+    /// The row `delta` conversations away from `from`, clamped to the list:
+    /// the replies of a conversation opened out in the list are stepped
+    /// over, as Gmail's j and k move between conversations (#392). From no
+    /// row, the first step lands on the top or the bottom one.
+    fn conversation_step(&self, from: Option<usize>, delta: i32) -> usize {
+        let last = self.shown.len().saturating_sub(1);
+        let is_child = |p: usize| self.shared.model.row(p).is_some_and(|r| r.meta.is_child);
+        let Some(mut pos) = from.filter(|&p| p <= last) else {
+            let mut p = if delta > 0 { 0 } else { last };
+            while p > 0 && is_child(p) {
+                p -= 1;
+            }
+            return p;
+        };
+        for _ in 0..delta.unsigned_abs() {
+            let mut p = pos;
+            loop {
+                if delta > 0 {
+                    if p == last {
+                        break;
+                    }
+                    p += 1;
+                } else {
+                    if p == 0 {
+                        break;
+                    }
+                    p -= 1;
+                }
+                if !is_child(p) {
+                    break;
+                }
+            }
+            if is_child(p) {
+                // Only replies past here: stay on the conversation already
+                // reached.
+                break;
+            }
+            pos = p;
+        }
+        pos
     }
 
     /// Where deletion advances to, once the row at `idx` is gone: the row now
@@ -4250,7 +4544,7 @@ impl MessageList {
         let mut css = String::new();
         for (id, color) in colors {
             css.push_str(&format!(
-                ".vireo-acct-ring-{0} {{ border-radius: 9999px; outline: 2px solid {1}; outline-offset: 1px; }}\n",
+                ".hylki-acct-ring-{0} {{ border-radius: 9999px; outline: 2px solid {1}; outline-offset: 1px; }}\n",
                 id, color
             ));
         }
@@ -4261,11 +4555,12 @@ impl MessageList {
 #[cfg(test)]
 mod tests {
     use super::{
-        column_sort, compute_thread_keys, correspondents, heads_its_row, message_cmp, SortOrder, latest_elsewhere, nested_members, reader_conversation,
+        column_sort, compute_thread_keys, correspondents, text_key_cmp, heads_its_row, message_cmp, SortOrder, latest_elsewhere, nested_members, reader_conversation,
         row_for_reader_key, thread_slot, unasked_threads,
     };
-    use crate::ui::message_row::{row_edits, swap_wanted, swipe_progress_px, RowEdit, SWIPE_ARM, SWIPE_MAX};
+    use crate::ui::message_row::{row_edits, swap_wanted, swipe_progress_px, DaySection, RowData, RowEdit, SWIPE_ARM, SWIPE_MAX};
     use crate::models::Message;
+    use std::rc::Rc;
 
     /// Apply `row_edits` to `old` the way the model applies them, then add
     /// the rest of `new`, and return the result alongside the number of rows
@@ -4439,20 +4734,21 @@ mod tests {
     fn headings_sort_by_their_columns() {
         use crate::config::ListColumn;
         for c in ListColumn::ALL {
-            if let Some(order) = column_sort(c, false) {
-                assert_eq!(SortOrder::from_key(order.key()), order);
-            }
+            let order = column_sort(c, false);
+            assert_eq!(SortOrder::from_key(order.key()), order);
         }
-        assert_eq!(column_sort(ListColumn::Sender, true), Some(SortOrder::Recipients));
-        assert_eq!(column_sort(ListColumn::Tags, false), None);
+        assert_eq!(column_sort(ListColumn::Sender, true), SortOrder::Recipients);
+        assert_eq!(column_sort(ListColumn::Tags, false), SortOrder::Tags);
+        assert_eq!(text_key_cmp("", "a"), std::cmp::Ordering::Greater);
+        assert_eq!(text_key_cmp("ann", "bob"), std::cmp::Ordering::Less);
         let due = |id, due| Message { due, ..msg(id, "", "") };
         let mut list = vec![due(1, 0), due(2, 300), due(3, 100)];
         list.sort_by(|a, b| message_cmp(a, b, SortOrder::Due));
         assert_eq!(list.iter().map(|m| m.id).collect::<Vec<_>>(), vec![3, 2, 1]);
     }
 
-    /// #334: who wrote, oldest first and each once; who it went to when
-    /// nobody else has written.
+    /// #334: who wrote, each once; who it went to when nobody else has
+    /// written. #443: the newest writer first.
     #[test]
     fn correspondents_name_each_writer_once() {
         let from = |id, name: &str, addr: &str, ts| Message {
@@ -4463,7 +4759,8 @@ mod tests {
             ..msg(id, "", "")
         };
         let (a, b, a2) = (from(1, "Ann", "a@example.com", 10), from(2, "", "b@example.com", 20), from(3, "Ann", "A@example.com", 30));
-        assert_eq!(correspondents(&[&a2, &b, &a]), "Ann, b@example.com");
+        assert_eq!(correspondents(&[&a, &b, &a2]), "Ann, b@example.com");
+        assert_eq!(correspondents(&[&a, &b]), "b@example.com, Ann");
         assert_eq!(correspondents(&[&a]), "Ann");
         assert_eq!(correspondents(&[]), "");
     }
@@ -4764,5 +5061,61 @@ mod tests {
         assert_eq!(row((1, 9)), Some(1));
         // And one from neither is no row at all.
         assert_eq!(row((1, 42)), None);
+    }
+
+    /// #435: each day falls under its heading, the boundaries at midnight,
+    /// and mail dated ahead of the clock under Today.
+    #[test]
+    fn mail_falls_under_its_days_heading() {
+        let day = 86_400;
+        let today = 100 * day;
+        let starts = [today, today - day, today - 6 * day, today - 13 * day];
+        let of = |ts| DaySection::of(ts, &starts);
+        assert_eq!(of(today + 5 * day), DaySection::Today);
+        assert_eq!(of(today), DaySection::Today);
+        assert_eq!(of(today - 1), DaySection::Yesterday);
+        assert_eq!(of(today - day), DaySection::Yesterday);
+        assert_eq!(of(today - day - 1), DaySection::LastWeek);
+        assert_eq!(of(today - 6 * day), DaySection::LastWeek);
+        assert_eq!(of(today - 6 * day - 1), DaySection::LastFortnight);
+        assert_eq!(of(today - 13 * day), DaySection::LastFortnight);
+        assert_eq!(of(today - 13 * day - 1), DaySection::Older);
+        assert_eq!(of(0), DaySection::Older);
+    }
+
+    /// The local midnights run back a day, a week and a fortnight, and the
+    /// first is the start of the day `now` is in.
+    #[test]
+    fn the_days_start_at_local_midnight() {
+        let now = crate::datefmt::now();
+        let [today, yesterday, week, fortnight] = crate::datefmt::day_starts(now);
+        assert!(today <= now && now - today < 25 * 3600);
+        assert_eq!(crate::datefmt::day_key(today), crate::datefmt::day_key(now));
+        assert_ne!(crate::datefmt::day_key(today - 1), crate::datefmt::day_key(today));
+        for (later, earlier, days) in [(today, yesterday, 1), (today, week, 6), (today, fortnight, 13)] {
+            let gap = later - earlier;
+            assert!((gap - days * 86_400).abs() <= 3600, "{days} days back is {gap}s");
+        }
+    }
+
+    /// A section is a run of rows under one heading, so the view's question
+    /// about any row is a search among a handful of starts.
+    #[test]
+    fn sections_are_the_runs_of_one_heading() {
+        use crate::ui::message_row::section_starts;
+        let row = |id: u32, section| Rc::new(RowData { msg: Rc::new(msg(id, "", "")), meta: Default::default(), section });
+        assert_eq!(section_starts(&[]), vec![0]);
+        let plain: Vec<_> = (0..5).map(|i| row(i, DaySection::None)).collect();
+        assert_eq!(section_starts(&plain), vec![0]);
+        let days = [
+            DaySection::Today,
+            DaySection::Today,
+            DaySection::Yesterday,
+            DaySection::Older,
+            DaySection::Older,
+            DaySection::Older,
+        ];
+        let rows: Vec<_> = days.iter().enumerate().map(|(i, s)| row(i as u32, *s)).collect();
+        assert_eq!(section_starts(&rows), vec![0, 2, 3]);
     }
 }

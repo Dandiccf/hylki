@@ -787,6 +787,32 @@ flowbox.attach-flow > flowboxchild {
   outline: none;
 }
 
+/* The date headings of a list grouped by date (#435): no ground of their
+   own, the text lined up with the rows' (the pill's 6px inset plus its
+   padding), air above to part one day from the last. */
+.message-list > header {
+  padding: 0;
+  margin: 0;
+  background: none;
+  border: none;
+}
+
+.list-day-heading {
+  margin: 14px 16px 4px 16px;
+}
+
+.message-list > header:first-child .list-day-heading {
+  margin-top: 8px;
+}
+
+.message-list.single-line .list-day-heading {
+  margin: 10px 14px 2px 14px;
+}
+
+.message-list.single-line > header:first-child .list-day-heading {
+  margin-top: 6px;
+}
+
 /* Every state tint lives on the inner .message-row as an inset rounded pill
    — matching the thread member cards — never on the full-width row, so
    highlights stop touching the list edges and crossing the separators. */
@@ -821,6 +847,22 @@ flowbox.attach-flow > flowboxchild {
 .message-list > row:selected:hover > .message-item:not(.swiping) .message-row,
 .message-list > row:selected:active > .message-item:not(.swiping) .message-row {
   background-color: alpha(@accent_bg_color, 0.5);
+}
+
+/* Gmail's j/k cursor (#392): an accent outline inside the pill, while the
+   list has the keyboard. It is a class the list sets for j and k and takes
+   off at a click, not a focus ring, so a click never draws it. On the
+   selected row, whose pill is already the accent, it is white. */
+.message-list:focus-within > row > .message-item.kbd-cursor:not(.swiping) .message-row {
+  box-shadow: inset 0 0 0 2px alpha(@accent_color, 0.85);
+}
+
+.message-list:focus-within > row:not(:selected) > .message-item.kbd-cursor:not(.swiping) .message-row {
+  background-color: alpha(@accent_bg_color, 0.1);
+}
+
+.message-list:focus-within > row:selected > .message-item.kbd-cursor:not(.swiping) .message-row {
+  box-shadow: inset 0 0 0 2px alpha(white, 0.8);
 }
 
 .message-row {
@@ -968,13 +1010,9 @@ flowbox.attach-flow > flowboxchild {
   opacity: 0.6;
 }
 
-/* A heading's resize handle: a faint divider on the edge it drags, in the
-   accent color under the pointer. */
-.column-resize-handle {
-  background: linear-gradient(to right, transparent 3px, alpha(currentColor, 0.15) 3px,
-                              alpha(currentColor, 0.15) 4px, transparent 4px);
-}
-
+/* A heading's resize handle: an accent line on the edge it drags, shown
+   only under the pointer. A divider at rest on every column's edge read as
+   marks on the headings' names (#443). */
 .column-resize-handle:hover {
   background: linear-gradient(to right, transparent 2px, @accent_color 2px,
                               @accent_color 5px, transparent 5px);
@@ -1430,7 +1468,7 @@ headerbar.compose-toolbar button.image-button {
 }
 
 .notify-cards {
-  padding: 4px 12px 14px 12px;
+  padding: 14px 12px 4px 12px;
 }
 
 /* Toast-like cards floating on the colored bar. Fixed amber with dark text
@@ -2279,18 +2317,18 @@ textview.console-view text selection {
 /* Message zoom chip on the reader header's account line: shown only away
    from the default, and a click goes back there, so it answers the pointer
    like a button. */
-.vireo-zoom-chip {
+.hylki-zoom-chip {
   padding: 1px 8px;
   border-radius: 99px;
   background: alpha(currentColor, 0.1);
   font-weight: 600;
   transition: background 150ms ease-out, color 150ms ease-out;
 }
-.vireo-zoom-chip:hover {
+.hylki-zoom-chip:hover {
   background: alpha(@accent_bg_color, 0.2);
   color: @accent_color;
 }
-.vireo-zoom-chip:active {
+.hylki-zoom-chip:active {
   background: alpha(@accent_bg_color, 0.35);
 }
 

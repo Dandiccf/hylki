@@ -1398,6 +1398,14 @@ pub(crate) struct PrivacyFile {
     /// rather than behind its chevron, the default.
     #[serde(default)]
     pub(crate) toolbar_expanded: bool,
+    /// The font rich-text messages are written and sent in, as a CSS family
+    /// list. Empty, the editor shows the interface font and the message
+    /// names none, so it reads in the recipient's own.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub(crate) compose_font: String,
+    /// Their text size in points; 0 leaves it to the recipient.
+    #[serde(default, skip_serializing_if = "is_zero")]
+    pub(crate) compose_font_size: u32,
     /// New messages start as plain text, without formatting (#180). Kept
     /// written so a version that predates `compose_format` still opens its
     /// composer the way this one was left.
@@ -1408,6 +1416,11 @@ pub(crate) struct PrivacyFile {
     /// where `compose_plain` above still says which of the two it is.
     #[serde(default)]
     pub(crate) compose_format: Option<ComposeFormat>,
+    /// Whether a reply or forward to mail that had no HTML part is written
+    /// in plain text whatever `compose_format` says (#436). Mailing lists
+    /// and the people on them often write plain text and expect it back.
+    #[serde(default)]
+    pub(crate) follow_plain: bool,
     /// Where the split reply opens in the reading pane (#212).
     #[serde(default)]
     pub(crate) reply_position: ReplyPosition,
@@ -1479,6 +1492,15 @@ pub(crate) struct PrivacyFile {
     /// Headings over those columns, which sort the list when clicked.
     #[serde(default)]
     pub(crate) list_headings: bool,
+    /// Columns keep their widths and a single line too wide for the pane
+    /// scrolls sideways (#443). Off, the default and the way it was, the
+    /// name columns narrow to fit.
+    #[serde(default)]
+    pub(crate) list_column_scroll: bool,
+    /// A list sorted by date is divided under Today, Yesterday, Last 7 days,
+    /// Last 14 days and Older (#435). Off by default.
+    #[serde(default)]
+    pub(crate) list_group_by_date: bool,
     /// The widths columns were dragged to, in pixels, by column name.
     #[serde(default)]
     pub(crate) list_column_widths: std::collections::BTreeMap<String, i32>,
@@ -1514,9 +1536,14 @@ pub(crate) struct PrivacyFile {
     #[serde(default = "default_on")]
     pub(crate) tray_mail: bool,
     /// Whether the launcher icon in a dock or task manager shows the unread
-    /// count (#271).
+    /// count (#271). Kept written so a version that predates
+    /// `launcher_badge` still shows a badge when this one does.
     #[serde(default = "default_on")]
     pub(crate) launcher_count: bool,
+    /// What that count counts (#431). Absent on installs that predate the
+    /// choice, where `launcher_count` above says whether there is one.
+    #[serde(default)]
+    pub(crate) launcher_badge: Option<LauncherBadge>,
     /// Whether to say anything at all when remote content is blocked. Off hides
     /// the banner; it never changes what is blocked, only whether you're told.
     #[serde(default = "default_on")]
@@ -1571,6 +1598,10 @@ pub(crate) struct PrivacyFile {
     /// the status bar. Off by default.
     #[serde(default)]
     pub(crate) console_mode: bool,
+    /// The status bar at the top of the window rather than its foot (#433).
+    /// Off by default, for everyone: the key is new in 1.44.
+    #[serde(default)]
+    pub(crate) status_bar_top: bool,
     /// Read-marking policy (#100).
     #[serde(default)]
     pub(crate) read_mark: ReadMark,
@@ -1684,6 +1715,7 @@ impl Default for PrivacyFile {
             tags_placement: SectionPlacement::default(),
             chevrons_left: default_chevrons_left(),
             console_mode: false,
+            status_bar_top: false,
             read_mark: ReadMark::default(),
             files_action: FilesAction::default(),
             files_large: FilesLarge::default(),
@@ -1750,8 +1782,11 @@ impl Default for PrivacyFile {
             paste_plain: true,
             return_paragraph: false,
             toolbar_expanded: false,
+            compose_font: String::new(),
+            compose_font_size: 0,
             compose_plain: false,
             compose_format: None,
+            follow_plain: false,
             reply_position: ReplyPosition::default(),
             signature_position: SignaturePosition::default(),
             signature_dashes: false,
@@ -1770,6 +1805,8 @@ impl Default for PrivacyFile {
             list_layout: ListLayout::Cards,
             list_columns: default_list_columns(),
             list_headings: false,
+            list_column_scroll: false,
+            list_group_by_date: false,
             list_column_widths: Default::default(),
             single_key_shortcuts: false,
             gmail_keys: false,
@@ -1780,6 +1817,7 @@ impl Default for PrivacyFile {
             tray_icon: TrayIcon::default(),
             tray_mail: true,
             launcher_count: true,
+            launcher_badge: None,
             print: PrintOptions::default(),
         }
     }
@@ -2182,6 +2220,20 @@ fn is_false(b: &bool) -> bool {
     !*b
 }
 
+/// The subject with any leading "Re:", "Fwd:" or "Fw:" (any case, repeated)
+/// taken off, and the whitespace around it.
+fn strip_reply_prefixes(subject: &str) -> &str {
+    const PREFIXES: [&str; 3] = ["re:", "fwd:", "fw:"];
+    let mut rest = subject.trim();
+    while let Some(next) = PREFIXES.iter().find_map(|p| {
+        let head = rest.get(..p.len())?;
+        head.eq_ignore_ascii_case(p).then(|| rest[p.len()..].trim_start())
+    }) {
+        rest = next;
+    }
+    rest.trim()
+}
+
 /// One condition of a [`FilterRule`]: what to look at, how, and for what.
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(from = "FilterConditionDisk", into = "FilterConditionDisk")]
@@ -2470,6 +2522,41 @@ fn mailboxes(list: &str) -> Vec<String> {
 }
 
 impl FilterRule {
+    /// The rule the "Create Filter from Message…" entry starts the
+    /// editor with: the sender's address, and the subject without its
+    /// leading "Re:" / "Fwd:" so a whole thread matches. Both have to match;
+    /// what the rule does is left for the user to pick. A blank subject
+    /// leaves the sender as the only condition.
+    pub fn draft_from_message(account_email: &str, from_addr: &str, subject: &str) -> FilterRule {
+        let mut conditions = vec![FilterCondition {
+            field: FilterField::FromAddress,
+            matcher: FilterMatch::Equals,
+            value: from_addr.trim().to_string(),
+        }];
+        let subject = strip_reply_prefixes(subject);
+        if !subject.is_empty() {
+            conditions.push(FilterCondition {
+                field: FilterField::Subject,
+                matcher: FilterMatch::Contains,
+                value: subject.to_string(),
+            });
+        }
+        let mut rule = FilterRule {
+            name: String::new(),
+            account_email: account_email.to_string(),
+            field: FilterField::FromAddress,
+            matcher: FilterMatch::Equals,
+            value: String::new(),
+            more: Vec::new(),
+            any: false,
+            dest_path: String::new(),
+            tag: String::new(),
+            count_unread: count_unread_default(),
+        };
+        rule.set_conditions(conditions);
+        rule
+    }
+
     /// Every condition, the first included.
     pub fn conditions(&self) -> Vec<FilterCondition> {
         let mut all = Vec::with_capacity(1 + self.more.len());
@@ -3207,6 +3294,32 @@ pub enum SignaturePosition {
 }
 
 
+
+/// What the number on the launcher icon counts (#431).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum LauncherBadge {
+    /// No badge.
+    Off,
+    /// Every unread message in the inboxes, as the tray icon's dot.
+    #[default]
+    AllUnread,
+    /// Inbox mail that arrived while the main window was not in front and
+    /// is still unread; back to none each time the window comes forward.
+    NewSinceFront,
+}
+
+impl PrivacyFile {
+    /// The launcher badge choice, falling back to the on/off switch it
+    /// replaced.
+    pub(crate) fn launcher_badge(&self) -> LauncherBadge {
+        self.launcher_badge.unwrap_or(if self.launcher_count {
+            LauncherBadge::AllUnread
+        } else {
+            LauncherBadge::Off
+        })
+    }
+}
 
 /// What new messages start out as, falling back to the plain-text
 /// switch this setting replaced (#180).
@@ -4036,6 +4149,36 @@ struct StateFile {
     /// (#343), keyed "address␟folder path".
     #[serde(default, skip_serializing_if = "std::collections::BTreeMap::is_empty")]
     unread_seen: std::collections::BTreeMap<String, u32>,
+    /// The fonts last picked with the composer's Other Font… (#358), the
+    /// newest first, for the font menu to offer again.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    recent_fonts: Vec<RecentFont>,
+}
+
+/// A font family picked in the composer (#358), and whether it is
+/// monospaced, which decides the generic family it falls back to.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Deserialize, Serialize)]
+pub struct RecentFont {
+    pub name: String,
+    #[serde(default)]
+    pub mono: bool,
+}
+
+/// How many picked fonts the font menu keeps.
+const RECENT_FONTS: usize = 5;
+
+pub fn load_recent_fonts() -> Vec<RecentFont> {
+    load_state().recent_fonts
+}
+
+/// Put `font` at the head of the recent fonts, once, and keep the newest
+/// few.
+pub fn note_recent_font(font: RecentFont) {
+    update_state(|s| {
+        s.recent_fonts.retain(|f| !f.name.eq_ignore_ascii_case(&font.name));
+        s.recent_fonts.insert(0, font);
+        s.recent_fonts.truncate(RECENT_FONTS);
+    });
 }
 
 fn default_about_height() -> i32 {
@@ -4410,6 +4553,21 @@ mod tests {
         assert_eq!(cfg.accounts[1].protocol, super::Protocol::Jmap);
     }
 
+    /// #431: a file from before the badge choice keeps what its switch
+    /// said, and the choice, once made, wins over the switch.
+    #[test]
+    fn launcher_badge_follows_the_old_switch() {
+        use super::LauncherBadge::*;
+        let read = |text: &str| toml::from_str::<PrivacyFile>(text).unwrap().launcher_badge();
+        assert_eq!(read(""), AllUnread);
+        assert_eq!(read("launcher_count = true"), AllUnread);
+        assert_eq!(read("launcher_count = false"), Off);
+        assert_eq!(read("launcher_count = true\nlauncher_badge = \"new_since_front\""), NewSinceFront);
+        assert_eq!(read("launcher_count = true\nlauncher_badge = \"off\""), Off);
+        let saved = PrivacyFile { launcher_count: true, launcher_badge: Some(NewSinceFront), ..Default::default() };
+        assert_eq!(read(&toml::to_string(&saved).unwrap()), NewSinceFront);
+    }
+
     /// #367: a sidebar file from before Favorites has none, and the list
     /// starts open; the entries come back in the order they were added.
     #[test]
@@ -4759,6 +4917,51 @@ mod filter_tests {
         recipients: &'a str,
     ) -> FilterInput<'a> {
         FilterInput { from_addr, from_name, subject, recipients, ..Default::default() }
+    }
+
+    #[test]
+    fn draft_filter_matches_sender_and_subject() {
+        let rule = FilterRule::draft_from_message("me@x.org", "billing@shop.example", "Your invoice");
+        assert_eq!(rule.account_email, "me@x.org");
+        assert!(!rule.any, "both conditions have to match");
+        assert!(rule.dest_path.is_empty() && rule.tag.is_empty(), "the user picks what the rule does");
+        assert_eq!(
+            rule.conditions(),
+            vec![
+                FilterCondition {
+                    field: FilterField::FromAddress,
+                    matcher: FilterMatch::Equals,
+                    value: "billing@shop.example".into(),
+                },
+                FilterCondition {
+                    field: FilterField::Subject,
+                    matcher: FilterMatch::Contains,
+                    value: "Your invoice".into(),
+                },
+            ]
+        );
+    }
+
+    #[test]
+    fn draft_filter_strips_reply_and_forward_prefixes() {
+        let subject_of = |subject| {
+            FilterRule::draft_from_message("me@x.org", "a@b.org", subject).conditions()[1].value.clone()
+        };
+        assert_eq!(subject_of("Re: Invoice"), "Invoice");
+        assert_eq!(subject_of("RE: Fwd: re:  Invoice"), "Invoice");
+        assert_eq!(subject_of("Fw: Invoice"), "Invoice");
+        // Only a leading prefix goes; one inside the subject is the subject's own.
+        assert_eq!(subject_of("Invoice re: March"), "Invoice re: March");
+        assert_eq!(subject_of("Reminder: Invoice"), "Reminder: Invoice");
+    }
+
+    #[test]
+    fn draft_filter_skips_an_empty_subject() {
+        for subject in ["", "   ", "Re: ", "Fwd:"] {
+            let rule = FilterRule::draft_from_message("me@x.org", "a@b.org", subject);
+            assert_eq!(rule.conditions().len(), 1, "subject {subject:?} leaves the sender alone");
+            assert_eq!(rule.field, FilterField::FromAddress);
+        }
     }
 
     #[test]

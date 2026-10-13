@@ -436,6 +436,14 @@ msgstr "Mappák rendezése"
 
 #, fuzzy
 msgid ""
+"Single-key shortcuts are switched off, and Gmail keys with them. Turn them "
+"on in Settings → System."
+msgstr ""
+"Az egybillentyűs gyorsbillentyűk ki vannak kapcsolva. Kapcsolja be őket a "
+"Beállítások → Rendszer és megjelenés menüben."
+
+#, fuzzy
+msgid ""
 "Single-key shortcuts are switched off. Turn them on in Settings → System."
 msgstr ""
 "Az egybillentyűs gyorsbillentyűk ki vannak kapcsolva. Kapcsolja be őket a "
@@ -492,6 +500,10 @@ msgstr "Címke szerkesztése"
 
 msgid "Add Sender to Contacts"
 msgstr "Feladó hozzáadása a névjegyekhez"
+
+#, fuzzy
+msgid "Create Filter from Message…"
+msgstr "Nyomtatás…"
 
 msgid "Block Remote Content"
 msgstr "Távoli képek blokkolása"
@@ -988,7 +1000,9 @@ msgstr "A teljes verzióinformáció a GitHub-on"
 msgid "Move around"
 msgstr "Navigáció"
 
-msgid "Move down or up the list without opening"
+msgid ""
+"Move down or up the list without opening; while reading, open the next or "
+"previous conversation"
 msgstr ""
 
 #, fuzzy
@@ -1002,8 +1016,29 @@ msgstr "Vissza az üzenetlistához"
 msgid "Next or previous message in the conversation"
 msgstr "A beszélgetés előző üzenete"
 
-msgid "Go to Inbox, Starred, Sent, Drafts or Archive"
-msgstr ""
+#, fuzzy
+msgid "Expand or collapse every message of the conversation"
+msgstr "A beszélgetés előző üzenete"
+
+#, fuzzy
+msgid "Go to Inbox"
+msgstr "Áthelyezés a Beérkezett üzenetek közé"
+
+#, fuzzy
+msgid "Go to Starred"
+msgstr "Nincs telepítve"
+
+#, fuzzy
+msgid "Go to Sent"
+msgstr "Hozzáadás a névjegyekhez"
+
+#, fuzzy
+msgid "Go to Drafts"
+msgstr "Mentés a Piszkozatok közé"
+
+#, fuzzy
+msgid "Go to Archive"
+msgstr "Archiválás"
 
 #, fuzzy
 msgid "Go to Contacts"
@@ -1018,17 +1053,27 @@ msgstr "Művelet az üzeneten"
 msgid "Reply to all"
 msgstr "Válasz mindenkinek"
 
+#, fuzzy
+msgid "Archive the conversation"
+msgstr "A teljes beszélgetés"
+
 msgid "Mark as spam"
 msgstr "Megjelölés levélszemétként"
 
 msgid "Star or unstar"
 msgstr "Csillagozás vagy csillag eltávolítása"
 
-msgid "Mark as read"
-msgstr "Megjelölés olvasottként"
+#, fuzzy
+msgid "Mark the conversation as read"
+msgstr "A teljes beszélgetés"
 
-msgid "Mark as unread"
-msgstr "Megjelölés olvasatlanként"
+#, fuzzy
+msgid "Mark the conversation as unread"
+msgstr "Megjelölés olvasottként vagy olvasatlanként"
+
+#, fuzzy
+msgid "Mark as unread from this message on"
+msgstr "Üzenet küldésének megkísérlése most"
 
 msgid "Select this row (for a bulk action)"
 msgstr "Sor kijelölése (csoportos művelethez)"
@@ -1151,6 +1196,9 @@ msgid "Quit Hylki entirely"
 msgstr "Kilépés teljesen a Hylkiből"
 
 msgid "Command palette: search actions, folders and tags"
+msgstr ""
+
+msgid "Command palette, actions only"
 msgstr ""
 
 msgid "This list"
@@ -1291,6 +1339,14 @@ msgstr "{date} {time} órakor"
 msgid "Evolution Data Server is not available"
 msgstr "Az Evolution Data Server nem érhető el"
 
+#, fuzzy
+msgid ""
+"The directory cannot be searched without signing in. Add a sign-in in "
+"Settings → LDAP Directories."
+msgstr ""
+"A könyvtár jelszót igényel. Adja hozzá a Beállítások → LDAP könyvtárak "
+"menüpontban."
+
 msgid "The directory did not accept the password."
 msgstr "A könyvtár nem fogadta el a jelszót."
 
@@ -1322,6 +1378,9 @@ msgid "The directory needs a password. Add it in Settings → LDAP Directories."
 msgstr ""
 "A könyvtár jelszót igényel. Adja hozzá a Beállítások → LDAP könyvtárak "
 "menüpontban."
+
+msgid "{name} did not answer: {error}"
+msgstr "{name} nem válaszolt: {error}"
 
 msgid "A contact needs a name or an email address"
 msgstr ""
@@ -3385,11 +3444,11 @@ msgstr ""
 msgid "Save as Template"
 msgstr "Beillesztés egyszerű szövegként"
 
-msgid "Delete Draft"
-msgstr "Piszkozat törlése"
-
 msgid "Move this draft to Trash"
 msgstr "Piszkozat áthelyezése a Kukába"
+
+msgid "Delete Draft"
+msgstr "Piszkozat törlése"
 
 msgid "Schedule"
 msgstr "Ütemezés"
@@ -3421,6 +3480,9 @@ msgstr "Titkosítás OpenPGP-vel minden címzett kulcsára"
 msgid "Sign with your OpenPGP key"
 msgstr "Aláírás a saját OpenPGP-kulccsal"
 
+#. Save Draft, Save as Template and Delete Draft are not here:
+#. the Save Draft button and its arrow stay in the header at
+#. any width.
 msgid "Attach files"
 msgstr "Fájlok csatolása"
 
@@ -3557,6 +3619,16 @@ msgstr ""
 #, fuzzy
 msgid "Could not translate"
 msgstr "Az üzenet nem címkézhető: {e}"
+
+#, fuzzy
+msgid "Switch to plain text?"
+msgstr "Beillesztés egyszerű szövegként"
+
+msgid "Formatting, images and links are removed."
+msgstr ""
+
+msgid "Switch"
+msgstr ""
 
 msgid "Cannot send with OpenPGP"
 msgstr "Nem lehet küldeni OpenPGP-vel"
@@ -3703,6 +3775,10 @@ msgstr "Keresztnév"
 msgid "Last name"
 msgstr "Vezetéknév"
 
+#, fuzzy
+msgid "In Directories"
+msgstr "LDAP Mappák"
+
 msgid "Delete Contact?"
 msgstr "Törli a névjegyet?"
 
@@ -3736,6 +3812,10 @@ msgstr ""
 #. ---- note ----
 msgid "Note"
 msgstr ""
+
+#, fuzzy
+msgid "Directory"
+msgstr "Könyvtár hozzáadása"
 
 #, fuzzy
 msgid "Address Book"
@@ -3790,10 +3870,11 @@ msgstr "LDAP Mappák"
 msgid "LDAP directories"
 msgstr "LDAP mappák"
 
+#, fuzzy
 msgid ""
 "The composer looks up recipients in these directories as you type an "
-"address. They are kept by Evolution Data Server, so a directory set up in "
-"Evolution is listed here too."
+"address, and a search in Contacts looks in them too. They are kept by "
+"Evolution Data Server, so a directory set up in Evolution is listed here too."
 msgstr ""
 "A program a cím beírása közben ezekben a címjegyzékekben keresi meg a "
 "címzetteket. Ezeket az Evolution Data Server tárolja, így az Evolution-ban "
@@ -3825,9 +3906,6 @@ msgstr ""
 
 msgid "Connected to {name}"
 msgstr "Kapcsolódva erre: {name}"
-
-msgid "{name} did not answer: {error}"
-msgstr "{name} nem válaszolt: {error}"
 
 msgid "The server took too long to answer."
 msgstr ""
@@ -4012,6 +4090,10 @@ msgstr "Nincsenek üzenetek"
 msgid "There's nothing here right now."
 msgstr "Itt jelenleg nincs semmi."
 
+#, fuzzy
+msgid "Customize Columns…"
+msgstr "Eszköztár testreszabása…"
+
 msgid "Remove Stars"
 msgstr "Csillagok eltávolítása"
 
@@ -4032,6 +4114,24 @@ msgstr "Keresés a mappákban"
 msgid "Search this folder"
 msgstr "Keresés a mappákban"
 
+msgid "Today"
+msgstr ""
+
+#, fuzzy
+msgid "Yesterday"
+msgstr "tegnap"
+
+#, fuzzy
+msgid "Last 7 days"
+msgstr "Vezetéknév"
+
+msgid "Last 14 days"
+msgstr ""
+
+#, fuzzy
+msgid "Older"
+msgstr "Mappa"
+
 msgid "Due"
 msgstr ""
 
@@ -4045,6 +4145,9 @@ msgstr ""
 msgid "Low importance"
 msgstr "Kulcs importálva"
 
+msgid "Mark as read"
+msgstr "Megjelölés olvasottként"
+
 msgid "Move to…"
 msgstr "Áthelyezés…"
 
@@ -4053,6 +4156,9 @@ msgstr "Nem levélszemét"
 
 msgid "Add sender to Contacts"
 msgstr "Feladó hozzáadása a névjegyekhez"
+
+msgid "Mark as unread"
+msgstr "Megjelölés olvasatlanként"
 
 msgid "Remove star"
 msgstr "Csillag eltávolítása"
@@ -4496,11 +4602,11 @@ msgstr ""
 msgid "Clear all"
 msgstr "Összes törlése"
 
-msgid "Collapse status bar"
-msgstr "Állapotsáv összecsukása"
-
 msgid "Export log"
 msgstr "Napló exportálása"
+
+msgid "Collapse status bar"
+msgstr "Állapotsáv összecsukása"
 
 msgid "Status bar ({n})"
 msgstr "Állapotsáv ({n})"
@@ -4720,6 +4826,13 @@ msgstr "Alkalmazásikon"
 
 msgid "Symbolic"
 msgstr "Szimbolikus"
+
+#, fuzzy
+msgid "All unread inbox mail"
+msgstr "Olvasatlan levelek számolása"
+
+msgid "New since last in front"
+msgstr ""
 
 msgid "Follow system"
 msgstr "Rendszer követése"
@@ -5506,6 +5619,14 @@ msgstr ""
 "Az egyes üzenetekből a tárgy alatt megjelenő mennyiség. Kikapcsolva az "
 "előnézetek letöltése is leáll."
 
+msgid "Group by date"
+msgstr ""
+
+msgid ""
+"Headings divide a list sorted by date into Today, Yesterday, Last 7 days, "
+"Last 14 days and Older."
+msgstr ""
+
 #, fuzzy
 msgid "Tint tagged messages"
 msgstr "{n} db üzenet címkézve"
@@ -5595,6 +5716,15 @@ msgstr ""
 msgid ""
 "Names the columns above the list. Click one to sort the list by it, and "
 "again to reverse the order."
+msgstr ""
+
+#, fuzzy
+msgid "Fit columns to the list"
+msgstr "Helyezze a kerülmb here ide hide it"
+
+msgid ""
+"The name and tag columns narrow as the list does. Off, every column keeps "
+"its width and a list too narrow for them scrolls sideways."
 msgstr ""
 
 msgid "Group messages by conversation"
@@ -5967,6 +6097,30 @@ msgstr ""
 "Az üzenetíró ablak formázás gombja bármelyik üzenet formátumát "
 "megváltoztatja."
 
+msgid "Font"
+msgstr ""
+
+msgid ""
+"The font rich-text messages are written and sent in. Default leaves it to "
+"the recipient's own font."
+msgstr ""
+
+#, fuzzy
+msgid "Font size"
+msgstr "Text méret"
+
+msgid "The size, in points, rich-text messages are written and sent in."
+msgstr ""
+
+#, fuzzy
+msgid "Reply in the original's format"
+msgstr "Válasz ezekkel a fájlokkal"
+
+msgid ""
+"Replies to and forwards of mail sent as plain text are written in plain "
+"text. Other mail starts in the format above."
+msgstr ""
+
 msgid "Signature in replies"
 msgstr "Aláírás a válaszokban"
 
@@ -6183,10 +6337,11 @@ msgstr ""
 msgid "Unread count on the app icon"
 msgstr "Az alkalmazás ikonján megjelenő olvasatlan üzenetek száma"
 
+#, fuzzy
 msgid ""
-"The number of unread inbox messages on Hylki's icon in the dock or task "
-"manager. KDE Plasma shows it; GNOME needs a dock extension such as Dash to "
-"Dock."
+"A number on Hylki's icon in the dock or task manager: every unread inbox "
+"message, or only those that arrived while Hylki was not in front. KDE Plasma "
+"shows it; GNOME needs a dock extension such as Dash to Dock."
 msgstr ""
 "A beérkezett üzenetek közül az olvasatlanok száma Hylki ikonján a dokkban "
 "vagy a feladatkezelőben. A KDE Plasma ezt megjeleníti; a GNOME esetében "
@@ -6208,8 +6363,15 @@ msgid "Gmail keys"
 msgstr "E-mail-cím"
 
 msgid ""
-"Single-key shortcuts as Gmail has them: j/k move without opening, o opens, e "
-"archives, # deletes, g then a letter goes to a folder."
+"Needs single-key shortcuts on. Swaps in the keys Gmail has: j/k move without "
+"opening, o opens, e archives, # deletes, g then a letter goes to a folder."
+msgstr ""
+
+#, fuzzy
+msgid "Status bar"
+msgstr "Állapotsáv ({n})"
+
+msgid "Where the bar with errors and the console opens"
 msgstr ""
 
 msgid "Console mode"
@@ -6407,6 +6569,14 @@ msgstr ""
 msgid "30 days"
 msgstr ""
 
+#, fuzzy
+msgid "Bottom of the window"
+msgstr "Levélírás a főablakban"
+
+#, fuzzy
+msgid "Top of the window"
+msgstr "Levélírás a főablakban"
+
 msgid "When displayed"
 msgstr "Megjelenítés ideje"
 
@@ -6532,6 +6702,9 @@ msgstr "Megváltozik"
 msgid "Custom File"
 msgstr "Egyéni fájl"
 
+msgid "Other Font…"
+msgstr ""
+
 msgid "Print Message"
 msgstr "Üzenet nyomtatása"
 
@@ -6625,16 +6798,6 @@ msgstr "Egyéni szín…"
 
 msgid "Paragraph style"
 msgstr ""
-
-msgid "Font"
-msgstr ""
-
-msgid "Other Font…"
-msgstr ""
-
-#, fuzzy
-msgid "Font size"
-msgstr "Text méret"
 
 msgid "Bold"
 msgstr "Félkövér"

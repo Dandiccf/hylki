@@ -432,6 +432,14 @@ msgstr "Etiquetas"
 msgid "Smart Folder"
 msgstr "Ordenar carpetas"
 
+#, fuzzy
+msgid ""
+"Single-key shortcuts are switched off, and Gmail keys with them. Turn them "
+"on in Settings → System."
+msgstr ""
+"Los atajos de una sola tecla están desactivados. Actívalos en Ajustes → "
+"Sistema."
+
 msgid ""
 "Single-key shortcuts are switched off. Turn them on in Settings → System."
 msgstr ""
@@ -490,6 +498,10 @@ msgstr "Editar plantilla"
 
 msgid "Add Sender to Contacts"
 msgstr "Añadir remitente a Contactos"
+
+#, fuzzy
+msgid "Create Filter from Message…"
+msgstr "Imprimir mensaje…"
 
 msgid "Block Remote Content"
 msgstr "Bloquear contenido remoto"
@@ -994,7 +1006,9 @@ msgstr "Notas completas de la versión en GitHub"
 msgid "Move around"
 msgstr "Navegación"
 
-msgid "Move down or up the list without opening"
+msgid ""
+"Move down or up the list without opening; while reading, open the next or "
+"previous conversation"
 msgstr ""
 
 #, fuzzy
@@ -1008,8 +1022,29 @@ msgstr "Volver a la lista de mensajes"
 msgid "Next or previous message in the conversation"
 msgstr "Mensaje anterior de la conversación"
 
-msgid "Go to Inbox, Starred, Sent, Drafts or Archive"
-msgstr ""
+#, fuzzy
+msgid "Expand or collapse every message of the conversation"
+msgstr "Mensaje anterior de la conversación"
+
+#, fuzzy
+msgid "Go to Inbox"
+msgstr "Mover a Bandeja de entrada"
+
+#, fuzzy
+msgid "Go to Starred"
+msgstr "No instalado"
+
+#, fuzzy
+msgid "Go to Sent"
+msgstr "Añadir a Contactos"
+
+#, fuzzy
+msgid "Go to Drafts"
+msgstr "Guardar en Borradores"
+
+#, fuzzy
+msgid "Go to Archive"
+msgstr "Archivar"
 
 #, fuzzy
 msgid "Go to Contacts"
@@ -1024,17 +1059,27 @@ msgstr "Acciones sobre un mensaje"
 msgid "Reply to all"
 msgstr "Responder a todos"
 
+#, fuzzy
+msgid "Archive the conversation"
+msgstr "Conversación completa"
+
 msgid "Mark as spam"
 msgstr "Marcar como spam"
 
 msgid "Star or unstar"
 msgstr "Destacar o quitar destacado"
 
-msgid "Mark as read"
-msgstr "Marcar como leído"
+#, fuzzy
+msgid "Mark the conversation as read"
+msgstr "Conversación completa"
 
-msgid "Mark as unread"
-msgstr "Marcar como no leído"
+#, fuzzy
+msgid "Mark the conversation as unread"
+msgstr "Marcar como leído o no leído"
+
+#, fuzzy
+msgid "Mark as unread from this message on"
+msgstr "Intentar enviar este mensaje ahora"
 
 msgid "Select this row (for a bulk action)"
 msgstr "Seleccionar esta fila (para una acción en lote)"
@@ -1153,6 +1198,9 @@ msgid "Quit Hylki entirely"
 msgstr "Salir completamente de Hylki"
 
 msgid "Command palette: search actions, folders and tags"
+msgstr ""
+
+msgid "Command palette, actions only"
 msgstr ""
 
 msgid "This list"
@@ -1289,6 +1337,13 @@ msgstr "{date} a las {time}"
 msgid "Evolution Data Server is not available"
 msgstr "Evolution Data Server no está disponible"
 
+#, fuzzy
+msgid ""
+"The directory cannot be searched without signing in. Add a sign-in in "
+"Settings → LDAP Directories."
+msgstr ""
+"El directorio necesita una contraseña. Añádela en Ajustes → Directorios LDAP."
+
 msgid "The directory did not accept the password."
 msgstr "El directorio no aceptó la contraseña."
 
@@ -1319,6 +1374,9 @@ msgstr ""
 msgid "The directory needs a password. Add it in Settings → LDAP Directories."
 msgstr ""
 "El directorio necesita una contraseña. Añádela en Ajustes → Directorios LDAP."
+
+msgid "{name} did not answer: {error}"
+msgstr "{name} no respondió: {error}"
 
 msgid "A contact needs a name or an email address"
 msgstr ""
@@ -3366,11 +3424,11 @@ msgstr ""
 msgid "Save as Template"
 msgstr "Guardar como plantilla"
 
-msgid "Delete Draft"
-msgstr "Eliminar borrador"
-
 msgid "Move this draft to Trash"
 msgstr "Mover este borrador a la Papelera"
+
+msgid "Delete Draft"
+msgstr "Eliminar borrador"
 
 msgid "Schedule"
 msgstr "Programar"
@@ -3402,6 +3460,9 @@ msgstr "Cifrar con OpenPGP usando la clave de cada destinatario"
 msgid "Sign with your OpenPGP key"
 msgstr "Firmar con tu clave OpenPGP"
 
+#. Save Draft, Save as Template and Delete Draft are not here:
+#. the Save Draft button and its arrow stay in the header at
+#. any width.
 msgid "Attach files"
 msgstr "Adjuntar archivos"
 
@@ -3530,6 +3591,16 @@ msgstr "Escribe algo primero o selecciona el texto que quieras traducir."
 
 msgid "Could not translate"
 msgstr "No se pudo traducir"
+
+#, fuzzy
+msgid "Switch to plain text?"
+msgstr "Pegar como texto sin formato"
+
+msgid "Formatting, images and links are removed."
+msgstr ""
+
+msgid "Switch"
+msgstr ""
 
 msgid "Cannot send with OpenPGP"
 msgstr "No se puede enviar con OpenPGP"
@@ -3672,6 +3743,10 @@ msgstr "Nombre"
 msgid "Last name"
 msgstr "Apellidos"
 
+#, fuzzy
+msgid "In Directories"
+msgstr "Directorios LDAP"
+
 msgid "Delete Contact?"
 msgstr "¿Eliminar contacto?"
 
@@ -3705,6 +3780,10 @@ msgstr ""
 #. ---- note ----
 msgid "Note"
 msgstr ""
+
+#, fuzzy
+msgid "Directory"
+msgstr "Añadir directorio"
 
 #, fuzzy
 msgid "Address Book"
@@ -3759,10 +3838,11 @@ msgstr "Directorios LDAP"
 msgid "LDAP directories"
 msgstr "Directorios LDAP"
 
+#, fuzzy
 msgid ""
 "The composer looks up recipients in these directories as you type an "
-"address. They are kept by Evolution Data Server, so a directory set up in "
-"Evolution is listed here too."
+"address, and a search in Contacts looks in them too. They are kept by "
+"Evolution Data Server, so a directory set up in Evolution is listed here too."
 msgstr ""
 "El redactor busca destinatarios en estos directorios mientras escribes una "
 "dirección. Los gestiona Evolution Data Server, por lo que los directorios "
@@ -3794,9 +3874,6 @@ msgstr ""
 
 msgid "Connected to {name}"
 msgstr "Conectado a {name}"
-
-msgid "{name} did not answer: {error}"
-msgstr "{name} no respondió: {error}"
 
 msgid "The server took too long to answer."
 msgstr ""
@@ -3974,6 +4051,10 @@ msgstr "No hay mensajes"
 msgid "There's nothing here right now."
 msgstr "Ahora mismo no hay nada aquí."
 
+#, fuzzy
+msgid "Customize Columns…"
+msgstr "Personalizar barra de herramientas…"
+
 msgid "Remove Stars"
 msgstr "Quitar destacados"
 
@@ -3994,6 +4075,24 @@ msgstr "Buscar carpetas"
 msgid "Search this folder"
 msgstr "Buscar carpetas"
 
+msgid "Today"
+msgstr ""
+
+#, fuzzy
+msgid "Yesterday"
+msgstr "ayer"
+
+#, fuzzy
+msgid "Last 7 days"
+msgstr "Apellidos"
+
+msgid "Last 14 days"
+msgstr ""
+
+#, fuzzy
+msgid "Older"
+msgstr "Carpeta"
+
 msgid "Due"
 msgstr "Vence"
 
@@ -4008,6 +4107,9 @@ msgstr "Importancia alta"
 msgid "Low importance"
 msgstr "Importancia baja"
 
+msgid "Mark as read"
+msgstr "Marcar como leído"
+
 msgid "Move to…"
 msgstr "Mover a…"
 
@@ -4016,6 +4118,9 @@ msgstr "No es correo no deseado"
 
 msgid "Add sender to Contacts"
 msgstr "Añadir remitente a Contactos"
+
+msgid "Mark as unread"
+msgstr "Marcar como no leído"
 
 msgid "Remove star"
 msgstr "Quitar destacado"
@@ -4447,11 +4552,11 @@ msgstr "Fecha"
 msgid "Clear all"
 msgstr "Borrar todo"
 
-msgid "Collapse status bar"
-msgstr "Contraer barra de estado"
-
 msgid "Export log"
 msgstr "Exportar registro"
+
+msgid "Collapse status bar"
+msgstr "Contraer barra de estado"
 
 msgid "Status bar ({n})"
 msgstr "Barra de estado ({n})"
@@ -4671,6 +4776,13 @@ msgstr "Icono de la aplicación"
 
 msgid "Symbolic"
 msgstr "Simbólico"
+
+#, fuzzy
+msgid "All unread inbox mail"
+msgstr "Contar correo sin leer"
+
+msgid "New since last in front"
+msgstr ""
 
 msgid "Follow system"
 msgstr "Seguir el sistema"
@@ -5454,6 +5566,14 @@ msgstr ""
 "Cuánto contenido de cada mensaje mostrar bajo su asunto. Desactivarlo "
 "también evita que se descarguen las vistas previas."
 
+msgid "Group by date"
+msgstr ""
+
+msgid ""
+"Headings divide a list sorted by date into Today, Yesterday, Last 7 days, "
+"Last 14 days and Older."
+msgstr ""
+
 #, fuzzy
 msgid "Tint tagged messages"
 msgstr "Se etiquetó {n} mensaje"
@@ -5550,6 +5670,15 @@ msgid ""
 msgstr ""
 "Muestra los nombres de las columnas sobre la lista. Haz clic en uno para "
 "ordenar la lista y vuelve a hacer clic para invertir el orden."
+
+#, fuzzy
+msgid "Fit columns to the list"
+msgstr "Suelta aquí una columna para ocultarla"
+
+msgid ""
+"The name and tag columns narrow as the list does. Off, every column keeps "
+"its width and a list too narrow for them scrolls sideways."
+msgstr ""
 
 msgid "Group messages by conversation"
 msgstr "Agrupar mensajes por conversación"
@@ -5925,6 +6054,30 @@ msgstr ""
 "formato se envía sin formato. El botón de formato del redactor permite "
 "cambiarlo para cada mensaje."
 
+msgid "Font"
+msgstr "Fuente"
+
+msgid ""
+"The font rich-text messages are written and sent in. Default leaves it to "
+"the recipient's own font."
+msgstr ""
+
+#, fuzzy
+msgid "Font size"
+msgstr "Tamaño del texto"
+
+msgid "The size, in points, rich-text messages are written and sent in."
+msgstr ""
+
+#, fuzzy
+msgid "Reply in the original's format"
+msgstr "Responder con los archivos"
+
+msgid ""
+"Replies to and forwards of mail sent as plain text are written in plain "
+"text. Other mail starts in the format above."
+msgstr ""
+
 msgid "Signature in replies"
 msgstr "Firma en las respuestas"
 
@@ -6136,10 +6289,11 @@ msgstr ""
 msgid "Unread count on the app icon"
 msgstr "Contador de no leídos en el icono de la aplicación"
 
+#, fuzzy
 msgid ""
-"The number of unread inbox messages on Hylki's icon in the dock or task "
-"manager. KDE Plasma shows it; GNOME needs a dock extension such as Dash to "
-"Dock."
+"A number on Hylki's icon in the dock or task manager: every unread inbox "
+"message, or only those that arrived while Hylki was not in front. KDE Plasma "
+"shows it; GNOME needs a dock extension such as Dash to Dock."
 msgstr ""
 "El número de mensajes sin leer de las bandejas de entrada en el icono de "
 "Hylki del dock o gestor de tareas. KDE Plasma lo muestra; GNOME necesita una "
@@ -6161,8 +6315,15 @@ msgid "Gmail keys"
 msgstr "Dirección de correo electrónico"
 
 msgid ""
-"Single-key shortcuts as Gmail has them: j/k move without opening, o opens, e "
-"archives, # deletes, g then a letter goes to a folder."
+"Needs single-key shortcuts on. Swaps in the keys Gmail has: j/k move without "
+"opening, o opens, e archives, # deletes, g then a letter goes to a folder."
+msgstr ""
+
+#, fuzzy
+msgid "Status bar"
+msgstr "Barra de estado ({n})"
+
+msgid "Where the bar with errors and the console opens"
 msgstr ""
 
 msgid "Console mode"
@@ -6357,6 +6518,14 @@ msgstr ""
 msgid "30 days"
 msgstr ""
 
+#, fuzzy
+msgid "Bottom of the window"
+msgstr "Redactar en la ventana principal"
+
+#, fuzzy
+msgid "Top of the window"
+msgstr "Redactar en la ventana principal"
+
 msgid "When displayed"
 msgstr "Al mostrarse"
 
@@ -6480,6 +6649,9 @@ msgstr "Swing"
 msgid "Custom File"
 msgstr "Archivo personalizado"
 
+msgid "Other Font…"
+msgstr ""
+
 msgid "Print Message"
 msgstr "Imprimir mensaje"
 
@@ -6564,16 +6736,6 @@ msgstr "Color personalizado…"
 
 msgid "Paragraph style"
 msgstr "Estilo de párrafo"
-
-msgid "Font"
-msgstr "Fuente"
-
-msgid "Other Font…"
-msgstr ""
-
-#, fuzzy
-msgid "Font size"
-msgstr "Tamaño del texto"
 
 msgid "Bold"
 msgstr "Negrita"

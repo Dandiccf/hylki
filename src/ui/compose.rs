@@ -26,7 +26,7 @@ pub enum Field {
 fn sig_html(sig: &str, dashes: bool) -> String {
     let body = rich_editor::signature_to_html(sig);
     let dashes = if dashes { "-- <br>" } else { "" };
-    format!("<div class=\"vireo-sig\"><br>{dashes}{body}</div>")
+    format!("<div class=\"hylki-sig\"><br>{dashes}{body}</div>")
 }
 
 /// A body as Markdown, keeping the empty line a reply opens with above its
@@ -243,6 +243,9 @@ pub struct ComposePrefill {
     /// Editing a template (#360): `draft_origin` is where it is kept, and
     /// saving puts it back there rather than in Drafts.
     pub template: bool,
+    /// The message replied to or forwarded had no HTML part (#436): with
+    /// the setting on, the composer opens in plain text.
+    pub original_plain: bool,
 }
 
 /// Everything the compose pane needs to open.
@@ -299,11 +302,10 @@ pub struct Compose {
     outbox_origin: Option<u32>,
     /// Recipient suggestions, filtered as the user types.
     suggestions: Vec<Suggestion>,
-    /// Whether an LDAP directory is switched on (#307), found once the
-    /// composer opens; without one, typing asks nothing.
-    directories: bool,
     /// The Microsoft 365 accounts whose organization directory is searched
-    /// too (#410), found with the LDAP directories.
+    /// too (#410), found once the composer opens. The LDAP directories are
+    /// not: one switched on in Evolution while the composer is open counts
+    /// as well (#307), and [`crate::directory::search`] keeps the list.
     graph_directories: std::sync::Arc<Vec<crate::config::AccountConfig>>,
     /// What the directories answered for the recipient being typed.
     directory_matches: Vec<Suggestion>,
@@ -505,6 +507,11 @@ pub enum ComposeInput {
     ToggleSign(bool),
     /// Pick what this message is written in.
     SetFormat(ComposeFormat),
+    /// Rich text to plain text would take formatting, pictures or links
+    /// out of the body: ask first (#424).
+    AskPlain,
+    /// Put the message in this format, now that nothing stands in the way.
+    ApplyFormat(ComposeFormat),
     /// The header's format button: the four formats as a menu.
     FormatMenu,
     /// The Translate button (#327): read the quoted message's language
@@ -584,12 +591,12 @@ pub enum ComposeInput {
     OpenContacts,
     /// The given recipient field changed — refresh autocomplete.
     Suggest(Field),
-    /// Whether any LDAP directory is switched on (#307), and the accounts
-    /// whose organization directory is searched (#410).
-    DirectoriesKnown { ldap: bool, graph: Vec<crate::config::AccountConfig> },
+    /// The accounts whose organization directory is searched (#410).
+    DirectoriesKnown { graph: Vec<crate::config::AccountConfig> },
     /// The typing paused: ask the directories, unless it went on since.
     DirectoryLookup { field: Field, token: String, generation: u64 },
-    DirectoryResults { field: Field, token: String, generation: u64, matches: Vec<Suggestion> },
+    /// What the directories answered, and the failures not shown before.
+    DirectoryResults { field: Field, token: String, generation: u64, matches: Vec<Suggestion>, errors: Vec<String> },
     /// Addresses just sent to from another composer: into this one's
     /// suggestions at once, without waiting for a reopen.
     AddSuggestions(Vec<Suggestion>),
@@ -644,6 +651,8 @@ pub enum ComposeOutput {
     /// menu (#365): the whole new setting, saved app-wide like the
     /// Settings switches.
     SetSpellcheckLangs(String),
+    /// A directory could not be asked (#307): for the status bar, once.
+    DirectoryError(String),
 }
 
 #[relm4::component(pub)]
@@ -722,18 +731,26 @@ impl Component for Compose {
                                                 sender.input(ComposeInput::SaveAsTemplate);
                                             },
                                         },
+                                        // Only while editing an existing draft: the
+                                        // message is moved to Trash, not saved, and
+                                        // the editor closes.
+                                        gtk::Button {
+                                            add_css_class: "flat",
+                                            add_css_class: "context-menu-item",
+                                            set_halign: gtk::Align::Fill,
+                                            set_tooltip_text: Some(i18n("Move this draft to Trash").as_str()),
+                                            #[watch]
+                                            set_visible: model.draft_origin.is_some(),
+                                            #[wrap(Some)]
+                                            set_child = &gtk::Label { set_label: &i18n("Delete Draft"), set_halign: gtk::Align::Start },
+                                            connect_clicked[sender] => move |b| {
+                                                b.ancestor(gtk::Popover::static_type()).and_downcast::<gtk::Popover>().map(|p| p.popdown());
+                                                sender.input(ComposeInput::DeleteDraft);
+                                            },
+                                        },
                                     },
                                 },
                             },
-                        },
-                        // Only while editing an existing draft: the message is
-                        // moved to Trash, not saved, and the editor closes.
-                        pack_start = &gtk::Button {
-                            set_label: &i18n("Delete Draft"),
-                            set_tooltip_text: Some(i18n("Move this draft to Trash").as_str()),
-                            #[watch]
-                            set_visible: model.draft_origin.is_some() && !model.template && !model.narrow,
-                            connect_clicked => ComposeInput::DeleteDraft,
                         },
                         // Send, with Send Later beside it (#145): presets, or a
                         // date and time of your own.
@@ -1106,7 +1123,7 @@ impl Component for Compose {
                 .flat_map(|a| super::rich_editor::remote_image_urls(&a.signature))
                 .collect::<Vec<_>>()
         });
-        let editor = RichEditor::new(&content, remote_images.as_deref());
+        let editor = RichEditor::new(&content, remote_images.as_deref(), format == ComposeFormat::Plain);
         editor.set_formatting_visible(format == ComposeFormat::Rich);
         // A source format starts from the same content, written out as
         // source: a reply's quoted original becomes `> ` lines in Markdown,
@@ -1117,6 +1134,14 @@ impl Component for Compose {
                 editor.set_source(SourceKind::Html, &crate::markdown::pretty_html(&content))
             }
             ComposeFormat::Rich | ComposeFormat::Plain => {}
+        }
+        // HYLKI_SHOWCASE_PLAIN_LOG also logs the body a composer opens with
+        // (demo only), to check a reply started in plain text (#436).
+        if std::env::var_os("HYLKI_SHOWCASE_PLAIN_LOG").is_some() && std::env::var_os("HYLKI_DEMO").is_some() {
+            let ed = editor.clone();
+            gtk::glib::timeout_add_local_once(std::time::Duration::from_millis(2500), move || {
+                ed.eval(SHOWCASE_PLAIN_LOG, move |v| tracing::info!("showcase plain: opened {format:?} {v}"));
+            });
         }
         // The format chooser and the preview toggle belong with the other
         // formatting controls, at the far end of the same row: a header
@@ -1228,7 +1253,6 @@ impl Component for Compose {
             attachments: prefill_attachments,
             attach_thumbs: Default::default(),
             suggestions,
-            directories: false,
             graph_directories: Default::default(),
             directory_matches: Vec::new(),
             directory_generation: 0,
@@ -1566,9 +1590,8 @@ impl Component for Compose {
         {
             let s = sender.input_sender().clone();
             std::thread::spawn(move || {
-                let ldap = crate::directory::list().is_ok_and(|d| d.iter().any(|d| d.enabled));
                 let graph = crate::graph_directory::accounts();
-                let _ = s.send(ComposeInput::DirectoriesKnown { ldap, graph });
+                let _ = s.send(ComposeInput::DirectoriesKnown { graph });
             });
         }
 
@@ -1801,6 +1824,19 @@ impl Component for Compose {
             ComposeInput::SetNarrow(narrow) => {
                 self.narrow = narrow;
                 self.dress_format_buttons();
+                // Folded, the header is as narrow as it gets: the pane goes
+                // no narrower, so a small window stops shrinking rather than
+                // cutting Send off at its edge. Unfolded, the floor drops
+                // back, or the pane could never get narrow enough to fold.
+                let (root, header) = (root.clone(), widgets.header.clone());
+                gtk::glib::idle_add_local_once(move || {
+                    let floor = if narrow {
+                        header.measure(gtk::Orientation::Horizontal, -1).0.max(COMPOSE_MIN_WIDTH)
+                    } else {
+                        COMPOSE_MIN_WIDTH
+                    };
+                    root.set_size_request(floor, 200);
+                });
             }
 
             ComposeInput::OverflowMenu => {
@@ -1809,12 +1845,9 @@ impl Component for Compose {
                     MenuEntry::new(&label, move || s.input(msg()))
                         .icon(&format!("{icon}-symbolic"))
                 };
-                // Save Draft and Save as Template are not here: the Save
-                // Draft button and its arrow stay in the header at any width.
-                let mut drafts = Vec::new();
-                if self.draft_origin.is_some() && !self.template {
-                    drafts.push(entry(i18n("Delete Draft"), "user-trash", || ComposeInput::DeleteDraft));
-                }
+                // Save Draft, Save as Template and Delete Draft are not here:
+                // the Save Draft button and its arrow stay in the header at
+                // any width.
                 let mut attach = vec![entry(i18n("Attach files"), "mail-attachment", || ComposeInput::AttachFiles)];
                 if !self.cloud_accounts.is_empty() {
                     attach.push(
@@ -1854,7 +1887,7 @@ impl Component for Compose {
                     });
                 }
                 let btn = &widgets.overflow_btn;
-                show_context_menu(btn, (btn.width() / 2) as f64, btn.height() as f64, vec![drafts, attach, pgp, host]);
+                show_context_menu(btn, (btn.width() / 2) as f64, btn.height() as f64, vec![attach, pgp, host]);
             }
 
             ComposeInput::CloudAttach => {
@@ -1919,7 +1952,7 @@ impl Component for Compose {
                 self.cloud_busy = self.cloud_busy.saturating_sub(1);
                 match result {
                     Ok(share) => {
-                        let id = format!("vireo-cloud-{}", crate::rng::token(8).unwrap_or_else(|_| share.size.to_string()));
+                        let id = format!("hylki-cloud-{}", crate::rng::token(8).unwrap_or_else(|_| share.size.to_string()));
                         let mut caption = crate::models::human_size(share.size);
                         if let Some(d) = &share.expires {
                             caption.push_str(&format!(", {}", i18n_f("link expires {date}", &[("date", d)])));
@@ -1928,7 +1961,7 @@ impl Component for Compose {
                             caption.push_str(&format!(", {}", i18n("password-protected")));
                         }
                         let html = format!(
-                            "<p id=\"{id}\" data-vireo-cloud=\"1\">\u{1F4CE} <a href=\"{url}\">{name}</a> ({caption})</p>",
+                            "<p id=\"{id}\" data-hylki-cloud=\"1\">\u{1F4CE} <a href=\"{url}\">{name}</a> ({caption})</p>",
                             url = html_escape(&share.url),
                             name = html_escape(&share.name),
                             caption = html_escape(&caption),
@@ -1966,10 +1999,11 @@ impl Component for Compose {
                         self.editor.run_js(&format!(
                             "(function(){{var d=document.createElement('div');d.innerHTML='{}';\
                              var p=d.firstChild;var b=document.body;\
-                             var first=null;var cands=b.querySelectorAll('.vireo-sig,.vireo-quote-attr,blockquote');\
+                             var first=null;var cands=b.querySelectorAll('.hylki-sig,.hylki-quote-attr,blockquote');\
                              for(var i=0;i<cands.length;i++){{var t=cands[i];while(t.parentNode&&t.parentNode!==b)t=t.parentNode;\
                              if(t.parentNode===b&&(!first||(t.compareDocumentPosition(first)&Node.DOCUMENT_POSITION_FOLLOWING)))first=t;}}\
                              if(first)b.insertBefore(p,first);else b.appendChild(p);\
+                             window.__hylkiPlainFix&&window.__hylkiPlainFix();\
                              document.dispatchEvent(new Event('input'));}})()",
                             js_escape(&html)
                         ));
@@ -2254,8 +2288,7 @@ impl Component for Compose {
                 self.directory_generation = self.directory_generation.wrapping_add(1);
                 self.directory_matches.clear();
                 let token = recipient_token(row);
-                let any = self.directories || !self.graph_directories.is_empty();
-                if any && token.chars().count() >= crate::directory::MIN_QUERY {
+                if token.chars().count() >= crate::directory::MIN_QUERY {
                     // A directory is asked once the typing pauses, not per key.
                     let generation = self.directory_generation;
                     let s = sender.input_sender().clone();
@@ -2266,8 +2299,7 @@ impl Component for Compose {
                 self.show_completion(field, row);
             }
 
-            ComposeInput::DirectoriesKnown { ldap, graph } => {
-                self.directories = ldap;
+            ComposeInput::DirectoriesKnown { graph } => {
                 self.graph_directories = std::sync::Arc::new(graph);
             }
 
@@ -2275,25 +2307,29 @@ impl Component for Compose {
                 if generation == self.directory_generation {
                     let s = sender.input_sender().clone();
                     let graph = self.graph_directories.clone();
-                    let ldap = self.directories;
                     std::thread::spawn(move || {
                         // Both at once: the slower decides when the list
                         // grows, not the two one after the other.
-                        let matches = std::thread::scope(|scope| {
+                        let (matches, errors) = std::thread::scope(|scope| {
                             let org = (!graph.is_empty())
                                 .then(|| scope.spawn(|| crate::graph_directory::search(&token, &graph)));
-                            let mut matches = if ldap { crate::directory::search(&token) } else { Vec::new() };
+                            let (mut matches, errors) = crate::directory::search(&token);
                             if let Some(found) = org.and_then(|h| h.join().ok()) {
                                 matches.extend(found);
                             }
-                            matches
+                            (matches, errors)
                         });
-                        let _ = s.send(ComposeInput::DirectoryResults { field, token, generation, matches });
+                        let _ = s.send(ComposeInput::DirectoryResults { field, token, generation, matches, errors });
                     });
                 }
             }
 
-            ComposeInput::DirectoryResults { field, token, generation, matches } => {
+            ComposeInput::DirectoryResults { field, token, generation, matches, errors } => {
+                // A directory that cannot be asked says so once, whatever
+                // came of the typing meanwhile.
+                for e in errors {
+                    let _ = sender.output(ComposeOutput::DirectoryError(e));
+                }
                 let row = match field {
                     Field::To => &widgets.to_row,
                     Field::Cc => &widgets.cc_row,
@@ -2580,6 +2616,63 @@ impl Component for Compose {
             }
 
             ComposeInput::SetFormat(to) => {
+                if to == self.format {
+                    break 'handle;
+                }
+                // Plain text shows only what is sent (#424), so moving a
+                // formatted body there drops what it cannot show, and the
+                // way back does not bring it back.
+                if self.format == ComposeFormat::Rich && to == ComposeFormat::Plain {
+                    let s = sender.clone();
+                    self.editor.eval(
+                        "String(!!(window.__hylkiPlainLoses&&window.__hylkiPlainLoses()))",
+                        move |loses| {
+                            s.input(if loses == "true" {
+                                ComposeInput::AskPlain
+                            } else {
+                                ComposeInput::ApplyFormat(ComposeFormat::Plain)
+                            });
+                        },
+                    );
+                    break 'handle;
+                }
+                sender.input(ComposeInput::ApplyFormat(to));
+            }
+
+            ComposeInput::AskPlain => {
+                let dialog = adw::AlertDialog::new(
+                    Some(&i18n("Switch to plain text?")),
+                    Some(&i18n("Formatting, images and links are removed.")),
+                );
+                dialog.add_response("cancel", &i18n("Cancel"));
+                dialog.add_response("switch", &i18n("Switch"));
+                dialog.set_response_appearance("switch", adw::ResponseAppearance::Destructive);
+                dialog.set_default_response(Some("cancel"));
+                dialog.set_close_response("cancel");
+                let s = sender.input_sender().clone();
+                dialog.connect_response(None, move |_, resp| {
+                    if resp == "switch" {
+                        let _ = s.send(ComposeInput::ApplyFormat(ComposeFormat::Plain));
+                    }
+                });
+                dialog.present(Some(root));
+                // HYLKI_SHOWCASE_PLAIN_ANSWER=switch|cancel answers it two
+                // seconds on (demo only), for a check without a pointer.
+                if let (Ok(answer), Some(_)) =
+                    (std::env::var("HYLKI_SHOWCASE_PLAIN_ANSWER"), std::env::var_os("HYLKI_DEMO"))
+                {
+                    tracing::info!("showcase plain: asked before switching");
+                    let (d, s) = (dialog.clone(), sender.input_sender().clone());
+                    gtk::glib::timeout_add_seconds_local_once(2, move || {
+                        d.force_close();
+                        if answer == "switch" {
+                            let _ = s.send(ComposeInput::ApplyFormat(ComposeFormat::Plain));
+                        }
+                    });
+                }
+            }
+
+            ComposeInput::ApplyFormat(to) => {
                 let from = self.format;
                 if to == from {
                     break 'handle;
@@ -2594,15 +2687,13 @@ impl Component for Compose {
                 // A preview of the old format's render would be a lie about
                 // the new one.
                 self.preview_btn.set_active(false);
-                // Rich and plain text share one document — plain text only
-                // decides what is *sent* — so switching between them must
-                // not reload it and throw away the undo history and caret.
-                if from.is_source() || to.is_source() {
-                    let s = sender.clone();
-                    self.read_body_as(from, false, move |body, _| {
-                        s.input(ComposeInput::LoadAs { from, to, body });
-                    });
-                }
+                // Every change reloads the body, plain text included: it
+                // shows the message flattened to what is sent (#424), so it
+                // cannot share the rich document's undo history.
+                let s = sender.clone();
+                self.read_body_as(from, false, move |body, _| {
+                    s.input(ComposeInput::LoadAs { from, to, body });
+                });
             }
 
             ComposeInput::LoadAs { from, to, body } => {
@@ -2612,6 +2703,7 @@ impl Component for Compose {
                     ComposeFormat::Markdown => crate::markdown::to_html(&body),
                     _ => body,
                 };
+                self.editor.set_plain(to == ComposeFormat::Plain);
                 match to {
                     ComposeFormat::Markdown => self.editor.set_source(SourceKind::Markdown, &markdown_body(&html)),
                     ComposeFormat::Html => self
@@ -2620,6 +2712,14 @@ impl Component for Compose {
                     ComposeFormat::Rich | ComposeFormat::Plain => self.editor.set_html(&html),
                 }
                 self.editor.grab_focus();
+                // HYLKI_SHOWCASE_PLAIN_LOG logs the reloaded body, its font
+                // and the text it sends (demo only).
+                if std::env::var_os("HYLKI_SHOWCASE_PLAIN_LOG").is_some() && std::env::var_os("HYLKI_DEMO").is_some() {
+                    let ed = self.editor.clone();
+                    gtk::glib::timeout_add_local_once(std::time::Duration::from_millis(1500), move || {
+                        ed.eval(SHOWCASE_PLAIN_LOG, move |v| tracing::info!("showcase plain: {to:?} {v}"));
+                    });
+                }
             }
 
             ComposeInput::TogglePreview(on) => {
@@ -3058,10 +3158,11 @@ impl Compose {
             // above the quoted original or at the end (#237).
             let anchor = self.rich_sig_anchor();
             let js = format!(
-                "(function(){{var s=document.querySelector('.vireo-sig');\
+                "(function(){{var s=document.querySelector('.hylki-sig');\
                  var h='{}';\
                  if(s){{if(h){{s.outerHTML=h;}}else{{s.remove();}}}}\
-                 else if(h){{{anchor}}}}})()",
+                 else if(h){{{anchor}}}\
+                 window.__hylkiPlainFix&&window.__hylkiPlainFix();}})()",
                 rich_editor::js_escape(&replacement)
             );
             self.editor.run_js(&js);
@@ -3078,7 +3179,7 @@ impl Compose {
         match (self.signature_position, kind) {
             (SignaturePosition::BelowQuote, _) => "v=v+n;",
             (SignaturePosition::AboveQuote, SourceKind::Html) => {
-                "var q=v.search(/<p class=\"vireo-quote-attr\"|<blockquote/);\
+                "var q=v.search(/<p class=\"hylki-quote-attr\"|<blockquote/);\
                  if(q<0){v=v+n;}else{v=v.slice(0,q).replace(/\\s*$/,'')+n+v.slice(q);}"
             }
             (SignaturePosition::AboveQuote, SourceKind::Markdown) => {
@@ -3097,7 +3198,7 @@ impl Compose {
         match self.signature_position {
             SignaturePosition::AboveQuote => {
                 "var b=document.body;var q=null;\
-                 var cands=b.querySelectorAll('.vireo-quote-attr,blockquote');\
+                 var cands=b.querySelectorAll('.hylki-quote-attr,blockquote');\
                  for(var i=0;i<cands.length;i++){var t=cands[i];\
                  while(t.parentNode&&t.parentNode!==b)t=t.parentNode;\
                  if(t.parentNode===b&&(!q||(t.compareDocumentPosition(q)&Node.DOCUMENT_POSITION_FOLLOWING)))q=t;}\
@@ -3150,7 +3251,7 @@ t.value=v;if(a>=0){t.selectionStart=t.selectionEnd=a;}window.__hylkiDirty=true;}
         // stands as a block of its own between the two halves; an empty
         // line gives up its place to it.
         let js = r#"(function(){var b=document.body,h=@SIG@,where=@WHERE@;
-var olds=[].filter.call(b.querySelectorAll('.vireo-sig'),function(s){return !s.closest('blockquote');});
+var olds=[].filter.call(b.querySelectorAll('.hylki-sig'),function(s){return !s.closest('blockquote');});
 var sel=window.getSelection(),r=null;
 if(where==='cursor'&&sel.rangeCount){r=sel.getRangeAt(0).cloneRange();r.collapse(false);if(!b.contains(r.startContainer)||r.startContainer===b&&b.childNodes.length===0)r=null;}
 if(r){for(var k=0;k<olds.length;k++){if(olds[k].contains(r.startContainer)){r.setStartBefore(olds[k]);r.collapse(true);}}}
@@ -3170,6 +3271,7 @@ if(where==='start'){b.insertBefore(sig,b.firstChild);}
 else if(where==='end'){b.appendChild(sig);}
 else if(r){b.insertBefore(sig,spot);var c=document.createRange();c.setStartBefore(sig);c.collapse(true);sel.removeAllRanges();sel.addRange(c);}
 else{@ANCHOR@}
+window.__hylkiPlainFix&&window.__hylkiPlainFix();
 window.__hylkiDirty=true;})()"#
             .replace("@WHERE@", &format!("'{place_js}'"))
             .replace("@ANCHOR@", self.rich_sig_anchor())
@@ -4345,6 +4447,13 @@ pub enum TranslateHow {
     Html,
 }
 
+/// What HYLKI_SHOWCASE_PLAIN_LOG reports about the body (demo only).
+const SHOWCASE_PLAIN_LOG: &str = r#"JSON.stringify({plain:!!window.__hylkiPlain,
+font:document.body?getComputedStyle(document.body).fontFamily:'',
+bold:document.body&&document.body.querySelector('b,strong')?getComputedStyle(document.body.querySelector('b,strong')).fontWeight:'',
+html:document.body?document.body.innerHTML:document.documentElement.outerHTML.slice(0,400),
+text:window.__hylkiBodyText?window.__hylkiBodyText():''})"#;
+
 /// The quoted message's text, for telling which language to offer first:
 /// the reply's quote in the rich document, or the quoted lines of a
 /// Markdown or HTML source.
@@ -4352,7 +4461,7 @@ const TR_QUOTE_TEXT: &str = r#"(function(){var t=document.getElementById('src');
 if(t){var v=t.value;var i=v.search(/<blockquote/i);
 if(i>=0)return v.slice(i).replace(/<[^>]*>/g,' ').slice(0,4000);
 return v.split('\n').filter(function(l){return /^\s*>/.test(l);}).map(function(l){return l.replace(/^\s*>+\s?/,'');}).join('\n').slice(0,4000);}
-var q=document.querySelector('blockquote.vireo-quote-mail')||document.querySelector('blockquote');
+var q=document.querySelector('blockquote.hylki-quote-mail')||document.querySelector('blockquote');
 return q?q.innerText.slice(0,4000):'';})()"#;
 
 /// What the rich document asks to have translated: the selection, else
@@ -4365,7 +4474,7 @@ return q?q.innerText.slice(0,4000):'';})()"#;
 const TR_RICH_BEGIN: &str = r#"(function(){var b=document.body;if(!b)return '';
 var s=getSelection(),r=null,sel=false;
 if(s.rangeCount&&!s.isCollapsed&&b.contains(s.anchorNode)){r=s.getRangeAt(0).cloneRange();sel=true;}
-else{var first=null,c=b.querySelectorAll('.vireo-sig,.vireo-quote-attr,blockquote');
+else{var first=null,c=b.querySelectorAll('.hylki-sig,.hylki-quote-attr,blockquote');
 for(var i=0;i<c.length;i++){var t=c[i];while(t.parentNode&&t.parentNode!==b)t=t.parentNode;
 if(t.parentNode===b&&(!first||(t.compareDocumentPosition(first)&Node.DOCUMENT_POSITION_FOLLOWING)))first=t;}
 var kids=[];for(var n=b.firstChild;n&&n!==first;n=n.nextSibling)kids.push(n);
@@ -4396,7 +4505,7 @@ return JSON.stringify({parts:p,sel:sel});})()"#;
 const TR_RICH_END: &str = r#"(function(h){var b=document.body;if(!b)return;b.setAttribute('contenteditable','true');
 var r=window.__hylkiTr;window.__hylkiTr=null;if(!r)return;b.focus();
 var s=getSelection();s.removeAllRanges();s.addRange(r);
-document.execCommand('insertHTML',false,h);window.__hylkiDirty=true;window.__hylkiTrState='translated';if(!window.__hylkiTrWatch){window.__hylkiTrWatch=true;document.addEventListener('input',function(e){var st=window.__hylkiTrState;if(!st)return;var k=e.inputType||'';if(k==='historyUndo')window.__hylkiTrState=st==='translated'?'original':'';else if(k==='historyRedo')window.__hylkiTrState=st==='original'?'translated':'';else window.__hylkiTrState='';},true);}})(ARG)"#;
+document.execCommand('insertHTML',false,h);window.__hylkiPlainFix&&window.__hylkiPlainFix();window.__hylkiDirty=true;window.__hylkiTrState='translated';if(!window.__hylkiTrWatch){window.__hylkiTrWatch=true;document.addEventListener('input',function(e){var st=window.__hylkiTrState;if(!st)return;var k=e.inputType||'';if(k==='historyUndo')window.__hylkiTrState=st==='translated'?'original':'';else if(k==='historyRedo')window.__hylkiTrState=st==='original'?'translated':'';else window.__hylkiTrState='';},true);}})(ARG)"#;
 
 /// The source field's version of [`TR_RICH_BEGIN`]: the selection, else
 /// the text above the quote (and, in Markdown, its "wrote:" line) and the
@@ -4404,8 +4513,8 @@ document.execCommand('insertHTML',false,h);window.__hylkiDirty=true;window.__hyl
 const TR_SOURCE_BEGIN: &str = r#"(function(H){var t=document.getElementById('src');if(!t)return '';
 var v=t.value,a=t.selectionStart,e=t.selectionEnd,sel=e>a;
 if(!sel){a=0;e=v.length;
-var sig=H?v.search(/<div class="vireo-sig"/):v.indexOf('\n-- \n');if(sig>=0)e=Math.min(e,sig);
-var q=H?v.search(/<p class="vireo-quote-attr"|<blockquote/i):v.search(/(^|\n)[ \t]*>/);
+var sig=H?v.search(/<div class="hylki-sig"/):v.indexOf('\n-- \n');if(sig>=0)e=Math.min(e,sig);
+var q=H?v.search(/<p class="hylki-quote-attr"|<blockquote/i):v.search(/(^|\n)[ \t]*>/);
 if(q>=0){if(!H){var pre=v.slice(0,q).replace(/\s+$/,'');var ls=pre.lastIndexOf('\n');
 if(/(wrote|schrieb|a écrit|escribió|Forwarded message)/i.test(pre.slice(ls+1)))q=ls+1;}
 e=Math.min(e,q);}}
@@ -4428,7 +4537,7 @@ mod tests {
 
     #[test]
     fn a_markdown_reply_has_a_line_to_write_on_above_the_quote() {
-        let reply = "<p><br></p><p class=\"vireo-quote-attr\">On Monday, Ann wrote:</p><blockquote><p>Hi</p></blockquote>";
+        let reply = "<p><br></p><p class=\"hylki-quote-attr\">On Monday, Ann wrote:</p><blockquote><p>Hi</p></blockquote>";
         let md = super::markdown_body(reply);
         assert!(md.starts_with("\n\nOn Monday, Ann wrote:"), "{md:?}");
         // A new message stays empty, and written text is left as it is.
@@ -4441,8 +4550,8 @@ mod tests {
 
     #[test]
     fn the_separator_line_follows_the_setting() {
-        assert_eq!(sig_html("Ann", false), "<div class=\"vireo-sig\"><br>Ann</div>");
-        assert_eq!(sig_html("Ann", true), "<div class=\"vireo-sig\"><br>-- <br>Ann</div>");
+        assert_eq!(sig_html("Ann", false), "<div class=\"hylki-sig\"><br>Ann</div>");
+        assert_eq!(sig_html("Ann", true), "<div class=\"hylki-sig\"><br>-- <br>Ann</div>");
         assert!(!sig_source(SourceKind::Markdown, "Ann", false).contains("-- "));
         assert!(sig_source(SourceKind::Markdown, "Ann", true).starts_with("\n\n-- \n"));
         assert_eq!(sig_source(SourceKind::Markdown, "", true), "");

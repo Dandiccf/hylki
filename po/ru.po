@@ -431,6 +431,14 @@ msgstr "Теги"
 msgid "Smart Folder"
 msgstr "Сортировать папки"
 
+#, fuzzy
+msgid ""
+"Single-key shortcuts are switched off, and Gmail keys with them. Turn them "
+"on in Settings → System."
+msgstr ""
+"Одноклавишные сочетания отключены. Включите их в меню «Параметры» → "
+"«Система»."
+
 msgid ""
 "Single-key shortcuts are switched off. Turn them on in Settings → System."
 msgstr ""
@@ -489,6 +497,10 @@ msgstr "Редактировать шаблон"
 
 msgid "Add Sender to Contacts"
 msgstr "Добавить отправителя в контакты"
+
+#, fuzzy
+msgid "Create Filter from Message…"
+msgstr "Печать сообщения…"
 
 msgid "Block Remote Content"
 msgstr "Блокировать удалённый контент"
@@ -1009,7 +1021,9 @@ msgstr "Полные примечания к выпуску на GitHub"
 msgid "Move around"
 msgstr "Перемещаться"
 
-msgid "Move down or up the list without opening"
+msgid ""
+"Move down or up the list without opening; while reading, open the next or "
+"previous conversation"
 msgstr ""
 
 #, fuzzy
@@ -1023,8 +1037,29 @@ msgstr "Вернуться к списку сообщений"
 msgid "Next or previous message in the conversation"
 msgstr "Предыдущее сообщение в беседе"
 
-msgid "Go to Inbox, Starred, Sent, Drafts or Archive"
-msgstr ""
+#, fuzzy
+msgid "Expand or collapse every message of the conversation"
+msgstr "Предыдущее сообщение в беседе"
+
+#, fuzzy
+msgid "Go to Inbox"
+msgstr "Переместить во «Входящие»"
+
+#, fuzzy
+msgid "Go to Starred"
+msgstr "Не установлено"
+
+#, fuzzy
+msgid "Go to Sent"
+msgstr "Добавить в Контакты"
+
+#, fuzzy
+msgid "Go to Drafts"
+msgstr "Сохранить в «Черновики»"
+
+#, fuzzy
+msgid "Go to Archive"
+msgstr "Архив"
 
 #, fuzzy
 msgid "Go to Contacts"
@@ -1039,17 +1074,27 @@ msgstr "Выполнить действие над сообщением"
 msgid "Reply to all"
 msgstr "Ответить всем"
 
+#, fuzzy
+msgid "Archive the conversation"
+msgstr "Всё обсуждение"
+
 msgid "Mark as spam"
 msgstr "Отметить как спам"
 
 msgid "Star or unstar"
 msgstr "Поставить или снять отметку"
 
-msgid "Mark as read"
-msgstr "Отметить как прочитанное"
+#, fuzzy
+msgid "Mark the conversation as read"
+msgstr "Всё обсуждение"
 
-msgid "Mark as unread"
-msgstr "Отметить как непрочитанное"
+#, fuzzy
+msgid "Mark the conversation as unread"
+msgstr "Отметить прочитанным/непрочитанным"
+
+#, fuzzy
+msgid "Mark as unread from this message on"
+msgstr "Попробовать отправить сейчас"
 
 msgid "Select this row (for a bulk action)"
 msgstr "Выбрать эту строку (для массового действия)"
@@ -1168,6 +1213,9 @@ msgid "Quit Hylki entirely"
 msgstr "Полностью выйти из Hylki"
 
 msgid "Command palette: search actions, folders and tags"
+msgstr ""
+
+msgid "Command palette, actions only"
 msgstr ""
 
 msgid "This list"
@@ -1305,6 +1353,14 @@ msgstr "{date} в {time}"
 msgid "Evolution Data Server is not available"
 msgstr "Сервис Evolution Data Server недоступен"
 
+#, fuzzy
+msgid ""
+"The directory cannot be searched without signing in. Add a sign-in in "
+"Settings → LDAP Directories."
+msgstr ""
+"Для доступа к каталогу требуется пароль. Добавьте его в меню Параметры → "
+"Каталоги LDAP."
+
 msgid "The directory did not accept the password."
 msgstr "Каталог не принял пароль."
 
@@ -1336,6 +1392,9 @@ msgid "The directory needs a password. Add it in Settings → LDAP Directories."
 msgstr ""
 "Для доступа к каталогу требуется пароль. Добавьте его в меню Параметры → "
 "Каталоги LDAP."
+
+msgid "{name} did not answer: {error}"
+msgstr "Сервер {name} не ответил: {error}"
 
 msgid "A contact needs a name or an email address"
 msgstr ""
@@ -3377,11 +3436,11 @@ msgstr "Сохранять копию в «Шаблонах» для созда�
 msgid "Save as Template"
 msgstr "Сохранить как шаблон"
 
-msgid "Delete Draft"
-msgstr "Удалить черновик"
-
 msgid "Move this draft to Trash"
 msgstr "Переместить этот черновик в «Корзину»"
+
+msgid "Delete Draft"
+msgstr "Удалить черновик"
 
 msgid "Schedule"
 msgstr "Запланировать"
@@ -3413,6 +3472,9 @@ msgstr "Зашифровать с помощью OpenPGP для каждого �
 msgid "Sign with your OpenPGP key"
 msgstr "Подписать вашим ключом OpenPGP"
 
+#. Save Draft, Save as Template and Delete Draft are not here:
+#. the Save Draft button and its arrow stay in the header at
+#. any width.
 msgid "Attach files"
 msgstr "Прикрепить файлы"
 
@@ -3541,6 +3603,16 @@ msgstr "Сначала напишите что-нибудь или выбери�
 
 msgid "Could not translate"
 msgstr "Не удалось перевести"
+
+#, fuzzy
+msgid "Switch to plain text?"
+msgstr "Вставлять как обычный текст"
+
+msgid "Formatting, images and links are removed."
+msgstr ""
+
+msgid "Switch"
+msgstr ""
 
 msgid "Cannot send with OpenPGP"
 msgstr "Невозможно отправить с помощью OpenPGP"
@@ -3684,6 +3756,10 @@ msgstr "Имя"
 msgid "Last name"
 msgstr "Фамилия"
 
+#, fuzzy
+msgid "In Directories"
+msgstr "Каталоги LDAP"
+
 msgid "Delete Contact?"
 msgstr "Удалить контакт?"
 
@@ -3717,6 +3793,10 @@ msgstr ""
 #. ---- note ----
 msgid "Note"
 msgstr ""
+
+#, fuzzy
+msgid "Directory"
+msgstr "Добавить каталог"
 
 #, fuzzy
 msgid "Address Book"
@@ -3771,10 +3851,11 @@ msgstr "Каталоги LDAP"
 msgid "LDAP directories"
 msgstr "Каталоги LDAP"
 
+#, fuzzy
 msgid ""
 "The composer looks up recipients in these directories as you type an "
-"address. They are kept by Evolution Data Server, so a directory set up in "
-"Evolution is listed here too."
+"address, and a search in Contacts looks in them too. They are kept by "
+"Evolution Data Server, so a directory set up in Evolution is listed here too."
 msgstr ""
 "Редактор ищет получателей в этих каталогах по мере ввода адреса. Они "
 "управляются службой Evolution Data Server, поэтому настроенный в Evolution "
@@ -3805,9 +3886,6 @@ msgstr ""
 
 msgid "Connected to {name}"
 msgstr "Подключено к {name}"
-
-msgid "{name} did not answer: {error}"
-msgstr "Сервер {name} не ответил: {error}"
 
 msgid "The server took too long to answer."
 msgstr ""
@@ -3997,6 +4075,10 @@ msgstr "Нет сообщений"
 msgid "There's nothing here right now."
 msgstr "Здесь пока ничего нет."
 
+#, fuzzy
+msgid "Customize Columns…"
+msgstr "Настроить панель инструментов…"
+
 msgid "Remove Stars"
 msgstr "Снять отметки"
 
@@ -4017,6 +4099,24 @@ msgstr "Папки поиска"
 msgid "Search this folder"
 msgstr "Папки поиска"
 
+msgid "Today"
+msgstr ""
+
+#, fuzzy
+msgid "Yesterday"
+msgstr "вчера"
+
+#, fuzzy
+msgid "Last 7 days"
+msgstr "Фамилия"
+
+msgid "Last 14 days"
+msgstr ""
+
+#, fuzzy
+msgid "Older"
+msgstr "Папка"
+
 msgid "Due"
 msgstr "Срок"
 
@@ -4031,6 +4131,9 @@ msgstr "Высокая важность"
 msgid "Low importance"
 msgstr "Низкая важность"
 
+msgid "Mark as read"
+msgstr "Отметить как прочитанное"
+
 msgid "Move to…"
 msgstr "Переместить в…"
 
@@ -4039,6 +4142,9 @@ msgstr "Не спам"
 
 msgid "Add sender to Contacts"
 msgstr "Добавить отправителя в «Контакты»"
+
+msgid "Mark as unread"
+msgstr "Отметить как непрочитанное"
 
 msgid "Remove star"
 msgstr "Снять отметку"
@@ -4470,11 +4576,11 @@ msgstr "Дата"
 msgid "Clear all"
 msgstr "Очистить всё"
 
-msgid "Collapse status bar"
-msgstr "Свернуть строку состояния"
-
 msgid "Export log"
 msgstr "Экспортировать журнал"
+
+msgid "Collapse status bar"
+msgstr "Свернуть строку состояния"
 
 msgid "Status bar ({n})"
 msgstr "Строка состояния ({n})"
@@ -4695,6 +4801,13 @@ msgstr "Иконка приложения"
 
 msgid "Symbolic"
 msgstr "Символическая"
+
+#, fuzzy
+msgid "All unread inbox mail"
+msgstr "Учитывать непрочитанную почту"
+
+msgid "New since last in front"
+msgstr ""
 
 msgid "Follow system"
 msgstr "Как в системе"
@@ -5473,6 +5586,14 @@ msgstr ""
 "Количество строк текста письма, отображаемых под его темой. При отключении "
 "загрузка предпросмотров также прекращается."
 
+msgid "Group by date"
+msgstr ""
+
+msgid ""
+"Headings divide a list sorted by date into Today, Yesterday, Last 7 days, "
+"Last 14 days and Older."
+msgstr ""
+
 #, fuzzy
 msgid "Tint tagged messages"
 msgstr "Метка добавлена к {n} письму"
@@ -5570,6 +5691,15 @@ msgstr ""
 "Отображает названия столбцов над списком. Нажмите на заголовок для "
 "сортировки списка, и нажмите ещё раз, чтобы изменить порядок сортировки на "
 "противоположный."
+
+#, fuzzy
+msgid "Fit columns to the list"
+msgstr "Перетащите столбец сюда, чтобы скрыть его"
+
+msgid ""
+"The name and tag columns narrow as the list does. Off, every column keeps "
+"its width and a list too narrow for them scrolls sideways."
+msgstr ""
 
 msgid "Group messages by conversation"
 msgstr "Группировать сообщения по обсуждениям"
@@ -5939,6 +6069,30 @@ msgstr ""
 "письмо; обычный текст отправляется без форматирования. Кнопка формата в "
 "редакторе позволяет переключить режим для отдельного сообщения."
 
+msgid "Font"
+msgstr "Шрифт"
+
+msgid ""
+"The font rich-text messages are written and sent in. Default leaves it to "
+"the recipient's own font."
+msgstr ""
+
+#, fuzzy
+msgid "Font size"
+msgstr "Размер текста"
+
+msgid "The size, in points, rich-text messages are written and sent in."
+msgstr ""
+
+#, fuzzy
+msgid "Reply in the original's format"
+msgstr "Ответить с прикреплением файлов"
+
+msgid ""
+"Replies to and forwards of mail sent as plain text are written in plain "
+"text. Other mail starts in the format above."
+msgstr ""
+
 msgid "Signature in replies"
 msgstr "Подпись в ответах"
 
@@ -6153,10 +6307,11 @@ msgstr ""
 msgid "Unread count on the app icon"
 msgstr "Счётчик непрочитанных на значке приложения"
 
+#, fuzzy
 msgid ""
-"The number of unread inbox messages on Hylki's icon in the dock or task "
-"manager. KDE Plasma shows it; GNOME needs a dock extension such as Dash to "
-"Dock."
+"A number on Hylki's icon in the dock or task manager: every unread inbox "
+"message, or only those that arrived while Hylki was not in front. KDE Plasma "
+"shows it; GNOME needs a dock extension such as Dash to Dock."
 msgstr ""
 "Количество непрочитанных сообщений во «Входящих» на значке Hylki в доке или "
 "панели задач. В KDE Plasma поддерживается по умолчанию; для GNOME требуется "
@@ -6178,8 +6333,15 @@ msgid "Gmail keys"
 msgstr "Адрес электронной почты"
 
 msgid ""
-"Single-key shortcuts as Gmail has them: j/k move without opening, o opens, e "
-"archives, # deletes, g then a letter goes to a folder."
+"Needs single-key shortcuts on. Swaps in the keys Gmail has: j/k move without "
+"opening, o opens, e archives, # deletes, g then a letter goes to a folder."
+msgstr ""
+
+#, fuzzy
+msgid "Status bar"
+msgstr "Строка состояния ({n})"
+
+msgid "Where the bar with errors and the console opens"
 msgstr ""
 
 msgid "Console mode"
@@ -6372,6 +6534,14 @@ msgstr ""
 msgid "30 days"
 msgstr ""
 
+#, fuzzy
+msgid "Bottom of the window"
+msgstr "Создание писем в основном окне"
+
+#, fuzzy
+msgid "Top of the window"
+msgstr "Создание писем в основном окне"
+
 msgid "When displayed"
 msgstr "При отображении"
 
@@ -6495,6 +6665,9 @@ msgstr "Свинг"
 msgid "Custom File"
 msgstr "Другой файл"
 
+msgid "Other Font…"
+msgstr ""
+
 msgid "Print Message"
 msgstr "Печать сообщения"
 
@@ -6579,16 +6752,6 @@ msgstr "Другой цвет…"
 
 msgid "Paragraph style"
 msgstr "Стиль абзаца"
-
-msgid "Font"
-msgstr "Шрифт"
-
-msgid "Other Font…"
-msgstr ""
-
-#, fuzzy
-msgid "Font size"
-msgstr "Размер текста"
 
 msgid "Bold"
 msgstr "Полужирный"

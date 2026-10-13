@@ -820,6 +820,11 @@ pub struct AppModel {
     list_columns: Vec<config::ListColumn>,
     /// Headings over them, which sort the list when clicked (#334).
     list_headings: bool,
+    /// A single line too wide for the pane scrolls rather than fitting its
+    /// columns (#443).
+    list_column_scroll: bool,
+    /// Date headings over a list sorted by date (#435).
+    list_group_by_date: bool,
     /// The widths columns were dragged to by their headings (#334).
     list_column_widths: std::collections::HashMap<config::ListColumn, i32>,
     /// The list pane is wide enough for one line per message, which
@@ -838,8 +843,10 @@ pub struct AppModel {
     tray_enabled: bool,
     tray_icon: config::TrayIcon,
     tray_mail: bool,
-    /// The unread count on the launcher icon (#271).
-    launcher_count: bool,
+    /// What the launcher icon's badge counts (#271, #431).
+    launcher_badge: config::LauncherBadge,
+    /// Inbox mail that arrived while the window was not in front (#431).
+    arrivals: crate::launcher_badge::Arrivals,
     /// The chosen app icon (an `app_icon::catalog` id); the tray draws it.
     app_icon: String,
     /// A restart is on its way (Restart Now clicked, settle timer running).
@@ -941,6 +948,8 @@ pub struct AppModel {
     folder_sort: config::FolderSort,
     /// Console mode offered in the status bar (Settings → System & Appearance).
     console_mode: bool,
+    /// The status bar at the top of the window, not its foot (#433).
+    status_bar_top: bool,
     /// Read-marking policy (#100).
     read_mark: config::ReadMark,
     /// Mail filter rules (#47), applied to inbox syncs.
@@ -1059,10 +1068,16 @@ pub struct AppModel {
     /// Return starts a new paragraph in the composer; off, a new line.
     return_paragraph: bool,
     toolbar_expanded: bool,
+    /// The font and size rich-text messages are written in; empty and 0
+    /// leave them to the recipient.
+    compose_font: String,
+    compose_font_size: u32,
     /// What a printed page carries besides the message (#359).
     print_options: config::PrintOptions,
     /// New messages start as plain text (#180).
     compose_format: crate::config::ComposeFormat,
+    /// Replies and forwards to plain-text mail open in plain text (#436).
+    follow_plain: bool,
     /// Where the split reply opens in the reading pane (#212).
     reply_position: config::ReplyPosition,
     /// Where the signature sits in a reply or forward (#237).
@@ -1135,6 +1150,13 @@ pub struct AppModel {
     /// The conversation currently shown in the reader (newest first), with bodies
     /// filled in as they arrive. More than one entry = conversation/thread mode.
     current_thread: Vec<Message>,
+    /// The members of the open conversation the list itself holds, as
+    /// opposed to the ones the reader brought in from Sent or another
+    /// folder: what archiving the conversation moves (#392).
+    listed_thread: Vec<(u32, u32)>,
+    /// The next message opened takes the keyboard into the reader (Gmail's
+    /// o and Enter, #392).
+    reader_focus_pending: bool,
     /// Every message currently selected (list rows or reader cards), newest
     /// report wins. Lets the toolbar's Delete act on the whole multi-selection.
     list_selection: Vec<(u32, u32)>,
@@ -1368,6 +1390,9 @@ pub enum AppMsg {
     /// The message list has no selection to show (e.g. the last message was
     /// removed), so the reader should clear.
     ClearReader,
+    /// Gmail's o or Enter opened a row (#392): the keyboard goes to the
+    /// reader, now if the row was already the one open, else once it opens.
+    OpenedByKey { already_open: bool },
     /// Double-click: open the message in its own standalone window.
     OpenMessageWindow { message: Message, thread: Vec<Message> },
     /// A popped-out message window was closed (remove it from the map).
@@ -1472,6 +1497,8 @@ pub enum AppMsg {
     ReaderToolbarMenu { x: f64, y: f64 },
     /// Open Settings on the Appearance page (its Toolbar section).
     CustomizeToolbar,
+    /// Settings, at Message List → Columns (#443).
+    CustomizeColumns,
     /// The window controls were re-measured (decoration layout changed).
     ReaderControlsChanged(i32),
     /// The collapsed header's ⋯ button was clicked — pop its menu.
@@ -1595,8 +1622,9 @@ pub enum AppMsg {
     Shortcut(Shortcut),
     /// Show the keyboard-shortcut reference.
     ShowShortcuts,
-    /// Ctrl+K: search what the app can do and where it can go (#399).
-    CommandPalette,
+    /// Ctrl+K: search what the app can do and where it can go (#399);
+    /// Ctrl+Shift+K opens it on the actions only (`true`).
+    CommandPalette(bool),
     /// Print the message in the reader (issue #16).
     PrintMessage,
     /// Render it to a PDF and open that, to see what will come out.
@@ -1850,6 +1878,8 @@ pub enum AppMsg {
     SystemResumed,
     /// The dock may have dropped the launcher badge; send it again.
     LauncherCountLost,
+    /// The main window became the active one.
+    WindowInFront,
     /// The network came back after being down: the same reconnect as a wake.
     NetworkBack,
     /// Open the settings window on the user's preferred view (the menu entry).
@@ -1913,6 +1943,8 @@ pub enum AppMsg {
     Unsent { account_id: u32, message: Box<crate::worker::OutgoingMessage> },
     Status { account_id: u32, text: String },
     Error { account_id: u32, text: String, connectivity: bool },
+    /// An LDAP directory could not be asked (#307), said once per failure.
+    DirectoryError(String),
     NotifyCount(usize),
     StatusBarShown(bool),
     ToggleNotifications,
@@ -1986,8 +2018,6 @@ impl SimpleComponent for AppModel {
                 #[wrap(Some)]
                 set_child = &gtk::Box {
                 set_orientation: gtk::Orientation::Vertical,
-
-                append: model.notifications.widget(),
 
                 // The peek panel's split view: permanently collapsed, so
                 // showing its sidebar slides the expanded panel in from the
@@ -2631,6 +2661,9 @@ impl SimpleComponent for AppModel {
                     },
                     },
                 },
+
+                // The status bar sits at the foot of the window (#433).
+                append: model.notifications.widget(),
                 },
 
                 // ======== Full-window attachment lightbox ========
@@ -2649,6 +2682,7 @@ impl SimpleComponent for AppModel {
     ) -> ComponentParts<Self> {
         // Every setting in privacy.toml, read once.
         let prefs = config::load_privacy();
+        let launcher_badge = prefs.launcher_badge();
         relm4::set_global_css(include_str!("styles.css"));
         register_icons(prefs.desktop_icons);
         // Before install_scheme_css and before the reader exists: both read
@@ -2850,9 +2884,11 @@ impl SimpleComponent for AppModel {
                         AppMsg::ListMoveTo { messages, offer_whole, x, y }
                     }
                     MessageListOutput::SelectionCleared => AppMsg::ClearReader,
+                    MessageListOutput::OpenedByKey { already_open } => AppMsg::OpenedByKey { already_open },
                     MessageListOutput::SearchActive(active) => AppMsg::SearchActive(active),
                     MessageListOutput::SortChanged(key) => AppMsg::ListSortChanged(key),
                     MessageListOutput::ColumnWidths(widths) => AppMsg::ListColumnWidths(widths),
+                    MessageListOutput::CustomizeColumns => AppMsg::CustomizeColumns,
                 });
 
         let message_view =
@@ -2970,6 +3006,7 @@ impl SimpleComponent for AppModel {
                         AppMsg::DeleteContact { book_uid, uid }
                     }
                     ContactsPageOutput::ImportContacts(paths) => AppMsg::ImportContacts(paths),
+                    ContactsPageOutput::DirectoryError(text) => AppMsg::DirectoryError(text),
                     ContactsPageOutput::ShowPhoto { name, data } => {
                         // The lightbox routes by extension — a bare contact
                         // name sent the JPEG down the PDF path, where poppler
@@ -3185,6 +3222,8 @@ impl SimpleComponent for AppModel {
             },
             popouts: HashMap::new(),
             current_thread: Vec::new(),
+            listed_thread: Vec::new(),
+            reader_focus_pending: false,
             list_selection: Vec::new(),
             list_heard: Vec::new(),
             undo_stack: Vec::new(),
@@ -3294,6 +3333,8 @@ impl SimpleComponent for AppModel {
             list_layout: config::load_list_layout(),
             list_columns: config::load_list_columns(),
             list_headings: config::load_privacy().list_headings,
+            list_column_scroll: config::load_privacy().list_column_scroll,
+            list_group_by_date: config::load_privacy().list_group_by_date,
             list_column_widths: config::load_list_column_widths(),
             list_wide: config::load_list_pane_width() >= LIST_WIDE_ON,
             shortcuts_win: None,
@@ -3304,7 +3345,8 @@ impl SimpleComponent for AppModel {
             tray_enabled: prefs.tray,
             tray_icon: prefs.tray_icon,
             tray_mail: prefs.tray_mail,
-            launcher_count: prefs.launcher_count,
+            launcher_badge,
+            arrivals: Default::default(),
             app_icon: crate::app_icon::init_on_startup(),
             restart_pending: false,
             tray: None,
@@ -3345,6 +3387,7 @@ impl SimpleComponent for AppModel {
             start_view,
             folder_sort: prefs.folder_sort,
             console_mode: prefs.console_mode,
+            status_bar_top: prefs.status_bar_top,
             read_mark: prefs.read_mark,
             // The demo (no accounts of its own) ships with tags and filter
             // rules, so its sidebar shows the Tags and Filtered Folders
@@ -3416,8 +3459,11 @@ impl SimpleComponent for AppModel {
             paste_plain: prefs.paste_plain,
             return_paragraph: prefs.return_paragraph,
             toolbar_expanded: prefs.toolbar_expanded,
+            compose_font: prefs.compose_font,
+            compose_font_size: prefs.compose_font_size,
             print_options: prefs.print,
             compose_format: config::load_compose_format(),
+            follow_plain: prefs.follow_plain,
             reply_position: prefs.reply_position,
             signature_position: prefs.signature_position,
             signature_dashes: prefs.signature_dashes,
@@ -3582,6 +3628,7 @@ impl SimpleComponent for AppModel {
         model.push_single_line();
         model.message_list.emit(MessageListInput::SetColumns(model.list_columns.clone()));
         model.message_list.emit(MessageListInput::SetHeadings(model.list_headings));
+        model.message_list.emit(MessageListInput::SetColumnScroll(model.list_column_scroll));
         model.message_list.emit(MessageListInput::SetColumnWidths(model.list_column_widths.clone()));
         model.sidebars_emit(SidebarInput::SetFocus {
             hide_accounts: model.focus.active(config::FocusPart::HideAccounts),
@@ -3902,8 +3949,9 @@ impl SimpleComponent for AppModel {
                 if w.is_active() {
                     crate::notify::withdraw_compose_ready();
                     // Focus comes back after an unlock, when the dock has
-                    // just been rebuilt without the badge.
-                    fsender.input(AppMsg::LauncherCountLost);
+                    // just been rebuilt without the badge; and the mail
+                    // that arrived meanwhile has now been seen (#431).
+                    fsender.input(AppMsg::WindowInFront);
                 }
             });
 
@@ -5099,6 +5147,25 @@ impl SimpleComponent for AppModel {
                 // body (a textarea) instead of the rich document, to
                 // `backspace` to trim text rather than type it, or to
                 // `pause` to leave a long gap between two runs of typing.
+                // HYLKI_SHOWCASE_COMPOSE_FORMAT=plain@6,rich@10 switches the
+                // inline composer's format at those moments (#424). Pair
+                // with HYLKI_SHOWCASE_REPLY.
+                if let Ok(steps) = std::env::var("HYLKI_SHOWCASE_COMPOSE_FORMAT") {
+                    for step in steps.split(',') {
+                        let (name, at) = showcase_at(step, 6);
+                        let format = match name {
+                            "rich" => config::ComposeFormat::Rich,
+                            "markdown" => config::ComposeFormat::Markdown,
+                            "html" => config::ComposeFormat::Html,
+                            "plain" => config::ComposeFormat::Plain,
+                            _ => continue,
+                        };
+                        let s = sender.clone();
+                        gtk::glib::timeout_add_seconds_local_once(at, move || {
+                            s.input(AppMsg::ShowcaseComposeFormat(format));
+                        });
+                    }
+                }
                 if let Ok(which) = std::env::var("HYLKI_SHOWCASE_COMPOSE_UNDO") {
                     let format = match which.as_str() {
                         "markdown" => Some(config::ComposeFormat::Markdown),
@@ -5168,7 +5235,7 @@ impl SimpleComponent for AppModel {
                             .filter_map(|o| o.downcast::<adw::Window>().ok())
                             .find(|w| w.is_visible() && w.title().is_some_and(|t| t == i18n("Keyboard Shortcuts")))
                         {
-                            w.set_default_size(420, h);
+                            w.set_default_size(w.default_width(), h);
                         }
                     });
                 }
@@ -5249,15 +5316,21 @@ impl SimpleComponent for AppModel {
                         }
                     });
                 }
-                // HYLKI_SHOWCASE_CONTACTS=list|new opens Contacts at 3s,
-                // and with "new" its editor for a new contact at 5s.
+                // HYLKI_SHOWCASE_CONTACTS=list|new|search:<text> opens
+                // Contacts at 3s, and with "new" its editor for a new contact
+                // at 5s, or with "search:" types the text into its search
+                // then, so the directories are asked too (#307).
                 if let Ok(which) = std::env::var("HYLKI_SHOWCASE_CONTACTS") {
                     let s = sender.clone();
                     gtk::glib::timeout_add_seconds_local_once(3, move || s.input(AppMsg::OpenContacts));
+                    let page = model.contacts_page.sender().clone();
                     if which == "new" {
-                        let page = model.contacts_page.sender().clone();
                         gtk::glib::timeout_add_seconds_local_once(5, move || {
                             let _ = page.send(ContactsPageInput::NewContact);
+                        });
+                    } else if let Some(text) = which.strip_prefix("search:").map(str::to_string) {
+                        gtk::glib::timeout_add_seconds_local_once(5, move || {
+                            let _ = page.send(ContactsPageInput::SetSearch(text));
                         });
                     }
                 }
@@ -5418,6 +5491,7 @@ impl SimpleComponent for AppModel {
         model
             .notifications
             .emit(NotifyInput::SetConsoleEnabled(model.console_mode));
+        model.notifications.emit(NotifyInput::SetAtTop(model.status_bar_top));
         // Screenshot/dev hook: open the status bar console shortly after
         // launch (pref permitting) so captures can show it.
         // HYLKI_SHOWCASE_ABOUT=1 opens the About window a beat after
@@ -6388,9 +6462,17 @@ impl SimpleComponent for AppModel {
                 }
             }
 
+            AppMsg::OpenedByKey { already_open } => {
+                if already_open {
+                    self.message_view.emit(MessageViewInput::FocusBody);
+                } else {
+                    self.reader_focus_pending = true;
+                }
+            }
             AppMsg::ClearReader => {
                 self.current = None;
                 self.current_thread.clear();
+                self.listed_thread.clear();
                 self.attachments.clear();
                 self.attachments_loading = false;
                 self.sync_attachment_drawer();
@@ -6447,8 +6529,19 @@ impl SimpleComponent for AppModel {
                 // Selecting a draft opens it in the compose editor, in the
                 // reading pane where the message would otherwise show.
                 if self.is_drafts_folder(m.account_id, m.folder_id) {
+                    self.reader_focus_pending = false;
                     self.open_draft(m, true, HandOffFiles::default(), &sender);
                     return;
+                }
+                // Opened with Gmail's o or Enter: the keyboard follows it into
+                // the reader, as Gmail's conversation view takes it, so j and
+                // k go on to the next conversation and u or Esc come back
+                // (#392). Once the reader has been handed the message.
+                if std::mem::take(&mut self.reader_focus_pending) {
+                    let view = self.message_view.sender().clone();
+                    gtk::glib::idle_add_local_once(move || {
+                        view.emit(MessageViewInput::FocusBody);
+                    });
                 }
                 self.attachments.clear();
                 self.attachments_loading = false;
@@ -6488,6 +6581,11 @@ impl SimpleComponent for AppModel {
                     current.body = body;
                 }
                 self.current = Some(current.clone());
+                self.listed_thread = if thread.is_empty() {
+                    vec![(m.account_id, m.id)]
+                } else {
+                    thread.iter().map(|t| (t.account_id, t.id)).collect()
+                };
                 // A new selection: whatever the last one was waiting for no
                 // longer holds this one back.
                 self.thread_related_pending = false;
@@ -6665,6 +6763,9 @@ impl SimpleComponent for AppModel {
                 let mut conv: Vec<Message> = existing.clone();
                 for tm in &thread {
                     let k = (tm.account_id, tm.id);
+                    if !self.listed_thread.contains(&k) {
+                        self.listed_thread.push(k);
+                    }
                     if conv.iter().any(|e| (e.account_id, e.id) == k) {
                         continue;
                     }
@@ -6840,6 +6941,15 @@ impl SimpleComponent for AppModel {
                 if self.list_selection.len() > 1 {
                     self.message_list.emit(MessageListInput::Bulk(BulkAction::Archive));
                     return;
+                }
+                // An open conversation's row stands for all of it, as it does
+                // for Delete; a picked card is that message alone (#392).
+                if self.acts_on_conversation(false) {
+                    let conversation = self.conversation_to_archive();
+                    if conversation.len() > 1 {
+                        self.apply_bulk_move(BulkAction::Archive, conversation);
+                        return;
+                    }
                 }
                 if let Some(m) = self.reply_target() {
                     self.move_to(m, FolderKind::Archive);
@@ -7080,6 +7190,17 @@ impl SimpleComponent for AppModel {
                     }
                     RowAction::AddContact => {
                         self.show_add_contact_dialog(&m.from_name, &m.from_addr, &sender);
+                    }
+                    RowAction::CreateFilter => {
+                        let Some(email) = self.email_of(m.account_id) else { return };
+                        let rule = config::FilterRule::draft_from_message(&email, &m.from_addr, &m.subject);
+                        self.open_settings_window(&sender, true, false);
+                        if let Some(p) = &self.prefs {
+                            p.emit(PrefInput::ShowPageById("filters".to_string()));
+                        }
+                        if let Some(acc) = &self.accounts_win {
+                            acc.emit(crate::ui::accounts::AccountsInput::AddFilterFrom(rule));
+                        }
                     }
                 }
             }
@@ -7776,8 +7897,8 @@ impl SimpleComponent for AppModel {
                 }
             }
 
-            AppMsg::Pref(PrefOutput::SetLauncherCount(on)) => {
-                if pref!(self.launcher_count = on) {
+            AppMsg::Pref(PrefOutput::SetLauncherBadge(badge)) => {
+                if pref!(self.launcher_badge = badge) {
                     self.push_launcher_count();
                 }
             }
@@ -7833,8 +7954,9 @@ impl SimpleComponent for AppModel {
             }
 
             AppMsg::ShowShortcuts => self.show_shortcuts(),
-            AppMsg::CommandPalette => {
+            AppMsg::CommandPalette(actions) => {
                 let entries = self.command_palette_entries(&sender);
+                let typed = if actions { ">" } else { "" };
                 // Over the window it was asked from: a composer of its own
                 // window would otherwise hide it behind.
                 let tops = gtk::Window::toplevels();
@@ -7843,8 +7965,8 @@ impl SimpleComponent for AppModel {
                     .filter_map(|o| o.downcast::<gtk::Window>().ok())
                     .find(|w| w.is_active() && w.is_visible());
                 match active {
-                    Some(w) => crate::ui::command_palette::show(&w, entries),
-                    None => crate::ui::command_palette::show(&self.window, entries),
+                    Some(w) => crate::ui::command_palette::show(&w, entries, typed),
+                    None => crate::ui::command_palette::show(&self.window, entries, typed),
                 }
             }
 
@@ -7880,6 +8002,16 @@ impl SimpleComponent for AppModel {
             AppMsg::Pref(PrefOutput::SetListHeadings(on)) => {
                 if pref!(self.list_headings = on) {
                     self.message_list.emit(MessageListInput::SetHeadings(on));
+                }
+            }
+            AppMsg::Pref(PrefOutput::SetListColumnScroll(on)) => {
+                if pref!(self.list_column_scroll = on) {
+                    self.message_list.emit(MessageListInput::SetColumnScroll(on));
+                }
+            }
+            AppMsg::Pref(PrefOutput::SetGroupByDate(on)) => {
+                if pref!(self.list_group_by_date = on) {
+                    self.message_list.emit(MessageListInput::SetGroupByDate(on));
                 }
             }
             AppMsg::Pref(PrefOutput::SetListColumns(columns)) => {
@@ -8608,6 +8740,14 @@ impl SimpleComponent for AppModel {
                 pref!(self.toolbar_expanded = on);
             }
 
+            AppMsg::Pref(PrefOutput::SetComposeFont(font)) => {
+                pref!(self.compose_font = font);
+            }
+
+            AppMsg::Pref(PrefOutput::SetComposeFontSize(pt)) => {
+                pref!(self.compose_font_size = pt);
+            }
+
             AppMsg::Pref(PrefOutput::SetPrintOptions(options)) => {
                 if pref!(self.print_options = options) {
                     crate::ui::print_preview::set_options(options);
@@ -8664,6 +8804,12 @@ impl SimpleComponent for AppModel {
                 self.open_settings_window(&sender, false, false);
                 if let Some(p) = &self.prefs {
                     p.emit(PrefInput::ShowPageById("appearance".to_string()));
+                }
+            }
+            AppMsg::CustomizeColumns => {
+                self.open_settings_window(&sender, false, false);
+                if let Some(p) = &self.prefs {
+                    p.emit(PrefInput::RevealColumns);
                 }
             }
             AppMsg::ShowcaseToolbarGap { zone, index } => {
@@ -8765,6 +8911,9 @@ impl SimpleComponent for AppModel {
             }
             AppMsg::Pref(PrefOutput::SetComposeFormat(format)) => {
                 pref!(self.compose_format = format);
+            }
+            AppMsg::Pref(PrefOutput::SetFollowPlain(on)) => {
+                pref!(self.follow_plain = on);
             }
             AppMsg::Pref(PrefOutput::SetReplyPosition(position)) => {
                 // A split reply already open stays where it is; the next
@@ -9812,11 +9961,7 @@ impl SimpleComponent for AppModel {
             AppMsg::OpenListSearch => {
                 // Ctrl+F routes by focus (#102/#103): in the reader it finds
                 // within the message, everywhere else it searches the list.
-                let reader = self.message_view.widget().clone().upcast::<gtk::Widget>();
-                let reader_focused =
-                    gtk::prelude::GtkWindowExt::focus(&self.window)
-                        .is_some_and(|f| f == reader || f.is_ancestor(&reader));
-                if reader_focused && self.current.is_some() {
+                if self.reader_has_focus() && self.current.is_some() {
                     self.message_view.emit(MessageViewInput::OpenFind);
                 } else {
                     self.message_list.emit(MessageListInput::FocusSearch);
@@ -9989,6 +10134,12 @@ impl SimpleComponent for AppModel {
                 }
             }
 
+            AppMsg::Pref(PrefOutput::SetStatusBarTop(top)) => {
+                if pref!(self.status_bar_top = top) {
+                    self.notifications.emit(NotifyInput::SetAtTop(top));
+                }
+            }
+
             AppMsg::Pref(PrefOutput::SetConsoleMode(on)) => {
                 if pref!(self.console_mode = on) {
                     self.notifications.emit(NotifyInput::SetConsoleEnabled(on));
@@ -10134,6 +10285,11 @@ impl SimpleComponent for AppModel {
             AppMsg::NetworkBack => self.reconnect_workers(&sender),
 
             AppMsg::LauncherCountLost => self.resend_launcher_count(),
+
+            AppMsg::WindowInFront => {
+                self.arrivals.clear();
+                self.resend_launcher_count();
+            }
 
             AppMsg::OpenSettings => {
                 // The "opens to" preference decides the first open of the
@@ -10709,6 +10865,24 @@ impl SimpleComponent for AppModel {
                 // rebuild of a large (or merged) list is not free, and it
                 // used to happen several times over per visit.
                 let unchanged = self.message_cache.get(&(account_id, folder_id)) == Some(&messages);
+                // What the badge counts when it counts arrivals (#431): the
+                // same new inbox mail as the notification above, whatever
+                // the notification settings, and only what is still in the
+                // inbox, as the badge's other choice counts.
+                if !self.window.is_active()
+                    && self.inbox_of(account_id).is_some_and(|f| f.id == folder_id)
+                {
+                    let old: Option<HashSet<u32>> = self
+                        .message_cache
+                        .get(&(account_id, folder_id))
+                        .map(|old| old.iter().map(|m| m.uid).collect());
+                    self.arrivals.note(
+                        account_id,
+                        folder_id,
+                        old.as_ref(),
+                        messages.iter().map(|m| (m.uid, m.unread)),
+                    );
+                }
                 // The notified mail was read somewhere else, on the phone or
                 // in another client: the notification goes too (#333).
                 if let Some((f, mid)) = crate::notify::posted_for(account_id) {
@@ -11387,6 +11561,10 @@ impl SimpleComponent for AppModel {
                 });
             }
 
+            AppMsg::DirectoryError(text) => {
+                self.notifications.emit(NotifyInput::Push { text, error: true, connectivity: false });
+            }
+
             AppMsg::NotifyCount(n) => self.notify_count = n,
             AppMsg::ToggleNotifications => self.notifications.emit(NotifyInput::ToggleBar),
             AppMsg::StatusBarShown(shown) => {
@@ -11867,10 +12045,13 @@ impl AppModel {
             paste_plain: self.paste_plain,
             return_paragraph: self.return_paragraph,
             toolbar_expanded: self.toolbar_expanded,
+            compose_font: self.compose_font.clone(),
+            compose_font_size: self.compose_font_size,
             print: self.print_options,
             // Both are written: the boolean is what an older version reads.
             compose_plain: self.compose_format == config::ComposeFormat::Plain,
             compose_format: Some(self.compose_format),
+            follow_plain: self.follow_plain,
             reply_position: self.reply_position,
             signature_position: self.signature_position,
             signature_dashes: self.signature_dashes,
@@ -11882,6 +12063,8 @@ impl AppModel {
             list_layout: self.list_layout,
             list_columns: config::ListColumn::to_keys(&self.list_columns),
             list_headings: self.list_headings,
+            list_column_scroll: self.list_column_scroll,
+            list_group_by_date: self.list_group_by_date,
             list_column_widths: config::list_column_widths_to(&self.list_column_widths),
             single_key_shortcuts: self.single_key.get(),
             gmail_keys: self.gmail_keys.get(),
@@ -11891,7 +12074,8 @@ impl AppModel {
             tray: self.tray_enabled,
             tray_icon: self.tray_icon,
             tray_mail: self.tray_mail,
-            launcher_count: self.launcher_count,
+            launcher_count: self.launcher_badge != config::LauncherBadge::Off,
+            launcher_badge: Some(self.launcher_badge),
             show_remote_banner: self.show_remote_banner,
             show_spoof_banner: self.show_spoof_banner,
             sidebar_hover_expand: self.sidebar_hover_expand,
@@ -11914,6 +12098,7 @@ impl AppModel {
             tags_placement: self.tags_placement,
             chevrons_left: self.chevrons_left,
             console_mode: self.console_mode,
+            status_bar_top: self.status_bar_top,
             read_mark: self.read_mark,
             files_action: self.files_prefs.action,
             files_large: self.files_prefs.large,
@@ -11935,12 +12120,27 @@ impl AppModel {
             // The open message's own view, not the reader's first page,
             // which is the "No message selected" one and takes no focus.
             Shortcut::OpenMessage => self.message_view.emit(MessageViewInput::FocusBody),
-            Shortcut::MoveCursor(delta) => self.message_list.emit(MessageListInput::MoveCursor(delta)),
+            Shortcut::MoveCursor(delta) => {
+                // In the reader, Gmail's j and k open the next or previous
+                // conversation; in the list they only move the cursor (#392).
+                if self.current.is_some() && self.reader_has_focus() {
+                    self.message_list.emit(MessageListInput::StepConversation(delta));
+                } else {
+                    self.message_list.emit(MessageListInput::MoveCursor(delta));
+                }
+            }
             Shortcut::OpenCursor => self.message_list.emit(MessageListInput::OpenCursor),
             Shortcut::MarkRead(read) => {
                 let mut targets = self.multi_selection();
+                if targets.is_empty() && self.acts_on_conversation(self.gmail_keys.get()) {
+                    // The whole conversation, as Gmail marks it (#392).
+                    targets = if read { self.current_thread.clone() } else { self.conversation_to_mark_unread() };
+                }
                 if targets.is_empty() {
                     targets.extend(self.reply_target());
+                }
+                if !read {
+                    self.hold_unread(&targets);
                 }
                 targets.retain(|m| m.unread == read);
                 if !targets.is_empty() {
@@ -11971,7 +12171,25 @@ impl AppModel {
             Shortcut::Reply => sender.input(AppMsg::Reply),
             Shortcut::ReplyAll => sender.input(AppMsg::ReplyAll),
             Shortcut::Forward => sender.input(AppMsg::Forward),
-            Shortcut::Archive => sender.input(AppMsg::Archive),
+            Shortcut::Archive => {
+                // Gmail's e archives the conversation even with one of its
+                // cards stepped to (#392); the toolbar's Archive, and the
+                // classic keys, leave a picked card on its own.
+                if self.gmail_keys.get() && self.acts_on_conversation(true) {
+                    let conversation = self.conversation_to_archive();
+                    if !conversation.is_empty() {
+                        self.apply_bulk_move(BulkAction::Archive, conversation);
+                        return;
+                    }
+                }
+                sender.input(AppMsg::Archive);
+            }
+            Shortcut::MarkUnreadFrom => self.mark_unread_from(),
+            Shortcut::FoldAll(folded) => {
+                if self.current_thread.len() > 1 {
+                    self.message_view.emit(MessageViewInput::FoldAll(folded));
+                }
+            }
             Shortcut::Delete => sender.input(AppMsg::Delete),
             Shortcut::Spam => sender.input(AppMsg::MarkSpam),
             Shortcut::Star => sender.input(AppMsg::ToggleStar),
@@ -12183,6 +12401,13 @@ impl AppModel {
         }
     }
 
+    /// Whether the keyboard is in the reader: its message, or anything else
+    /// inside the reading pane.
+    fn reader_has_focus(&self) -> bool {
+        let reader = self.message_view.widget().clone().upcast::<gtk::Widget>();
+        gtk::prelude::GtkWindowExt::focus(&self.window).is_some_and(|f| f == reader || f.is_ancestor(&reader))
+    }
+
     /// Open the keyboard-shortcut reference, or close it if it is already up:
     /// the key that summons a cheatsheet is the obvious one to dismiss it with.
     fn show_shortcuts(&mut self) {
@@ -12198,12 +12423,14 @@ impl AppModel {
 
     /// A plain window listing every keyboard shortcut.
     fn build_shortcuts_window(&self) -> adw::Window {
+        // Wide enough that the longest keys ("Ctrl+B  /  Ctrl+I  /  Ctrl+U")
+        // leave the description room for a line or two (#392).
         let win = adw::Window::builder()
             .transient_for(&self.window)
             .modal(true)
             .title(&i18n("Keyboard Shortcuts"))
-            .default_width(420)
-            .default_height(560)
+            .default_width(600)
+            .default_height(640)
             .build();
 
         let page = gtk::Box::new(gtk::Orientation::Vertical, 0);
@@ -12213,9 +12440,12 @@ impl AppModel {
         page.set_margin_end(18);
 
         if !self.single_key.get() {
-            let off = gtk::Label::new(Some(
-                i18n("Single-key shortcuts are switched off. Turn them on in Settings → System.").as_str(),
-            ));
+            let text = if self.gmail_keys.get() {
+                i18n("Single-key shortcuts are switched off, and Gmail keys with them. Turn them on in Settings → System.")
+            } else {
+                i18n("Single-key shortcuts are switched off. Turn them on in Settings → System.")
+            };
+            let off = gtk::Label::new(Some(text.as_str()));
             off.add_css_class("dim-label");
             off.set_wrap(true);
             off.set_xalign(0.0);
@@ -13528,6 +13758,82 @@ impl AppModel {
                 .is_some_and(|c| c.account_id == m.account_id && c.id == m.id)
     }
 
+    /// Whether an action from the keyboard or the toolbar means the whole
+    /// open conversation (#392): one is open, nothing of several is selected,
+    /// and, unless `cards_too`, no card of it has been picked. Gmail's keys
+    /// pass `cards_too`: there a card stepped to with n or p is only where
+    /// the reader is, and e or Shift+I still act on the conversation.
+    fn acts_on_conversation(&self, cards_too: bool) -> bool {
+        self.current_thread.len() > 1
+            && self.list_selection.len() <= 1
+            && (cards_too || !self.selection_from_cards)
+    }
+
+    /// What archiving the open conversation moves: the members its row
+    /// stands for in the list. A reply the reader brought in from Sent, or
+    /// an older part filed elsewhere, stays where it is.
+    fn conversation_to_archive(&self) -> Vec<Message> {
+        self.current_thread
+            .iter()
+            .filter(|m| self.listed_thread.contains(&(m.account_id, m.id)))
+            .cloned()
+            .collect()
+    }
+
+    /// What marking the open conversation unread marks: every member but the
+    /// ones in Sent or Drafts. The user's own messages were never unread,
+    /// and marking them so would light Sent's badge.
+    fn conversation_to_mark_unread(&self) -> Vec<Message> {
+        self.current_thread
+            .iter()
+            .filter(|m| !matches!(self.folder_kind(m.account_id, m.folder_id), Some(FolderKind::Sent | FolderKind::Drafts)))
+            .cloned()
+            .collect()
+    }
+
+    /// Gmail's `_` (#392): mark unread from the message being read onward,
+    /// that message and the later ones of its conversation. The message is
+    /// the picked card, or with none picked the conversation's newest, which
+    /// is where Gmail's own cursor sits in an open conversation.
+    fn mark_unread_from(&mut self) {
+        if self.list_selection.len() > 1 {
+            let targets = self.multi_selection();
+            self.user_set_flags(read_label(false), &targets, FlagKind::Read, false);
+            return;
+        }
+        if self.current_thread.len() <= 1 {
+            if let Some(m) = self.reply_target() {
+                self.user_set_flags(read_label(false), &[m], FlagKind::Read, false);
+            }
+            return;
+        }
+        let order = |m: &Message| (m.timestamp, m.uid);
+        let start = (if self.selection_from_cards { self.reply_target() } else { None })
+            .or_else(|| self.current_thread.iter().max_by_key(|m| order(m)).cloned());
+        let Some(start) = start else { return };
+        let from = order(&start);
+        let mut targets: Vec<Message> = self
+            .conversation_to_mark_unread()
+            .into_iter()
+            .filter(|m| order(m) >= from && (m.account_id, m.id) != (start.account_id, start.id))
+            .collect();
+        // The message asked about is marked whatever folder it is in.
+        targets.insert(0, start);
+        self.hold_unread(&targets);
+        self.user_set_flags(read_label(false), &targets, FlagKind::Read, false);
+    }
+
+    /// Keep the reader from marking these read again as they sit in view.
+    /// The ones being marked unread are told by `set_read`; one that was
+    /// unread already is not, and would be read a moment later (#392).
+    fn hold_unread(&self, targets: &[Message]) {
+        for m in targets.iter().filter(|m| m.unread) {
+            if self.current_thread.iter().any(|t| (t.account_id, t.id) == (m.account_id, m.id)) {
+                self.message_view.emit(MessageViewInput::SuppressAutoRead { account_id: m.account_id, id: m.id });
+            }
+        }
+    }
+
     /// Whether the reader toolbar's star shows lit: the target message's own
     /// star, or any member's when the conversation is the target.
     fn toolbar_star_lit(&self) -> bool {
@@ -13872,9 +14178,21 @@ impl AppModel {
     }
 
     /// The launcher icon's badge (#271): the same inboxes total as the tray
-    /// icon's dot, or nothing when Settings has it off.
+    /// icon's dot, only the inbox mail that came in while the window was
+    /// behind (#431), or nothing, as Settings has it.
     fn push_launcher_count(&self) {
-        let count = if self.launcher_count { self.inboxes_unread() } else { 0 };
+        let count = match self.launcher_badge {
+            config::LauncherBadge::Off => 0,
+            config::LauncherBadge::AllUnread => self.inboxes_unread(),
+            config::LauncherBadge::NewSinceFront => self.arrivals.count(|a, f| {
+                self.message_cache
+                    .get(&(a, f))
+                    .into_iter()
+                    .flatten()
+                    .filter(|m| m.unread)
+                    .map(|m| m.uid)
+            }),
+        };
         crate::launcher_badge::set_count(count);
     }
 
@@ -15125,7 +15443,10 @@ impl AppModel {
         acts.push(item(RowAction::Archive, i18n("Archive"), "mail-archive"));
         acts.push(item(RowAction::Delete, i18n("Delete"), "user-trash"));
         sections.push(acts);
-        sections.push(vec![item(RowAction::AddContact, i18n("Add Sender to Contacts"), "contact-new")]);
+        sections.push(vec![
+            item(RowAction::AddContact, i18n("Add Sender to Contacts"), "contact-new"),
+            item(RowAction::CreateFilter, i18n("Create Filter from Message…"), "filter-folder"),
+        ]);
         // Remote content, per message. The banner offers the same thing, but
         // it can be switched off (Settings → Privacy) and then there is
         // nothing to click — so the choice lives here too, and here it goes
@@ -15995,7 +16316,7 @@ impl AppModel {
     /// this is a local render — the same one the worker would produce.
     fn show_outbox_message(&mut self, item: &crate::models::OutboxItem) {
         let mut message = item.as_message();
-        message.body = crate::worker::extract_body(&item.raw);
+        message.body = crate::legacy::current_markup(crate::worker::extract_body(&item.raw));
         message.date = crate::models::OutboxItem::waiting_label(item.queued_at);
         self.attachments = crate::worker::extract_attachments_of(&item.raw);
         self.attachments_loading = false;
@@ -16054,6 +16375,7 @@ impl AppModel {
             resumed: false,
             no_signature: false,
             template: false,
+            original_plain: false,
         };
         // The Outbox stays the folder on screen: its list is still what's listed,
         // so its toolbar has to stay too. Leaving it would strand the user in a
@@ -16112,6 +16434,7 @@ impl AppModel {
             no_signature: false,
             // A template that failed to save comes back cut loose from it.
             template: false,
+            original_plain: false,
         };
         self.open_compose(account_id, prefill, sender);
     }
@@ -16496,6 +16819,13 @@ impl AppModel {
             })
             .unwrap_or(0);
 
+        // A reply or forward to plain-text mail answers in kind when the
+        // setting says so (#436); anything else starts in the chosen format.
+        let format = if self.follow_plain && prefill.original_plain {
+            config::ComposeFormat::Plain
+        } else {
+            self.compose_format
+        };
         // The user's own addresses go last in the recipient suggestions.
         let own: Vec<(String, String)> = self.config.iter().map(|c| (c.name.clone(), c.email.clone())).collect();
         let id = self.next_compose_id;
@@ -16510,7 +16840,7 @@ impl AppModel {
             can_toggle,
             compact: false,
             decorations: true,
-            format: self.compose_format,
+            format,
             signature_position: self.signature_position,
         };
         (id, init)
@@ -16539,6 +16869,7 @@ impl AppModel {
                 ComposeOutput::SetSpellcheckLangs(langs) => {
                     AppMsg::Pref(PrefOutput::SetSpellcheckLangs(langs))
                 }
+                ComposeOutput::DirectoryError(text) => AppMsg::DirectoryError(text),
             })
     }
 
@@ -19640,6 +19971,7 @@ impl AppModel {
             plain_monospace: self.plain_monospace,
             plain_font: self.plain_font.clone(),
             compose_format: self.compose_format,
+            follow_plain: self.follow_plain,
             reply_position: self.reply_position,
             signature_position: self.signature_position,
             signature_dashes: self.signature_dashes,
@@ -19660,6 +19992,7 @@ impl AppModel {
             start_view: self.start_view,
             folder_sort: self.folder_sort,
             console_mode: self.console_mode,
+            status_bar_top: self.status_bar_top,
             read_mark: self.read_mark,
             settings_open_accounts: self.settings_open_accounts,
             sidebar_hover_expand: self.sidebar_hover_expand,
@@ -19687,6 +20020,8 @@ impl AppModel {
             paste_plain: self.paste_plain,
             return_paragraph: self.return_paragraph,
             toolbar_expanded: self.toolbar_expanded,
+            compose_font: self.compose_font.clone(),
+            compose_font_size: self.compose_font_size,
             print_options: self.print_options,
             spellcheck: self.spellcheck,
             spellcheck_langs: self.spellcheck_langs.clone(),
@@ -19697,6 +20032,8 @@ impl AppModel {
             list_layout: self.list_layout,
             list_columns: self.list_columns.clone(),
             list_headings: self.list_headings,
+            list_column_scroll: self.list_column_scroll,
+            list_group_by_date: self.list_group_by_date,
             single_key_shortcuts: self.single_key.get(),
             gmail_keys: self.gmail_keys.get(),
             keep_downloads_days: self.keep_downloads_days,
@@ -19705,7 +20042,7 @@ impl AppModel {
             tray: self.tray_enabled,
             tray_icon: self.tray_icon,
             tray_mail: self.tray_mail,
-            launcher_count: self.launcher_count,
+            launcher_badge: self.launcher_badge,
             app_icon: self.app_icon.clone(),
             accounts_panel: accounts.widget().clone().upcast::<gtk::Widget>(),
             accounts_sender: accounts.sender().clone(),
@@ -22347,8 +22684,14 @@ pub enum Shortcut {
     MoveCursor(i32),
     /// Gmail's o: open the row the cursor is on.
     OpenCursor,
-    /// Gmail's Shift+I (read) and Shift+U or _ (unread).
+    /// Gmail's Shift+I (read) and Shift+U (unread): the whole conversation
+    /// when one is open.
     MarkRead(bool),
+    /// Gmail's _: unread from the message being read onward.
+    MarkUnreadFrom,
+    /// Gmail's ; (expand, `false`) and : (collapse, `true`): every message
+    /// of the open conversation.
+    FoldAll(bool),
     /// Gmail's z.
     Undo,
     /// Gmail's v: the Move To picker.
@@ -22393,8 +22736,11 @@ fn gmail_shortcut_for(key: gtk::gdk::Key, shift: bool) -> Option<Shortcut> {
         Key::c => Shortcut::Compose,
         Key::slash => Shortcut::Search,
         Key::question => Shortcut::Shortcuts,
-        Key::U | Key::underscore => Shortcut::MarkRead(false),
+        Key::U => Shortcut::MarkRead(false),
+        Key::underscore => Shortcut::MarkUnreadFrom,
         Key::I => Shortcut::MarkRead(true),
+        Key::semicolon => Shortcut::FoldAll(false),
+        Key::colon => Shortcut::FoldAll(true),
         Key::z => Shortcut::Undo,
         Key::v => Shortcut::MoveTo,
         Key::l => Shortcut::Label,
@@ -22473,7 +22819,8 @@ fn shortcut_for(key: gtk::gdk::Key, shift: bool) -> Option<Shortcut> {
 
 /// Ctrl+K opens the command palette (#399) wherever the keyboard is, a
 /// composer included: in the capture phase, ahead of a focused editor that
-/// keeps the other Ctrl keys for its text.
+/// keeps the other Ctrl keys for its text. Ctrl+Shift+K opens it with `>`
+/// typed, on the actions only.
 fn palette_key(sender: &ComponentSender<AppModel>) -> gtk::EventControllerKey {
     let keys = gtk::EventControllerKey::new();
     keys.set_propagation_phase(gtk::PropagationPhase::Capture);
@@ -22481,7 +22828,8 @@ fn palette_key(sender: &ComponentSender<AppModel>) -> gtk::EventControllerKey {
     keys.connect_key_pressed(move |keys, keyval, _, state| {
         use gtk::gdk::ModifierType as M;
         let mods = state & (M::CONTROL_MASK | M::SHIFT_MASK | M::ALT_MASK | M::SUPER_MASK);
-        if mods == M::CONTROL_MASK && matches!(keyval, gtk::gdk::Key::k | gtk::gdk::Key::K) {
+        let ctrl = mods == M::CONTROL_MASK || mods == M::CONTROL_MASK | M::SHIFT_MASK;
+        if ctrl && matches!(keyval, gtk::gdk::Key::k | gtk::gdk::Key::K) {
             // Not over a dialog already up, the palette itself among them.
             let dialog = keys.widget().is_some_and(|w| {
                 w.downcast_ref::<adw::ApplicationWindow>()
@@ -22492,7 +22840,7 @@ fn palette_key(sender: &ComponentSender<AppModel>) -> gtk::EventControllerKey {
             if dialog {
                 return gtk::glib::Propagation::Proceed;
             }
-            let _ = s.send(AppMsg::CommandPalette);
+            let _ = s.send(AppMsg::CommandPalette(mods.contains(M::SHIFT_MASK)));
             return gtk::glib::Propagation::Stop;
         }
         gtk::glib::Propagation::Proceed
@@ -22519,11 +22867,16 @@ const GMAIL_HELP: &[(&str, &[(&str, &str)])] = &[
     (
         i18n_noop("Move around"),
         &[
-            ("j  /  k", i18n_noop("Move down or up the list without opening")),
+            ("j  /  k", i18n_noop("Move down or up the list without opening; while reading, open the next or previous conversation")),
             ("o  or  Enter", i18n_noop("Open the message the cursor is on")),
-            ("u", i18n_noop("Back to the message list")),
+            ("u  or  Esc", i18n_noop("Back to the message list")),
             ("n  /  p", i18n_noop("Next or previous message in the conversation")),
-            ("g  i  /  g  s  /  g  t  /  g  d  /  g  a", i18n_noop("Go to Inbox, Starred, Sent, Drafts or Archive")),
+            (";  /  :", i18n_noop("Expand or collapse every message of the conversation")),
+            ("g  i", i18n_noop("Go to Inbox")),
+            ("g  s", i18n_noop("Go to Starred")),
+            ("g  t", i18n_noop("Go to Sent")),
+            ("g  d", i18n_noop("Go to Drafts")),
+            ("g  a", i18n_noop("Go to Archive")),
             ("g  c", i18n_noop("Go to Contacts")),
             ("/", i18n_noop("Search")),
         ],
@@ -22534,12 +22887,13 @@ const GMAIL_HELP: &[(&str, &[(&str, &str)])] = &[
             ("r", i18n_noop("Reply")),
             ("a", i18n_noop("Reply to all")),
             ("f", i18n_noop("Forward")),
-            ("e", i18n_noop("Archive")),
+            ("e", i18n_noop("Archive the conversation")),
             ("#", i18n_noop("Delete")),
             ("!", i18n_noop("Mark as spam")),
             ("s", i18n_noop("Star or unstar")),
-            ("Shift+I", i18n_noop("Mark as read")),
-            ("Shift+U  or  _", i18n_noop("Mark as unread")),
+            ("Shift+I", i18n_noop("Mark the conversation as read")),
+            ("Shift+U", i18n_noop("Mark the conversation as unread")),
+            ("_", i18n_noop("Mark as unread from this message on")),
             ("x", i18n_noop("Select this row (for a bulk action)")),
             ("*  a  /  *  n", i18n_noop("Select every row, or none")),
             ("v", i18n_noop("Move to a folder")),
@@ -22619,6 +22973,7 @@ const SHORTCUT_HELP: &[(&str, &[(&str, &str)])] = &[
             ("Ctrl+W", i18n_noop("Close the window (background sync keeps running)")),
             ("Ctrl+Q", i18n_noop("Quit Hylki entirely")),
             ("Ctrl+K", i18n_noop("Command palette: search actions, folders and tags")),
+            ("Ctrl+Shift+K", i18n_noop("Command palette, actions only")),
             ("?  or  Ctrl+?  or  F1", i18n_noop("This list")),
         ],
     ),
@@ -23783,6 +24138,7 @@ fn map_event(account_id: u32, event: WorkerEvent) -> AppMsg {
             AppMsg::RefsRepaired { account_id, folder_id }
         }
         WorkerEvent::Body { message_id, path, body } => {
+            let body = crate::legacy::current_markup(body);
             AppMsg::Body { account_id, message_id, path, body }
         }
         WorkerEvent::SenderChecked { path, message_id, check } => {
@@ -24120,6 +24476,7 @@ fn reply_prefill(m: &Message) -> ComposePrefill {
         // into one bar, so an answer to an answer lost the shape of the
         // conversation it was answering (#248).
         body_html: quoted_original(&attribution, &m.body),
+        original_plain: body_is_plain_text(&m.body),
         // What makes this a reply rather than a new conversation: In-Reply-To
         // names the parent, References carries the chain it belongs to.
         in_reply_to: m.message_id.clone(),
@@ -24225,6 +24582,7 @@ fn forward_prefill(m: &Message) -> ComposePrefill {
         cc: String::new(),
         subject,
         body_html,
+        original_plain: body_is_plain_text(&m.body),
         ..Default::default()
     }
 }
@@ -24425,26 +24783,73 @@ fn hard_wrap_plain_regions(html: &str) -> String {
             (Some(open), Some(close)) if open <= close => format!(
                 "{}{}{}",
                 &html[..open],
-                html[open..close].replace('\n', "<br>"),
+                breaks(&html[open..close]),
                 &html[close..]
             ),
-            _ => html.replace('\n', "<br>"),
+            _ => breaks(html),
         };
     }
     // A message of mixed parts (`wrap_fragment`): only its text parts are
-    // pre-wrap, each one a `.vireo-plain` div the worker writes itself, with
+    // pre-wrap, each one a `.hylki-plain` div the worker writes itself, with
     // nothing but escaped text and links inside it.
     let mut out = String::with_capacity(html.len());
     let mut rest = html;
-    while let Some(at) = rest.find("class=\"vireo-plain\"") {
+    while let Some(at) = rest.find("class=\"hylki-plain\"") {
         let Some(open) = rest[at..].find('>').map(|i| at + i + 1) else { break };
         let Some(close) = rest[open..].find("</div>").map(|i| open + i) else { break };
         out.push_str(&rest[..open]);
-        out.push_str(&rest[open..close].replace('\n', "<br>"));
+        out.push_str(&breaks(&rest[open..close]));
         rest = &rest[close..];
     }
     out.push_str(rest);
     out
+}
+
+/// A plain-text region's line ends as `<br>`. Mail arrives with CRLF, and a
+/// carriage return left in front of the `<br>` is read back as a second
+/// line break, under the `pre-wrap` the quote keeps.
+fn breaks(text: &str) -> String {
+    text.replace("\r\n", "\n").replace('\r', "\n").replace('\n', "<br>")
+}
+
+/// Whether a body, as the worker renders it, came from mail with no HTML
+/// part (#436): text with no markup at all, the worker's `wrap_plain`
+/// document, or its `wrap_fragment` of text parts (with any pictures that
+/// came between them). A sender's HTML is never only these, and a body that
+/// merely uses `<pre>` is still HTML.
+pub(crate) fn body_is_plain_text(body: &str) -> bool {
+    if !body.contains('<') {
+        return !body.trim().is_empty();
+    }
+    let lower = body.to_ascii_lowercase();
+    let Some(open) = lower.find("<body").and_then(|i| lower[i..].find('>').map(|j| i + j + 1)) else {
+        return false;
+    };
+    let close = lower.rfind("</body>").filter(|&c| c >= open).unwrap_or(lower.len());
+    let whole = body_is_pre_wrap(body);
+    let mut text = whole;
+    let mut rest = &lower[open..close];
+    while let Some(at) = rest.find('<') {
+        let Some(end) = rest[at..].find('>').map(|i| at + i) else { return false };
+        let tag = rest[at + 1..end].trim();
+        let ok = match tag.split_whitespace().next().unwrap_or("") {
+            // `linkify`'s links, the one markup inside the text.
+            "a" | "/a" => true,
+            "div" if !whole => {
+                let part = tag.contains("class=\"hylki-plain\"");
+                text |= part;
+                part
+            }
+            "/div" => !whole,
+            "img" => !whole && tag.contains("class=\"hylki-inline\""),
+            _ => false,
+        };
+        if !ok {
+            return false;
+        }
+        rest = &rest[end + 1..];
+    }
+    text
 }
 
 /// Does this document set `white-space: pre-wrap` on `body` itself?
@@ -24491,16 +24896,16 @@ fn trim_empty_blocks(html: &str) -> &str {
 
 /// Like [`quote_block`], but the quoted body is already-sanitized HTML.
 ///
-/// A body that sets its own colors is marked `vireo-quote-mail`: the editor
+/// A body that sets its own colors is marked `hylki-quote-mail`: the editor
 /// lays it on the light ground it was designed for, where a dark composer
 /// would leave its dark text unreadable.
 fn quote_block_html(attribution: &str, inner_html: &str) -> String {
     let esc = |s: &str| gtk::glib::markup_escape_text(s).replace('\n', "<br>");
     let colored = ["color:", "color=\"", "background:"].iter().any(|c| inner_html.contains(c));
     format!(
-        "<p class=\"vireo-quote-attr\">{}</p><blockquote{}>{}</blockquote>",
+        "<p class=\"hylki-quote-attr\">{}</p><blockquote{}>{}</blockquote>",
         esc(attribution),
-        if colored { " class=\"vireo-quote-mail\"" } else { "" },
+        if colored { " class=\"hylki-quote-mail\"" } else { "" },
         inner_html
     )
 }
@@ -24509,8 +24914,11 @@ fn quote_block_html(attribution: &str, inner_html: &str) -> String {
 /// forward, from plain text so no scripts/remote content leak into the editor.
 fn quote_block(attribution: &str, text: &str) -> String {
     let esc = |s: &str| gtk::glib::markup_escape_text(s).replace('\n', "<br>");
+    // Under `pre-wrap`, as a plain-text part from the server is quoted
+    // (#436): its spaces are part of the text, and a plain-text reply
+    // sends them back as they were.
     format!(
-        "<p class=\"vireo-quote-attr\">{}</p><blockquote>{}</blockquote>",
+        "<p class=\"hylki-quote-attr\">{}</p><blockquote><div style=\"white-space:pre-wrap\">{}</div></blockquote>",
         esc(attribution),
         esc(text)
     )
@@ -24963,7 +25371,7 @@ mod tests {
         // An answer to an answer: the inner quote has to stay one level in
         // (#248), not be flattened into the outer one.
         let body = "<!doctype html><html><head></head><body><div>yada yada</div>\
-            <p class=\"vireo-quote-attr\">On Monday, Ada wrote:</p>\
+            <p class=\"hylki-quote-attr\">On Monday, Ada wrote:</p>\
             <blockquote><div>tagada</div></blockquote></body></html>";
         let quoted = super::quoted_original("On Tuesday, Bo wrote:", body);
         let inner = quoted.split_once("</p>").expect("attribution line").1;
@@ -24985,13 +25393,73 @@ mod tests {
 
         // The same in a message of several parts, where only the text part
         // is pre-wrap and the HTML part's source newlines are not breaks.
-        let mixed = "<!doctype html><html><head><style>.vireo-plain{white-space:pre-wrap}\
-            </style></head><body><div class=\"vireo-plain\">One\nTwo</div>\
+        let mixed = "<!doctype html><html><head><style>.hylki-plain{white-space:pre-wrap}\
+            </style></head><body><div class=\"hylki-plain\">One\nTwo</div>\
             <div>\n<b>Three</b>\n</div></body></html>";
         let quoted = super::quoted_original("hdr", mixed);
         assert!(quoted.contains("One<br>Two"), "{quoted}");
         assert!(quoted.contains("<b>Three</b>"), "{quoted}");
         assert!(!quoted.contains("<br>\n<b>"), "{quoted}");
+    }
+
+    #[test]
+    fn plain_text_mail_is_told_from_html_mail() {
+        use crate::worker::extract_body;
+        let plain = extract_body(
+            b"Content-Type: text/plain\r\n\r\nHi,\r\n\r\n  indented, see http://example.com/x <here>\r\n",
+        );
+        assert!(super::body_is_plain_text(&plain), "{plain}");
+        // Text and a picture between two text parts, as Apple Mail sends.
+        let mixed = extract_body(
+            b"Content-Type: multipart/mixed; boundary=b\r\n\r\n--b\r\nContent-Type: text/plain\r\n\r\nOne\r\n\
+              --b\r\nContent-Type: image/png\r\nContent-Disposition: inline\r\nContent-Transfer-Encoding: base64\r\n\r\n\
+              iVBORw0KGgo=\r\n--b\r\nContent-Type: text/plain\r\n\r\nTwo\r\n--b--\r\n",
+        );
+        assert!(super::body_is_plain_text(&mixed), "{mixed}");
+        assert!(super::body_is_plain_text("Raw text the demo keeps"));
+
+        let alternative = extract_body(
+            b"Content-Type: multipart/alternative; boundary=b\r\n\r\n--b\r\nContent-Type: text/plain\r\n\r\nHi\r\n\
+              --b\r\nContent-Type: text/html\r\n\r\n<p>Hi</p>\r\n--b--\r\n",
+        );
+        assert!(!super::body_is_plain_text(&alternative), "{alternative}");
+        // HTML set in <pre> is still HTML, and so is a pre-wrap body with
+        // markup of its own.
+        assert!(!super::body_is_plain_text("<html><body><pre>text</pre></body></html>"));
+        assert!(!super::body_is_plain_text(
+            "<html><head><style>body{white-space:pre-wrap}</style></head><body><b>Hi</b></body></html>"
+        ));
+        // A text part and an HTML part side by side.
+        let both = "<!doctype html><html><head></head><body><div class=\"hylki-plain\">One</div>\
+            <div><b>Two</b></div></body></html>";
+        assert!(!super::body_is_plain_text(both));
+        assert!(!super::body_is_plain_text(""));
+    }
+
+    #[test]
+    fn a_reply_or_forward_knows_its_original_was_plain_text() {
+        let mut m = msg(1, 1, 10);
+        m.subject = "Hi".into();
+        m.body = crate::worker::extract_body(b"Content-Type: text/plain\r\n\r\nHello\r\n");
+        assert!(super::reply_prefill(&m).original_plain);
+        assert!(super::reply_all_prefill(&m, "me@example.com").original_plain);
+        assert!(super::forward_prefill(&m).original_plain);
+        m.body = "<html><body><p>Hello</p></body></html>".into();
+        assert!(!super::reply_prefill(&m).original_plain);
+        assert!(!super::forward_prefill(&m).original_plain);
+    }
+
+    #[test]
+    fn quoted_plain_text_keeps_its_spaces_and_one_break_per_line() {
+        // CRLF mail: a carriage return left before the <br> read back as a
+        // second break under the quote's pre-wrap. The indent stays, and so
+        // does the escaped-text path's.
+        let body = crate::worker::extract_body(b"Content-Type: text/plain\r\n\r\nHi,\r\n  indented\r\n");
+        let quoted = super::quoted_original("hdr", &body);
+        assert!(quoted.contains("Hi,<br>  indented"), "{quoted}");
+        assert!(!quoted.contains(['\r', '\n']), "{quoted}");
+        let raw = super::quoted_original("hdr", "Hi,\n  indented");
+        assert!(raw.contains("<div style=\"white-space:pre-wrap\">Hi,<br>  indented</div>"), "{raw}");
     }
 
     #[test]
@@ -25245,7 +25713,9 @@ mod tests {
         assert_eq!(gmail_shortcut_for(Key::numbersign, true), Some(Shortcut::Delete));
         assert_eq!(gmail_shortcut_for(Key::a, false), Some(Shortcut::ReplyAll));
         assert_eq!(gmail_shortcut_for(Key::U, true), Some(Shortcut::MarkRead(false)));
-        assert_eq!(gmail_shortcut_for(Key::underscore, true), Some(Shortcut::MarkRead(false)));
+        assert_eq!(gmail_shortcut_for(Key::underscore, true), Some(Shortcut::MarkUnreadFrom));
+        assert_eq!(gmail_shortcut_for(Key::semicolon, false), Some(Shortcut::FoldAll(false)));
+        assert_eq!(gmail_shortcut_for(Key::colon, true), Some(Shortcut::FoldAll(true)));
         assert_eq!(gmail_shortcut_for(Key::I, true), Some(Shortcut::MarkRead(true)));
         assert_eq!(gmail_shortcut_for(Key::n, false), Some(Shortcut::NextInThread));
         assert_eq!(gmail_shortcut_for(Key::_3, false), Some(Shortcut::Tag(3)));

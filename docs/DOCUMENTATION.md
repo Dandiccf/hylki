@@ -528,6 +528,13 @@ name, surname or address starts with them, and the answers join the
 suggestions from GNOME Contacts and your mail. Nothing is copied from the
 directory to your machine.
 
+The search in Contacts asks the directories the same way. The people they
+hold are listed after your contacts, under **In Directories**, with the
+directory's name beside each address. Selecting one shows the entry: an
+address starts a message, and **Add to Contacts** copies the person into the
+default address book. A directory switched on in Evolution is searched
+without restarting Hylki.
+
 A directory is an address book in Evolution Data Server, the service GNOME
 Contacts and Evolution keep theirs in. Hylki adds no LDAP client of its own,
 so a directory set up in Evolution is listed here as well, and one added
@@ -547,11 +554,17 @@ here shows in Evolution. Removing one removes it for both.
   `cn=jane,ou=people,dc=example,dc=com`, and its password. Leave both empty
   for a directory that can be searched anonymously. The password is kept in
   the keyring and handed to Evolution Data Server when the directory asks
-  for it.
+  for it. A directory set up in Evolution with its password remembered needs
+  none in Hylki: Evolution Data Server signs in with the one Evolution
+  stored.
 
 Saving checks the connection and says whether the directory answered, or
 why not (a password it refused, a server it could not reach or find, TLS
-that could not start). The check gives up after 30 seconds. The Flatpak
+that could not start). The check gives up after 30 seconds. A directory
+that fails during a search, such as one that needs a password neither
+Hylki nor Evolution has, says why once in the status bar and in its row in
+Settings → LDAP Directories, and is left alone for 30 seconds before it is
+asked again. The Flatpak
 reaches the desktop's Evolution Data Server, which has to be installed on
 the system, as it is with GNOME.
 
@@ -738,7 +751,10 @@ rest of what a mail can carry:
   client to pick its own font of each kind; the fonts most mail programs
   offer, such as Arial, Georgia, Verdana and Courier New, each with a
   fallback; or **Other Font…** for any font installed here, followed by its
-  generic kind in case the recipient lacks it.
+  generic kind in case the recipient lacks it. Each font in the menu is shown
+  in its own face. The last five fonts picked
+  with **Other Font…** are listed at the foot of the menu. With nothing
+  selected, the font applies to what is typed next.
 - **Font size:** points from 8 to 36, or Default. With nothing selected, the
   size applies to what is typed next.
 - **Text color and Highlight:** the GNOME palette and **Custom…** for any
@@ -754,8 +770,15 @@ Markdown has no words for them, so switching such a message to Markdown or
 plain text leaves them out. **Settings → Composing → Formatting toolbar**
 says whether a new message starts with these tools shown (Always expanded)
 or hidden behind the chevron (Always collapsed, the default); the chevron
-changes it for the message at hand. When the composer is narrow, the
-toolbar wraps onto a second row.
+changes it for the message at hand. **Settings → Composing → Font** and
+**Font size** set the font and size a rich-text message starts in, and they
+are sent with it, so the recipient sees them too. They cover what you
+write: the signature and the message quoted in a reply or forward keep their
+own look, and text given its own font or size in the message keeps it. **Other Font…** in the Font list picks any
+installed font. Default, for both, leaves the recipient's own font and size
+in charge. When the composer is narrow, the
+toolbar wraps onto a second row, the chevron staying beside the tools it
+shows wherever the row has room for it.
 
 ### Spell checking
 
@@ -804,6 +827,14 @@ the same way.
 Switching format converts what is already in the message, so you can start a
 reply in rich text and finish it in Markdown; the quoted original comes
 across as `>` lines.
+
+**Settings → Composing → Reply in the original's format**, off by default,
+answers plain text in kind. A reply, a reply to all or a forward of a message
+that came as plain text only, the way mailing lists and many of the people on
+them send it, opens in plain text, the original quoted as `>` lines that keep
+its indents. A message with an HTML part is answered in the format chosen in
+**Write messages in**. Drafts, templates and **Edit as New** open as they
+always have, and the format button still switches any one message.
 
 **The Markdown Hylki understands** is the dialect documented at
 [markdownguide.org](https://www.markdownguide.org/): all of the basic
@@ -1125,20 +1156,21 @@ their own. **Single line** puts them on one line in columns: the sender's
 circle and name, the subject with the text dimmed after it, then tags, a
 paperclip, the conversation's size and a short date. **Automatic** uses one
 line while the list pane is dragged wider than about 600 pixels and cards
-when it is narrower. On one line the actions palette is not shown; the
-right-click menu, swipes and keyboard shortcuts do the same things.
+when it is narrower. On one line the actions palette is not shown and a
+row does not swipe, as sideways is how the list scrolls to its columns;
+the right-click menu and keyboard shortcuts do the same things.
 
 **Settings → Message List → Columns** chooses what a single line shows and
 in what order: drag a column between **Shown** and **Not shown**, or along
-the row. The subject always stays, and the conversation's size rides at its
-end. The columns are:
+the row. Any number of columns can be shown. The subject always stays, and
+the conversation's size rides at its end. The columns are:
 
 | Column | What it shows |
 | --- | --- |
 | Star | The star, lit when the message is starred |
 | Sender | Who it is from; in Sent, who it went to |
 | Recipients | Who it went to |
-| Correspondents | Everyone who wrote in the conversation, you as "me" |
+| Correspondents | Everyone who wrote in the conversation, newest first, you as "me" |
 | Subject | The subject, with the start of the text dimmed after it |
 | Tags | The message's tags |
 | Attachment | A paperclip when there are files attached |
@@ -1156,15 +1188,34 @@ Defaults** goes back to star, sender, subject, tags, attachment and date.
 **Column headings**, in the same group, names the columns above the list.
 Clicking a heading sorts the list by that column, and clicking it again
 reverses the order; the sorted heading is in the accent color, with an
-arrow. Tags and Correspondents do not sort. The sort menu follows the
-headings.
+arrow. Correspondents sorts by the names the column shows, and Tags by tag
+name with untagged mail last. The sort menu follows the headings.
 
-The name and date columns are resized by dragging the faint line at a
-heading's edge: the right edge of a column left of the subject, the left
-edge of one right of it. A double click on that line puts the column back
-to its usual width, and **Restore Defaults** puts every column back. When
-the list is too narrow for the widths set, the name columns give way in
-proportion and the dates keep theirs.
+The name, tags and date columns are resized by dragging a heading's edge,
+where a line shows under the pointer: the right edge of a column left of
+the subject, the left edge of one right of it. A double click there puts
+the column back to its usual width, and **Restore Defaults** puts every
+column back.
+
+**Fit columns to the list**, in the same group and on until it is switched
+off, narrows the name and tag columns in proportion when the list is too
+narrow for the widths set; the dates keep theirs. Switched off, every
+column keeps its width, the subject takes the room they leave, and a list
+too narrow for them all scrolls sideways to the columns past its edge, the
+headings with it.
+
+A right-click on the headings offers **Customize Columns…**, which opens
+Settings at **Message List → Columns**.
+
+**Settings → Message List → Group by date** divides the list under
+headings: **Today**, **Yesterday**, **Last 7 days**, **Last 14 days** and
+**Older**, counted in calendar days on this computer's clock. The headings
+show only while the list is sorted by date, newest or oldest first, and move
+on at midnight. A conversation goes under the heading of the message that
+places it in the sort, the newest for newest first and the oldest for oldest
+first, and its replies stay with it when it is opened out. The headings work
+in both layouts and in search results, and are not rows: the keyboard,
+selection and swipes pass them by. It is off unless switched on.
 
 **Settings → Message List → Tint tagged messages** washes the row of a
 tagged message with its tag's color, in both layouts. A message with more
@@ -1212,11 +1263,26 @@ unread when the setting was turned on counts as seen. The marks are kept in
 
 ### Unread count on the app icon
 
-Hylki puts the number of unread inbox messages on its icon in the dock or
-task manager, the same count as the tray icon's dot. KDE Plasma's task
-manager shows it, and so do the Dash to Dock and Dash to Panel extensions
-for GNOME; GNOME's own dash has no badges. **Settings → System → Unread count
-on the app icon** turns it off. Stored as `launcher_count` in `privacy.toml`.
+Hylki puts a number on its icon in the dock or task manager. KDE Plasma's
+task manager shows it, and so do the Dash to Dock and Dash to Panel
+extensions for GNOME; GNOME's own dash has no badges. **Settings → System →
+Unread count on the app icon** chooses what it counts:
+
+- **All unread inbox mail**, the default: every unread message in every
+  account's inbox, the same count as the tray icon's dot.
+- **New since last in front**: only the inbox mail that arrived while the
+  main window was not the active window, and is still unread. It is the mail
+  a new-mail notification is raised for, less what a filter filed out of the
+  inbox, whether or not notifications are on. Reading or deleting one of those messages, from a
+  notification's buttons or on another device, takes it off the count, and
+  the count goes back to none as soon as the main window is in front. It
+  starts from none each time Hylki starts. The tray icon's dot still counts
+  every unread inbox message.
+- **Off**: no number.
+
+Stored as `launcher_badge` (`off`, `all_unread` or `new_since_front`) in
+`privacy.toml`; `launcher_count`, the on/off switch it replaced, is still
+written for older versions and read when `launcher_badge` is absent.
 
 ### Renderer
 
@@ -1301,6 +1367,15 @@ played while Do Not Disturb is on; the Flatpak cannot see Do Not Disturb, which 
 desktop does not share with sandboxed apps. The desktop may play a sound of
 its own for the notification as well; GNOME Settings → Notifications → Hylki →
 Sound Alerts turns that one off.
+
+### The status bar
+
+Errors, and the console when **Settings → System → Console mode** is on, open
+in a bar at the bottom of the window. **Settings → System → Status bar** puts
+it at the top instead. <kbd>Ctrl+Shift+S</kbd>, or a long press on Refresh,
+shows or hides it. Its buttons are, from the left, **Export log** (while the
+console is open), the console, and the bar's own toggle. Stored as
+`status_bar_top` in `privacy.toml`.
 
 ## Privacy
 
