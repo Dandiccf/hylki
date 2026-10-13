@@ -2,6 +2,44 @@
 
 Hylki (formerly Vireo) is a clean, fast, GNOME-native email client built with Rust and libadwaita for Wayland desktops. Privacy-first: no telemetry, remote content blocked by default, and credentials kept in the system keyring.
 
+## What's new in 1.44.0-beta.7
+
+New features:
+
+- A font and size for new messages, set in Settings → Composing - (#358)
+- The last five fonts picked with Other Font… in the composer's font menu - (#358)
+- Group the message list by date - (#435)
+- Replies in plain text to mail sent in plain text - (#436)
+- An app icon count of the new mail only - (#431)
+- Ctrl+Shift+K opens the command palette on its actions - (#399)
+- Create Filter from Message…, by @fsoft72 - (#428)
+- The Correspondents column names the newest writer first - (#443)
+- The Correspondents and Tags headings sort the list - (#443)
+- A single-line list that scrolls sideways for its columns - (#443)
+- Customize Columns… on the column headings' right-click menu - (#443)
+- Swipe actions in the card layout only - (#443)
+- The status bar at the foot of the window, or at the top in Settings - (#433)
+
+Fixes:
+
+- Hylki closing at launch when the session's locale is missing from the runtime - (#437)
+- Microsoft 365 and JMAP folders showing only their newest 300 messages - (#429)
+- LDAP directories set up in Evolution never searched - (#307)
+- Gmail keys acting on one message of a conversation - (#392)
+- the composer keeping the formatting on screen in plain text - (#424)
+- right-click menus doing nothing on X11, by @fsoft72 - (#427)
+- the settings search listing every OpenPGP key - (#432)
+- the composer's font menu going on saying Sans Serif - (#358)
+- a font picked with Other Font… lost before it was typed - (#358)
+- the formatting toolbar's menus not opening near the foot of the screen - (#358)
+- single-line columns after Tags falling out of line - (#443)
+- a narrow composer cut off at the right
+
+Translations:
+
+- Italian, new, by @amivaleo
+- Catalan by @jolupa
+
 ## What's new in 1.44.0-beta.6
 
 Fixes:

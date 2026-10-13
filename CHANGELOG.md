@@ -1,5 +1,129 @@
 # Changelog
 
+## 1.44.0-beta.7 — 2026-10-13
+
+The seventh beta previewing 1.44.0.
+
+- **Fixed: Hylki closed at launch when the session's locale was missing
+  from the Flatpak runtime** (#437, reported by Bohne13). The app now runs
+  in C.UTF-8 in that case, so its reading pane starts.
+- **Changed: the Correspondents column names the newest writer first**
+  (#443, suggested by erenoglu), the one the conversation is waiting on,
+  rather than whoever opened it.
+- **Added: the Correspondents and Tags headings sort the list** (#443),
+  like every other column heading. Correspondents sorts by the names the
+  column shows; Tags by tag name, untagged mail last.
+- **Added: a single-line list can scroll sideways** (#443). With
+  **Settings → Message List → Columns → Fit columns to the list** switched
+  off, the columns keep the widths set for them and a list too narrow for
+  them scrolls, the headings with it. On, the default, the name and tag
+  columns narrow to fit as before.
+- **Added: Customize Columns… on the column headings' right-click menu**
+  (#443), which opens Settings at Message List → Columns.
+- **Changed: swipe actions are for the card layout** (#443). A single line
+  no longer swipes; sideways is how it scrolls.
+- **Fixed: single-line columns after Tags fell out of line** (#443) on
+  rows without tags. Tags is a column of fixed width now, resized from its
+  heading like the names.
+- **Changed: column resize lines show only under the pointer** (#443).
+  At rest they sat across the headings' names.
+- **Changed: Settings → Message List → Columns shows every column it
+  holds** (#443): the Shown row wraps instead of scrolling, where past six
+  columns the rest were out of sight.
+- **Fixed: the composer's font menu went on saying Sans Serif** (#358,
+  reported by erenoglu). A font applied to selected text, or chosen for the
+  next words typed, now shows in the menu at once; the size menu does the
+  same for a size.
+- **Fixed: a font picked with Other Font… was lost before it was typed**
+  (#358). With nothing selected, the font now holds for the next words
+  typed, as a size does, however the focus moves. Accepting the font dialog
+  with no font selected closed Hylki; it now changes nothing.
+- **Added: the last five fonts picked with Other Font…** are listed at the
+  foot of the composer's font menu, and the menu shows each font in its own
+  face (#358).
+- **Fixed: the formatting toolbar's menus did not open near the foot of
+  the screen** (#358). A menu taller than the room there now scrolls.
+- **Added: a font and size for new messages** (#358, suggested by
+  erenoglu). **Settings → Composing → Font** and **Font size** set what
+  rich-text messages are written in, and they go out with the message.
+  The font list has the composer's fonts, the recent picks and **Other
+  Font…**. They apply to what you write, not to the signature or the
+  quoted message. Default leaves both to the recipient, as before.
+- **Changed: Delete Draft is in the Save Draft button's menu**, under Save
+  as Template, rather than a button of its own in the composer's header.
+- **Added: group the message list by date** (#435, suggested by rhuhxx).
+  **Settings → Message List → Group by date** puts Today, Yesterday, Last 7
+  days, Last 14 days and Older headings over a list sorted by date. A
+  conversation stays under one heading with its replies.
+- **Fixed: Microsoft 365 and JMAP folders showed only their newest 300
+  messages** (#429, reported by Dandiccf). The newest 300 still come first;
+  the rest of the folder is indexed in the background, as on IMAP, and mail
+  deleted elsewhere leaves the list. A refresh no longer drops the older
+  mail already listed.
+- **Added: replies follow a plain-text original** (#436, suggested by
+  3v1n0). With **Settings → Composing → Reply in the original's format**
+  on, a reply or forward of mail sent as plain text opens in plain text.
+  Mail with an HTML part starts in the format chosen in **Write messages
+  in**. Quoting plain-text mail also keeps its indents and line ends.
+- **Added: the app icon's unread count can count only new mail** (#431,
+  suggested by 3v1n0). **Settings → System → Unread count on the app icon**
+  is now Off, All unread inbox mail (the default, as before) or New since
+  last in front: the inbox mail that arrived while Hylki was behind other
+  windows and is still unread, cleared when Hylki comes to the front.
+- **Fixed: LDAP directories set up in Evolution were never searched** (#307,
+  reported by 3v1n0). Hylki gave up before Evolution Data Server had signed
+  in with the password Evolution stored; it now waits for that sign-in, and
+  notices a directory switched on in Evolution without a restart. The
+  Contacts search asks the directories too and lists matches under **In
+  Directories**, with **Add to Contacts**. A directory that cannot be asked
+  says why once in the status bar and in its row in Settings.
+- **Fixed: Gmail keys acted on one message of a conversation** (#392,
+  reported by 3v1n0).
+  **Shift+I**, **Shift+U** and **e** now mark or archive the whole
+  conversation that is open, and the toolbar's Archive takes a
+  conversation's row as Delete does. `_` marks unread from the message
+  being read onward, and `;` and `:` expand and collapse every message.
+  **j** and **k** skip the replies of a conversation opened out in the list
+  and outline the row they reach; **o** takes the keyboard into the reader,
+  where **j** and **k** open the next or previous conversation and **Esc**
+  goes back like **u**. The shortcuts window is wider and lists each go-to
+  key on its own row, and Settings greys out Gmail keys while single-key
+  shortcuts are off.
+- **Fixed: switching the composer to plain text kept the formatting on
+  screen** (#424, reported by 3v1n0). Plain text now shows the message as
+  it is sent, in the desktop's monospace font: bold and the like go, a
+  link is followed by its address, a quote becomes `> ` lines, and paste
+  brings in text alone. When the body has formatting, pictures or links,
+  the composer asks first. A composer that opens in plain text starts
+  that way too, and a plain-text signature keeps the space of its `-- `
+  line.
+- **Added: Ctrl+Shift+K opens the command palette on its actions** (#399,
+  suggested by 3v1n0), with `>` already typed.
+- **Changed: the status bar sits at the bottom of the window** (#433,
+  reported by 3v1n0). At the top, an error coming in pushed the whole window
+  down under the pointer; at the foot nothing moves, and its list of
+  messages and the console open upward. It moves there for everyone;
+  **Settings → System → Status bar** puts it back at the top. Its buttons
+  read Export log, the console, then the bar's own toggle.
+- **Fixed: a narrow composer was cut off at the right.** The formatting
+  tools now wrap onto further rows one by one, the chevron stays beside them
+  wherever the row has room for it, and a small composer window stops
+  shrinking once its folded header is as narrow as it gets.
+- **Fixed: the settings search listed every OpenPGP key** (#432, reported
+  by 3v1n0). A keyring with many people's keys buried the settings under
+  them; keys are no longer search results.
+- **Italian translation** (#430 by Jimmy), complete but for the strings
+  added after it was made.
+- **Catalan translation** brought up to date (PR #422 by jolupa).
+- **Fixed: right-click menus did nothing on X11** (#427, by Fabio Rotondo).
+  Releasing the right button took the menu's hold on the pointer away, so
+  every entry only closed the menu. On X11 the menu now opens once the button
+  is up; Wayland is unchanged.
+- **Added: Create Filter from Message…** (#428, by Fabio Rotondo). The
+  entry in the message list's and the reader's right-click menus opens the
+  filter editor on a new rule with the sender's address and the subject,
+  without a leading "Re:" or "Fwd:", already filled in.
+
 ## 1.44.0-beta.6 — 2026-10-12
 
 The sixth beta previewing 1.44.0.

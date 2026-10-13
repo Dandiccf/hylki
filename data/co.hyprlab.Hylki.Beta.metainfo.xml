@@ -63,6 +63,11 @@
   <content_rating type="oars-1.1"/>
 
   <releases>
+    <release version="1.44.0-beta.7" date="2026-10-13" type="development">
+      <description>
+        <p>Seventh preview of 1.44.0: a font and size for new messages, the list grouped by date, plain-text replies to plain-text mail, a new-mail count on the app icon, sortable and scrolling list columns, the status bar at the foot of the window, an Italian translation, and fixes for a crash at launch, Microsoft 365 and JMAP folders, LDAP directories and right-click menus on X11.</p>
+      </description>
+    </release>
     <release version="1.44.0-beta.6" date="2026-10-12" type="development">
       <description>
         <p>Sixth preview of 1.44.0: support for on-premise Exchange servers, added in the fifth preview, is removed.</p>
