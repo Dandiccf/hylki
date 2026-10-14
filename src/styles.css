@@ -700,10 +700,17 @@ flowbox.attach-flow > flowboxchild {
   color: @accent_fg_color;
   border-radius: 9999px;
   min-width: 18px;
-  min-height: 18px;
-  padding: 0 5px;
+  /* 16 + 2 above: the pill stays 18px high. A line of text keeps room
+     under it for descenders, which digits never use, so centred as a line
+     they sat high in the pill; the 2px above bring them to its middle. */
+  min-height: 16px;
+  padding: 2px 5px 0 6px;
   font-size: 0.8em;
   font-weight: 700;
+  /* Digits of one width, each centred in it: with the font's proportional
+     ones a "1" sat off centre in its pill. The extra pixel on the left
+     makes up for the half pixel they still lean that way. */
+  font-feature-settings: "tnum";
 }
 
 /* "Highlight only new unread mail" (#343): a count already looked at. */
